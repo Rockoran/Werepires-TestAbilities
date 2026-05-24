@@ -108,9 +108,19 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          return this.handleListTomeChestsCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("resetplayer")) {
          return this.handleResetPlayerCommand(sender, args);
+      } else if (command.getName().equalsIgnoreCase("set_vampire_spawn")) {
+         return this.handleSetVampireSpawnCommand(sender, args);
+      } else if (command.getName().equalsIgnoreCase("reloadconfig")) {
+         return this.handleReloadConfig(sender, args);
       } else {
-         return command.getName().equalsIgnoreCase("set_vampire_spawn") ? this.handleSetVampireSpawnCommand(sender, args) : false;
+         return false;
       }
+   }
+
+   private boolean handleReloadConfig(CommandSender sender, String[] args) {
+      this.plugin.getConfigManager().loadConfig();
+      sender.sendMessage("§aSuccessfully reloaded config file!");
+      return true;
    }
 
    private boolean handleResetPlayerCommand(CommandSender sender, String[] args) {
