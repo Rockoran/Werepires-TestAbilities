@@ -1,0 +1,15 @@
+name: VampireSMP
+version: 1.0.0
+main: pow.crimson2.VampireSMPPlugin
+api-version: 1.21
+author: PowCreations
+description: The official Vampire SMP plugin
+
+permissions:
+  vampiresmp.admin:
+    description: Allows access to all vampire SMP admin commands
+    default: op
+
+  vampiresmp.player:
+    description: Allows access to basic vampire SMP player features
+    default: true
