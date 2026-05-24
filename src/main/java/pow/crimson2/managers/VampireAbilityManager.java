@@ -195,7 +195,7 @@ public class VampireAbilityManager {
 
       TomeAbility holyWordAbility = this.plugin.getTomeManager().getAbility("holyword");
       if (holyWordAbility instanceof HolyWordTomeAbility && ((HolyWordTomeAbility)holyWordAbility).isParalyzed(player)) {
-         player.sendMessage("§cYou cannot use abilities while being cured.");
+         player.sendMessage("§cYou cannot use abilities while under a holy word.");
          return false;
       }
 
