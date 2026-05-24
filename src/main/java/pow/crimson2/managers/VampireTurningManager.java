@@ -35,6 +35,9 @@ public class VampireTurningManager {
    }
 
    public void disableAllVampireTurning() {
+      if (!this.plugin.getConfigManager().getDisableTurningAfterTurn()) {
+         return;
+      }
       for (Player player : Bukkit.getOnlinePlayers()) {
          if (this.plugin.getVampireManager().isVampire(player)) {
             this.turningEnabled.put(player.getUniqueId(), false);

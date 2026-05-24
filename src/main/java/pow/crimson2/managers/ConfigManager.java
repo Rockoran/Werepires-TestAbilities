@@ -300,6 +300,8 @@ public class ConfigManager {
       this.plugin.saveConfig();
    }
 
+   public boolean getDisableTurningAfterTurn() { return this.config.getBoolean("vampire.disable-turning-after-turn", true); }
+
    public String getOakhurstName() {
       return this.config.getString("oakhurst.name", "Oakhurst");
    }

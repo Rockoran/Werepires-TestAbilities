@@ -137,6 +137,10 @@ vampire:
   # Default: 40,101,-113 (the vampire crypt)
   respawn-location: "40,101,-113"
 
+  # Controls whether all vampires will automatically have their turning toggled off after a new vampire is created.
+  # Default: true
+  disable-turning-after-turn: true
+
 # ============================================================================
 # NEW VAMPIRE INDICATOR
 # ============================================================================
