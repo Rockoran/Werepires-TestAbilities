@@ -1,9 +1,7 @@
 package pow.crimson2.managers;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,24 +22,24 @@ public class TomeDistributionManager {
    private final ConfigManager configManager;
    private final Random random;
    private BukkitTask distributionTask;
-   private int distributionCount = 4;
    private List<Location> tomeLocations = new ArrayList<>();
-   private final String[] tomeTypes = new String[]{
-      "BanishUndead",
-      "Blessing",
-      "EnlightenedEye",
-      "HolyWord",
-      "LanternThrash",
-      "PrayerOfFaith",
-      "RallyingCry",
-      "ShoulderBarge",
-      "TurnUndead",
-      "UncannyDirection",
-      "UnnaturalHaste",
-      "WayOfTheLand",
-      "WayOfTheLumberjack",
-      "WayOfTheProspector"
-   };
+   private List<String> tomeTypes;
+//           new String[]{
+//      "BanishUndead",
+//      "Blessing",
+//      "EnlightenedEye",
+//      "HolyWord",
+//      "LanternThrash",
+//      "PrayerOfFaith",
+//      "RallyingCry",
+//      "ShoulderBarge",
+//      "TurnUndead",
+//      "UncannyDirection",
+//      "UnnaturalHaste",
+//      "WayOfTheLand",
+//      "WayOfTheLumberjack",
+//      "WayOfTheProspector"
+//   };
    private final Enchantment[] enchantmentTypes = new Enchantment[]{
       Enchantment.EFFICIENCY, Enchantment.PROTECTION, Enchantment.FEATHER_FALLING, Enchantment.KNOCKBACK, Enchantment.SWEEPING_EDGE
    };
@@ -50,7 +48,12 @@ public class TomeDistributionManager {
       this.plugin = plugin;
       this.configManager = configManager;
       this.random = new Random();
+      this.reloadConfig();
+   }
+
+   public void reloadConfig() {
       this.initializeTomeLocations();
+      this.initializeTomeTypes();
    }
 
    private void initializeTomeLocations() {
@@ -59,6 +62,23 @@ public class TomeDistributionManager {
          this.plugin.getLogger().warning("TomeDistributionManager: No tome locations found in config!");
       } else {
          this.plugin.logInfo("TomeDistributionManager: Loaded " + this.tomeLocations.size() + " tome locations from config");
+      }
+   }
+
+   private void initializeTomeTypes() {
+      this.tomeTypes = new ArrayList<>();
+      List<String> tomeTypes = this.configManager.getTomeTypes();
+      for (String tome : tomeTypes) {
+         if (this.plugin.getTomeManager().isValidAbility(tome)) {
+            this.tomeTypes.add(tome);
+         } else {
+            this.plugin.getLogger().warning("TomeDistributionManager: Unknown tome type " + tome + "!");
+         }
+      }
+      if (this.tomeTypes.isEmpty()) {
+         this.plugin.getLogger().warning("TomeDistributionManager: No valid tome types specified. Chests containing a tome will instead be empty!");
+      } else {
+         this.plugin.logInfo("TomeDistributionManager: Loaded " + this.tomeTypes.size() + " tome types.");
       }
    }
 
@@ -85,9 +105,12 @@ public class TomeDistributionManager {
             this.clearAllTomeChests();
             List<Location> tomeSelectedLocations = this.selectRandomLocations();
 
-            for (Location location : tomeSelectedLocations) {
-               String randomTome = this.getRandomTomeType();
-               this.distributeTomeToLocation(location, randomTome);
+            // spawn tome books
+            if (!this.tomeTypes.isEmpty()) {
+               for (Location location : tomeSelectedLocations) {
+                  String randomTome = this.tomeTypes.get(this.random.nextInt(this.tomeTypes.size()));
+                  this.distributeTomeToLocation(location, randomTome);
+               }
             }
 
             List<Location> emptyLocations = new ArrayList<>(this.tomeLocations);
@@ -133,12 +156,8 @@ public class TomeDistributionManager {
    private List<Location> selectRandomLocations() {
       List<Location> availableLocations = new ArrayList<>(this.tomeLocations);
       Collections.shuffle(availableLocations, this.random);
-      int locationsToSelect = Math.min(this.distributionCount, availableLocations.size());
+      int locationsToSelect = Math.min(this.plugin.getConfigManager().getTomeCount(), availableLocations.size());
       return availableLocations.subList(0, locationsToSelect);
-   }
-
-   private String getRandomTomeType() {
-      return this.tomeTypes[this.random.nextInt(this.tomeTypes.length)];
    }
 
    private void distributeTomeToLocation(Location location, String tomeType) {
@@ -299,15 +318,6 @@ public class TomeDistributionManager {
 
    private String locationToString(Location location) {
       return String.format("(%d, %d, %d)", location.getBlockX(), location.getBlockY(), location.getBlockZ());
-   }
-
-   public int getDistributionCount() {
-      return this.distributionCount;
-   }
-
-   public void setDistributionCount(int count) {
-      this.distributionCount = Math.max(1, Math.min(count, this.tomeLocations.size()));
-      this.plugin.logInfo("TomeDistributionManager: Distribution count set to " + this.distributionCount);
    }
 
    public boolean addTomeLocation(Location location) {

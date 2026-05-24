@@ -45,6 +45,33 @@ chat:
 tome-distribution-interval-minutes: 20
 
 # ============================================================================
+# TOME CHEST ITEMS
+# ============================================================================
+tome-chest-items:
+  # How many tome books spawn every time tomes are distributed. The remaining tome chests will be filled with enchanted books.
+  # Default: 4
+  tome-count: 4
+
+  # Which tome abilities will spawn in tome chests.
+  # If this list is empty, the default is used.
+  tomes-available:
+    - BanishUndead
+    - Blessing
+    - EnlightenedEye
+    - HolyWord
+    - LanternThrash
+    - PrayerOfFaith
+    - RallyingCry
+    - ShoulderBarge
+    #- StopTheBleeding
+    - TurnUndead
+    - UncannyDirection
+    - UnnaturalHaste
+    - WayOfTheLand
+    - WayOfTheLumberjack
+    - WayOfTheProspector
+
+# ============================================================================
 # TOME CHEST LOCATIONS
 # ============================================================================
 # List of coordinates where tome chests can spawn

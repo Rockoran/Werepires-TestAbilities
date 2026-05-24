@@ -1,6 +1,7 @@
 package pow.crimson2.managers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -51,6 +52,34 @@ public class ConfigManager {
       }
 
       return locations;
+   }
+
+   public int getTomeCount() {
+      return this.config.getInt("tome-chest-items.tome-count", 4);
+   }
+
+   public List<String> getTomeTypes() {
+      List<String> tomeTypes = this.config.getStringList("tome-chest-items.tomes-available");
+      if (tomeTypes.isEmpty()) {
+         return Arrays.asList(
+                 "BanishUndead",
+                 "Blessing",
+                 "EnlightenedEye",
+                 "HolyWord",
+                 "LanternThrash",
+                 "PrayerOfFaith",
+                 "RallyingCry",
+                 "ShoulderBarge",
+                 "TurnUndead",
+                 "UncannyDirection",
+                 "UnnaturalHaste",
+                 "WayOfTheLand",
+                 "WayOfTheLumberjack",
+                 "WayOfTheProspector"
+         );
+      } else {
+         return tomeTypes;
+      }
    }
 
    public boolean addTomeChestLocation(Location location) {

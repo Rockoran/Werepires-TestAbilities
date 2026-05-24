@@ -119,6 +119,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
    private boolean handleReloadConfig(CommandSender sender, String[] args) {
       this.plugin.getConfigManager().loadConfig();
+      this.plugin.getTomeDistributionManager().reloadConfig();
       sender.sendMessage("§aSuccessfully reloaded config file!");
       return true;
    }
