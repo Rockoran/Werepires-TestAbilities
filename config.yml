@@ -138,6 +138,33 @@ vampire:
   respawn-location: "40,101,-113"
 
 # ============================================================================
+# NEW VAMPIRE INDICATOR
+# ============================================================================
+vampire-indicator:
+  # Controls whether vampires will see a message in their action bar when a player is turned.
+  # Default: true
+  enabled: true
+
+  # How long the indicator stays visible.
+  # Default: 120 seconds (2 minutes)
+  duration-seconds: 120
+
+  # Radius of the indicator broadcast (ignoring y-position). Vampires farther than this distance from the new vampire will not be alerted.
+  # A radius of 0 means all vampires see the indicator regardless of distance.
+  # Default: 0 blocks
+  distance: 0
+
+  # Controls whether the indicator includes the distance and direction to the new vampire.
+  # Default: true
+  tracker: true
+
+  # Minimum vampire stage for the indicator to be visible.
+  # All vampires this stage and above will see the indicator.
+  # Valid values: 1, 2, or 3
+  # Default: 1
+  minimum-stage: 1
+
+# ============================================================================
 # BEACON SYSTEM
 # ============================================================================
 beacons:

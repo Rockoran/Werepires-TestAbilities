@@ -15,8 +15,8 @@ public class VampireTrackingManager {
    private final VampireManager vampireManager;
    private final Map<UUID, BukkitTask> activeTrackingSessions = new ConcurrentHashMap<>();
    private UUID mostRecentVampireId = null;
-   private static final int TRACKING_DURATION_SECONDS = 120;
-   private static final int UPDATE_INTERVAL_TICKS = 4;
+//   private static final int TRACKING_DURATION_SECONDS = 120;
+//   private static final int UPDATE_INTERVAL_TICKS = 4;
 
    public VampireTrackingManager(VampireSMPPlugin plugin) {
       this.plugin = plugin;
@@ -24,19 +24,20 @@ public class VampireTrackingManager {
    }
 
    public void startTrackingNewVampire(Player newVampire) {
-      if (newVampire != null && newVampire.isOnline()) {
+      if (plugin.getConfigManager().getTrackingEnabled() && newVampire != null && newVampire.isOnline()) {
          final UUID newVampireId = newVampire.getUniqueId();
          this.stopTracking(newVampireId);
          this.mostRecentVampireId = newVampireId;
+         int tracking_duration_seconds = plugin.getConfigManager().getTrackingDurationSeconds();
          BukkitTask trackingTask = (new BukkitRunnable() {
-            int ticksRemaining = 2400;
+            int ticksRemaining = tracking_duration_seconds * 20;
 
             public void run() {
                if (this.ticksRemaining <= 0) {
                   VampireTrackingManager.this.stopTracking(newVampireId);
                } else {
                   Player trackedPlayer = Bukkit.getPlayer(newVampireId);
-                  if (trackedPlayer != null && trackedPlayer.isOnline()) {
+                  if (trackedPlayer != null && trackedPlayer.isOnline() && plugin.getVampireManager().isVampire(trackedPlayer)) {
                      VampireTrackingManager.this.updateTrackingForAllVampires(trackedPlayer);
                      this.ticksRemaining -= 4;
                   } else {
@@ -46,7 +47,7 @@ public class VampireTrackingManager {
             }
          }).runTaskTimer(this.plugin, 0L, 4L);
          this.activeTrackingSessions.put(newVampireId, trackingTask);
-         this.plugin.logInfo("Started vampire tracking for " + newVampire.getName() + " (120s)");
+         this.plugin.logInfo("Started vampire tracking for " + newVampire.getName() + " (" + tracking_duration_seconds + "s)");
       }
    }
 
@@ -57,15 +58,22 @@ public class VampireTrackingManager {
          for (Player vampire : Bukkit.getOnlinePlayers()) {
             if (this.vampireManager.isVampire(vampire)
                && !vampire.getUniqueId().equals(trackedVampire.getUniqueId())
+               && this.vampireManager.getVampireStage(vampire) >= this.plugin.getConfigManager().getTrackingMinimumStage()
                && vampire.getWorld().equals(trackedVampire.getWorld())
                && (this.plugin.getVampireFeedingManager() == null || !this.plugin.getVampireFeedingManager().isFeeding(vampire))) {
                Location vampireLocation = vampire.getLocation();
                double deltaX = trackedLocation.getX() - vampireLocation.getX();
                double deltaZ = trackedLocation.getZ() - vampireLocation.getZ();
                double distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
-               String direction = this.getRelativeDirection(deltaX, deltaZ, vampireLocation.getYaw());
-               String message = String.format("§4New Vampire: §f%s §7(§f%.0f blocks§7)", direction, distance);
-               this.plugin.getSessionManager().sendActionBar(vampire, message);
+               double maxDistance = this.plugin.getConfigManager().getTrackingDistance();
+               if (maxDistance == 0.0 || distance <= maxDistance) {
+                  String direction = this.getRelativeDirection(deltaX, deltaZ, vampireLocation.getYaw());
+                  String message = "§4New Vampire";
+                  if (this.plugin.getConfigManager().getTrackingArrowEnabled()) {
+                     message += String.format(": §f%s §7(§f%.0f blocks§7)", direction, distance);
+                  }
+                  this.plugin.getSessionManager().sendActionBar(vampire, message);
+               }
             }
          }
       }

@@ -171,6 +171,16 @@ public class ConfigManager {
       return this.config.getInt("thirst.max-feeding-per-session", 60);
    }
 
+   public boolean getTrackingEnabled() { return this.config.getBoolean("vampire-indicator.enabled", true); }
+
+   public int getTrackingDurationSeconds() { return this.config.getInt("vampire-indicator.duration-seconds", 120); }
+
+   public double getTrackingDistance() { return this.config.getDouble("vampire-indicator.distance", 0); }
+
+   public boolean getTrackingArrowEnabled() { return this.config.getBoolean("vampire-indicator.tracker", true); }
+
+   public int getTrackingMinimumStage() { return this.config.getInt("vampire-indicator.minimum-stage", 1); }
+
    public long getBeaconConversionTimeMs() {
       long seconds = this.config.getLong("beacons.conversion-time-seconds", 300L);
       return seconds * 1000L;
