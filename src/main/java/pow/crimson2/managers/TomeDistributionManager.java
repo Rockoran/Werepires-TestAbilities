@@ -2,9 +2,7 @@ package pow.crimson2.managers;
 
 import java.util.*;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.enchantments.Enchantment;
@@ -16,6 +14,7 @@ import org.bukkit.scheduler.BukkitTask;
 import pow.crimson2.VampireSMPPlugin;
 import pow.crimson2.abilities.tome.TomeAbility;
 import pow.crimson2.listeners.CureBookReadingListener;
+import pow.crimson2.utils.LeveledEnchantment;
 
 public class TomeDistributionManager {
    private final VampireSMPPlugin plugin;
@@ -24,25 +23,7 @@ public class TomeDistributionManager {
    private BukkitTask distributionTask;
    private List<Location> tomeLocations = new ArrayList<>();
    private List<String> tomeTypes;
-//           new String[]{
-//      "BanishUndead",
-//      "Blessing",
-//      "EnlightenedEye",
-//      "HolyWord",
-//      "LanternThrash",
-//      "PrayerOfFaith",
-//      "RallyingCry",
-//      "ShoulderBarge",
-//      "TurnUndead",
-//      "UncannyDirection",
-//      "UnnaturalHaste",
-//      "WayOfTheLand",
-//      "WayOfTheLumberjack",
-//      "WayOfTheProspector"
-//   };
-   private final Enchantment[] enchantmentTypes = new Enchantment[]{
-      Enchantment.EFFICIENCY, Enchantment.PROTECTION, Enchantment.FEATHER_FALLING, Enchantment.KNOCKBACK, Enchantment.SWEEPING_EDGE
-   };
+   private List<LeveledEnchantment> enchantmentTypes;
 
    public TomeDistributionManager(VampireSMPPlugin plugin, ConfigManager configManager) {
       this.plugin = plugin;
@@ -54,6 +35,7 @@ public class TomeDistributionManager {
    public void reloadConfig() {
       this.initializeTomeLocations();
       this.initializeTomeTypes();
+      this.initializeEnchantmentTypes();
    }
 
    private void initializeTomeLocations() {
@@ -80,6 +62,11 @@ public class TomeDistributionManager {
       } else {
          this.plugin.logInfo("TomeDistributionManager: Loaded " + this.tomeTypes.size() + " tome types.");
       }
+   }
+
+   private void initializeEnchantmentTypes() {
+      this.enchantmentTypes = this.plugin.getConfigManager().getTomeEnchantmentTypes();
+      this.plugin.logInfo("TomeDistributionManager: Loaded " + this.enchantmentTypes.size() + " tome types.");
    }
 
    public void startDistributionTask() {
@@ -221,9 +208,8 @@ public class TomeDistributionManager {
       ItemStack enchantedBook = new ItemStack(Material.ENCHANTED_BOOK);
       EnchantmentStorageMeta meta = (EnchantmentStorageMeta)enchantedBook.getItemMeta();
       if (meta != null) {
-         Enchantment randomEnchantment = this.enchantmentTypes[this.random.nextInt(this.enchantmentTypes.length)];
-         int level = 1;
-         meta.addStoredEnchant(randomEnchantment, level, true);
+         LeveledEnchantment randomEnchantment = this.enchantmentTypes.get(this.random.nextInt(this.enchantmentTypes.size()));
+         meta.addStoredEnchant(randomEnchantment.enchantment, randomEnchantment.level, true);
          enchantedBook.setItemMeta(meta);
       }
 

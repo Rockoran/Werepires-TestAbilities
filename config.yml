@@ -55,21 +55,30 @@ tome-chest-items:
   # Which tome abilities will spawn in tome chests.
   # If this list is empty, the default is used.
   tomes-available:
-    - BanishUndead
-    - Blessing
-    - EnlightenedEye
-    - HolyWord
-    - LanternThrash
-    - PrayerOfFaith
-    - RallyingCry
-    - ShoulderBarge
-    #- StopTheBleeding
-    - TurnUndead
-    - UncannyDirection
-    - UnnaturalHaste
-    - WayOfTheLand
-    - WayOfTheLumberjack
-    - WayOfTheProspector
+  - BanishUndead
+  - Blessing
+  - EnlightenedEye
+  - HolyWord
+  - LanternThrash
+  - PrayerOfFaith
+  - RallyingCry
+  - ShoulderBarge
+  #- StopTheBleeding
+  - TurnUndead
+  - UncannyDirection
+  - UnnaturalHaste
+  - WayOfTheLand
+  - WayOfTheLumberjack
+  - WayOfTheProspector
+
+  # Which enchantments and their level will spawn in the tome chests.
+  # If this list is empty, the default is used.
+  enchantments-available:
+  - efficiency 1
+  - protection 1
+  - feather_falling 1
+  - knockback 1
+  - sweeping_edge 1
 
 # ============================================================================
 # TOME CHEST LOCATIONS

@@ -3,11 +3,17 @@ package pow.crimson2.managers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.plugin.java.JavaPlugin;
 import pow.crimson2.beacons.BeaconSite;
+import pow.crimson2.utils.LeveledEnchantment;
 
 public class ConfigManager {
    private final JavaPlugin plugin;
@@ -79,6 +85,37 @@ public class ConfigManager {
          );
       } else {
          return tomeTypes;
+      }
+   }
+
+   public List<LeveledEnchantment> getTomeEnchantmentTypes() {
+      List<String> enchantStrings = this.config.getStringList("tome-chest-items.enchantments-available");
+      List<LeveledEnchantment> enchants = new ArrayList<>();
+      for (String enchantString : enchantStrings) {
+         String[] parts = enchantString.split(" ");
+         try {
+            assert parts.length == 2;
+            Enchantment enchant = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT).get(NamespacedKey.minecraft(parts[0]));
+            if (enchant == null) {
+               this.plugin.getLogger().warning("Unknown enchantment: " + parts[0]);
+               continue;
+            }
+            int level = Integer.parseInt(parts[1]);
+            enchants.add(new LeveledEnchantment(enchant, level));
+         } catch (Exception e) {
+            this.plugin.getLogger().warning("Invalid enchantment format: " + enchantString);
+         }
+      }
+      if (enchants.isEmpty()) {
+         return Arrays.asList(
+                 new LeveledEnchantment(Enchantment.EFFICIENCY, 1),
+                 new LeveledEnchantment(Enchantment.PROTECTION, 1),
+                 new LeveledEnchantment(Enchantment.FEATHER_FALLING, 1),
+                 new LeveledEnchantment(Enchantment.KNOCKBACK, 1),
+                 new LeveledEnchantment(Enchantment.SWEEPING_EDGE, 1)
+         );
+      } else {
+         return enchants;
       }
    }
 
