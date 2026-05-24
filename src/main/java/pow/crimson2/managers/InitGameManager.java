@@ -385,7 +385,7 @@ public class InitGameManager {
             Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
 
             for (Player player : onlinePlayers) {
-               for (String tag : new HashSet(player.getScoreboardTags())) {
+               for (String tag : new HashSet<String>(player.getScoreboardTags())) {
                   player.removeScoreboardTag(tag);
                }
 
@@ -395,7 +395,7 @@ public class InitGameManager {
             admin.sendMessage("§7[3.5/9] Resetting scoreboard objectives...");
             Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
-            for (Objective obj : new HashSet(mainScoreboard.getObjectives())) {
+            for (Objective obj : new HashSet<Objective>(mainScoreboard.getObjectives())) {
                if (obj.getName().startsWith("vsmp_")) {
                   String name = obj.getName();
                   String displayName = obj.getDisplayName();
