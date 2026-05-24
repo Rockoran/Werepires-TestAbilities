@@ -82,6 +82,8 @@
                                     <shadedPattern>com.google.gson</shadedPattern>
                                 </relocation>
                             </relocations>
+                            <finalName>${project.artifactId}-${project.version}-mrraow</finalName>
+                            <outputDirectory>../PaperVampServer/plugins</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
