@@ -1,0 +1,81 @@
+package pow.crimson2.managers;
+
+import java.util.HashMap;
+import java.util.Map;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.ClickEvent.Action;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import pow.crimson2.VampireSMPPlugin;
+
+public class PlayerChatManager implements Listener {
+   private final Map<Player, String> pendingMessages = new HashMap<>();
+   private VampireSMPPlugin plugin;
+
+   public PlayerChatManager(VampireSMPPlugin plugin) {
+      this.plugin = plugin;
+   }
+
+   public Map<Player, String> getPendingMessages() {
+      return this.pendingMessages;
+   }
+
+   public void removePlayersPendingMessages(Player player) {
+      this.pendingMessages.remove(player);
+   }
+
+   @EventHandler(ignoreCancelled = true)
+   public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
+      Player player = event.getPlayer();
+      if (this.plugin.getConfigManager().isFirstMessageBlockingEnabled()) {
+         if (event.getPlayer().getScoreboardTags().contains("ChatPrevented")) {
+            event.setCancelled(true);
+            player.getServer().broadcastMessage("<" + player.getName() + "> " + event.getMessage());
+         } else {
+            event.setCancelled(true);
+            String originalMessage = event.getMessage();
+            this.pendingMessages.put(player, originalMessage);
+            this.sendPreventionMessage(player, originalMessage);
+         }
+      }
+   }
+
+   private void sendPreventionMessage(Player player, String originalMessage) {
+      String configMessage = this.plugin.getConfigManager().getFirstMessageBlockedMessage();
+      String translatedMessage = ChatColor.translateAlternateColorCodes('&', configMessage);
+      if (translatedMessage.contains("[Click Here]")) {
+         String[] parts = translatedMessage.split("\\[Click Here\\]", 2);
+         TextComponent message = new TextComponent("\n" + parts[0]);
+         TextComponent clickHere = new TextComponent(ChatColor.AQUA + "[Click Here]");
+         clickHere.setClickEvent(new ClickEvent(Action.RUN_COMMAND, "/pow sendmessage"));
+         clickHere.setHoverEvent(
+            new HoverEvent(
+               net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT,
+               new ComponentBuilder(ChatColor.GREEN + "Click to send your message: " + ChatColor.WHITE + originalMessage).create()
+            )
+         );
+         message.addExtra(clickHere);
+         if (parts.length > 1) {
+            message.addExtra(new TextComponent(parts[1]));
+         }
+
+         player.spigot().sendMessage(message);
+      } else {
+         player.sendMessage("\n" + translatedMessage);
+      }
+   }
+
+   public void handleSendPendingMessage(Player player) {
+      String pendingMessage = this.pendingMessages.get(player);
+      if (pendingMessage != null) {
+         player.getServer().broadcastMessage("<" + player.getName() + "> " + pendingMessage);
+         this.pendingMessages.remove(player);
+      }
+   }
+}

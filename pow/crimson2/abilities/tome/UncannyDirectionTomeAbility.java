@@ -1,0 +1,83 @@
+package pow.crimson2.abilities.tome;
+
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import pow.crimson2.VampireSMPPlugin;
+
+public class UncannyDirectionTomeAbility extends TomeAbility {
+   public UncannyDirectionTomeAbility(VampireSMPPlugin plugin) {
+      super(
+         plugin,
+         "UncannyDirection",
+         new String[]{
+            "You gain an understanding of navigation you thought not possible,", "and can navigate your way back to home far more easily than before."
+         },
+         plugin.getConfigManager().getTomeUncannyDirectionCooldown()
+      );
+   }
+
+   @Override
+   protected boolean useAbility(final Player player) {
+      if (!this.canUse(player)) {
+         this.sendCannotUseMessage(player, "Only humans can use tome abilities!");
+         return false;
+      } else {
+         final double townCenterX = this.plugin.getConfigManager().getOakhurstTownCenterX();
+         final double townCenterZ = this.plugin.getConfigManager().getOakhurstTownCenterZ();
+         (new BukkitRunnable() {
+            int ticksRemaining = 140;
+
+            public void run() {
+               if (this.ticksRemaining > 0 && player.isOnline()) {
+                  Location currentLocation = player.getLocation();
+                  double deltaX = townCenterX - currentLocation.getX();
+                  double deltaZ = townCenterZ - currentLocation.getZ();
+                  double distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+                  String direction = UncannyDirectionTomeAbility.this.getRelativeDirection(deltaX, deltaZ, currentLocation.getYaw());
+                  String actionBarMessage = String.format("§6Town Center: §f %s §7(§f%.0f blocks§7)", direction, distance);
+                  UncannyDirectionTomeAbility.this.plugin.getSessionManager().sendActionBar(player, actionBarMessage);
+                  this.ticksRemaining -= 4;
+               } else {
+                  this.cancel();
+               }
+            }
+         }).runTaskTimer(this.plugin, 0L, 4L);
+         this.plugin.getWorld().playSound(player.getLocation(), "minecraft:item.lodestone_compass.lock", 1.0F, 1.2F);
+         this.sendSuccessMessage(player, "Your inner compass awakens, pointing you toward home...");
+         return true;
+      }
+   }
+
+   private String getRelativeDirection(double deltaX, double deltaZ, float playerYaw) {
+      double targetAngle = Math.atan2(deltaX, -deltaZ);
+      double targetDegrees = Math.toDegrees(targetAngle);
+      if (targetDegrees < 0.0) {
+         targetDegrees += 360.0;
+      }
+
+      double playerFacing = (playerYaw + 180.0F) % 360.0F;
+      if (playerFacing < 0.0) {
+         playerFacing += 360.0;
+      }
+
+      double relativeAngle = (targetDegrees - playerFacing + 360.0) % 360.0;
+      if (relativeAngle >= 337.5 || relativeAngle < 22.5) {
+         return "\ue00a";
+      } else if (relativeAngle >= 22.5 && relativeAngle < 67.5) {
+         return "\ue00b";
+      } else if (relativeAngle >= 67.5 && relativeAngle < 112.5) {
+         return "\ue00c";
+      } else if (relativeAngle >= 112.5 && relativeAngle < 157.5) {
+         return "\ue00d";
+      } else if (relativeAngle >= 157.5 && relativeAngle < 202.5) {
+         return "\ue00e";
+      } else if (relativeAngle >= 202.5 && relativeAngle < 247.5) {
+         return "\ue00f";
+      } else if (relativeAngle >= 247.5 && relativeAngle < 292.5) {
+         return "\ue010";
+      } else {
+         return relativeAngle >= 292.5 && relativeAngle < 337.5 ? "\ue011" : "\ue00a";
+      }
+   }
+}
