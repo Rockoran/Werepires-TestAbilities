@@ -19,8 +19,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 import pow.crimson2.VampireSMPPlugin;
-import pow.crimson2.libs.gson.Gson;
-import pow.crimson2.libs.gson.reflect.TypeToken;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 public class WayOfTheLumberjackTomeAbility extends TomeAbility implements Listener {
    private static final int NO_COOLDOWN = 0;

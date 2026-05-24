@@ -149,7 +149,7 @@ public class HolyWordTomeAbility extends TomeAbility implements Listener {
       (new BukkitRunnable() {
          double currentRadius = 0.0;
          final double maxRadius = baseRadius;
-         final double radiusStep = HolyWordTomeAbility.super.maxRadius / 10.0;
+         final double radiusStep = maxRadius / 10.0;
          int tickCount = 0;
 
          public void run() {

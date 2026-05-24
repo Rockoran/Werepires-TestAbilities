@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Optional;
-import pow.crimson2.libs.gson.Gson;
-import pow.crimson2.libs.gson.TypeAdapter;
-import pow.crimson2.libs.gson.TypeAdapterFactory;
-import pow.crimson2.libs.gson.reflect.TypeToken;
-import pow.crimson2.libs.gson.stream.JsonReader;
-import pow.crimson2.libs.gson.stream.JsonToken;
-import pow.crimson2.libs.gson.stream.JsonWriter;
+import com.google.gson.Gson;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
 
 public class OptionalTypeAdapter implements TypeAdapterFactory {
    @Override
@@ -22,7 +22,7 @@ public class OptionalTypeAdapter implements TypeAdapterFactory {
 
       Type wrappedType = ((ParameterizedType)type).getActualTypeArguments()[0];
       final TypeAdapter<?> wrappedAdapter = gson.getAdapter(TypeToken.get(wrappedType));
-      return new TypeAdapter<Optional<?>>() {
+      return (TypeAdapter<T>) new TypeAdapter<Optional<?>>() {
          public void write(JsonWriter out, Optional<?> value) throws IOException {
             if (value != null && value.isPresent()) {
                ((TypeAdapter<Object>)wrappedAdapter).write(out, value.get());

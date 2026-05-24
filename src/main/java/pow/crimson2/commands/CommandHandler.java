@@ -133,7 +133,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
       this.vampireManager.setPlayerAsHuman(target);
 
-      for (String tag : new HashSet(target.getScoreboardTags())) {
+      for (String tag : new HashSet<String>(target.getScoreboardTags())) {
          target.removeScoreboardTag(tag);
       }
 

@@ -12,8 +12,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import pow.crimson2.VampireSMPPlugin;
-import pow.crimson2.libs.gson.Gson;
-import pow.crimson2.libs.gson.reflect.TypeToken;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 public class VampireSireManager {
    private final VampireSMPPlugin plugin;

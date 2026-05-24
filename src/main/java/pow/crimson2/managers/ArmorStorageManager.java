@@ -15,9 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import pow.crimson2.VampireSMPPlugin;
-import pow.crimson2.libs.gson.Gson;
-import pow.crimson2.libs.gson.GsonBuilder;
-import pow.crimson2.libs.gson.reflect.TypeToken;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import pow.crimson2.utils.OptionalTypeAdapter;
 
 public class ArmorStorageManager {
