@@ -290,6 +290,10 @@ public class ConfigManager {
       this.plugin.saveConfig();
    }
 
+   public String getOakhurstName() {
+      return this.config.getString("oakhurst.name", "Oakhurst");
+   }
+
    public double getOakhurstTownCenterX() {
       return this.config.getDouble("oakhurst.town-center-x", 79.0);
    }

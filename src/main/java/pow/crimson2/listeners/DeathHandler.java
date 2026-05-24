@@ -131,7 +131,7 @@ public class DeathHandler implements Listener {
          player.sendMessage("");
          player.sendMessage("§cThe last defender of humanity has fallen...");
          if (allBeaconsDesecrated) {
-            player.sendMessage("§cDarkness reigns supreme over Oakhurst. You are free.");
+            player.sendMessage("§cDarkness reigns supreme over " + plugin.getConfigManager().getOakhurstName() + ". You are free.");
          } else {
             player.sendMessage("§cNow only the beacons lie between you and freedom.");
          }
@@ -159,7 +159,7 @@ public class DeathHandler implements Listener {
             player.sendMessage("§7But a beacon of light has been permanently corrupted.");
             player.sendMessage("§7The creatures of the night have been vanquished, but does freedom await you?");
          } else if (allBeaconsHoly) {
-            player.sendMessage("§aLight reigns supreme over Oakhurst. You are free.");
+            player.sendMessage("§aLight reigns supreme over " + plugin.getConfigManager().getOakhurstName() + ". You are free.");
          } else {
             player.sendMessage("§7Now only the beacons lie between you and freedom.");
          }

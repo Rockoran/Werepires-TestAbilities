@@ -40,7 +40,7 @@ public class MovementBoundaryListener implements Listener {
                String leaveMessage = null;
                if (player.getScoreboardTags().contains("CuredVampire")) {
                   canLeave = true;
-                  leaveMessage = "§6You are leaving Oakhurst...\n§eThe familiar lands fade behind you as you venture beyond the border.";
+                  leaveMessage = "§6You are leaving " + this.plugin.getConfigManager().getOakhurstName() + "...\n§eThe familiar lands fade behind you as you venture beyond the border.";
                } else if (!this.plugin.getVampireManager().isHuman(player)) {
                   if (this.areAllBeaconsDesecrated() && !this.anySurvivalModeHumansExist()) {
                      canLeave = true;
@@ -72,12 +72,12 @@ public class MovementBoundaryListener implements Listener {
                            if (this.areAllBeaconsDesecrated()) {
                               blockedMessage = "§4But while humans remain... Hope still stands...";
                            } else {
-                              blockedMessage = "§cYou feel a force tying you to Oakhurst... You may not leave while an enemy's beacon remains... But one that has embraced darkness, and yet has found strength to return to the light... Could escape...";
+                              blockedMessage = "§cYou feel a force tying you to " + this.plugin.getConfigManager().getOakhurstName() + "... You may not leave while an enemy's beacon remains... But one that has embraced darkness, and yet has found strength to return to the light... Could escape...";
                            }
                         } else if (this.areAllBeaconsHoly()) {
-                           blockedMessage = "§aBut while evil creatures still walk Oakhurst, your job is not yet finished...";
+                           blockedMessage = "§aBut while evil creatures still walk " + this.plugin.getConfigManager().getOakhurstName() + ", your job is not yet finished...";
                         } else {
-                           blockedMessage = "§cYou feel a force tying you to Oakhurst... You may not leave while an enemy's beacon remains... But one that has embraced darkness, and yet has found strength to return to the light... Could escape...";
+                           blockedMessage = "§cYou feel a force tying you to " + this.plugin.getConfigManager().getOakhurstName() + "... You may not leave while an enemy's beacon remains... But one that has embraced darkness, and yet has found strength to return to the light... Could escape...";
                         }
 
                         player.sendMessage(blockedMessage);
