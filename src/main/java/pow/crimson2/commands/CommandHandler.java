@@ -1,11 +1,7 @@
 package pow.crimson2.commands;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -35,11 +31,7 @@ import pow.crimson2.VampireSMPPlugin;
 import pow.crimson2.abilities.tome.TomeAbility;
 import pow.crimson2.beacons.BeaconSite;
 import pow.crimson2.listeners.CureBookReadingListener;
-import pow.crimson2.managers.BeaconManager;
-import pow.crimson2.managers.SessionManager;
-import pow.crimson2.managers.ThirstManager;
-import pow.crimson2.managers.TomeManager;
-import pow.crimson2.managers.VampireManager;
+import pow.crimson2.managers.*;
 
 public class CommandHandler implements CommandExecutor, TabCompleter {
    private final VampireSMPPlugin plugin;
@@ -112,8 +104,51 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          return this.handleSetVampireSpawnCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("reloadconfig")) {
          return this.handleReloadConfig(sender, args);
+      } else if (command.getName().equalsIgnoreCase("sire")) {
+         return this.handleSire(sender, args);
       } else {
          return false;
+      }
+   }
+
+   private boolean handleSire(CommandSender sender, String[] args) {
+      if (args.length == 0) {
+         sender.sendMessage("§cUsage: /pow admin sire <player> [clear|<player>]");
+         return true;
+      }
+      String victim = args[0];
+      if (args.length == 1) {
+         String sireName = this.plugin.getSireManager().getSireByName(victim);
+         String status;
+         if (sireName == null) {
+          status = "§7No sire assigned to " + victim + " §2(can cure)";
+         } else {
+          Player sire = Bukkit.getPlayer(sireName);
+          if (sire == null) {
+            status = "§7" + victim + "'s sire §f" + sireName + "§7 is OFFLINE §2(can cure)";
+          } else {
+            GameMode sireGameMode = sire.getGameMode();
+            if (sireGameMode == GameMode.SPECTATOR) {
+              status = "§7" + victim + "'s sire §f" + sireName + "§7 is in SPECTATOR mode §2(can cure)";
+            } else if (this.plugin.getConfigManager().getCureAllowCuredSire() && this.plugin.getVampireManager().isHuman(sire)) {
+               status = "§7" + victim + "'s sire §f" + sireName + "§7 is ALIVE in " + sireGameMode + " mode as a human §2(CAN cure)";
+            } else {
+              status = "§7" + victim + "'s sire §f" + sireName + "§7 is ALIVE in " + sireGameMode + " mode §4(CANNOT cure)";
+            }
+          }
+         }
+         sender.sendMessage(status);
+         return true;
+      }
+      String sire = args[1];;
+      if (sire.equalsIgnoreCase("clear")) {
+         this.plugin.getSireManager().removeSire(victim);
+         sender.sendMessage(victim + "'s sire connection has been removed.");
+         return true;
+      } else {
+         this.plugin.getSireManager().setSire(victim, sire);
+         sender.sendMessage(victim + "'s sire is now " + sire + ".");
+         return true;
       }
    }
 

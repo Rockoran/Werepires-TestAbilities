@@ -146,6 +146,10 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage("§e/pow admin listtomechests §7- List all tome chest locations");
       sender.sendMessage("§e/pow admin resetplayer <player> §7- Fully reset player to fresh state");
       sender.sendMessage("§e/pow admin set_vampire_spawn [x y z] §7- Set vampire respawn location");
+      sender.sendMessage("§e/pow admin reloadconfig §7- Reload this plugin's config.yml.");
+      sender.sendMessage("§e/pow admin sire <player> §7- Get a player's sire status.");
+      sender.sendMessage("§e/pow admin sire <player> clear §7- Remove a player's sire connection.");
+      sender.sendMessage("§e/pow admin sire <player> <player> §7- Set a player's sire.");
    }
 
    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {

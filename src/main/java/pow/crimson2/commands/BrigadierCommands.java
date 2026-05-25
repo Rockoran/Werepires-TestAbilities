@@ -588,6 +588,32 @@ public class BrigadierCommands {
                                             Commands.literal("reloadconfig")
                                                     .executes(ctx -> this.executePowCommand(ctx, "admin", "reloadconfig"))
                                     )
+                                    .then(
+                                            Commands.literal("sire")
+                                                    .then(
+                                                            Commands.argument("victim", StringArgumentType.word())
+                                                                    .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                                                                    .executes(ctx -> {
+                                                                      String victim = StringArgumentType.getString(ctx, "victim");
+                                                                      return this.executePowCommand(ctx, "admin", "sire", victim);
+                                                                    })
+                                                                    .then(Commands.literal("clear")
+                                                                            .executes(ctx -> {
+                                                                              String victim = StringArgumentType.getString(ctx, "victim");
+                                                                              return this.executePowCommand(ctx, "admin", "sire", victim, "clear");
+                                                                            })
+                                                                    )
+                                                                    .then(Commands.argument("sire", StringArgumentType.word())
+                                                                            .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                                                                            .executes(ctx -> {
+                                                                              String victim = StringArgumentType.getString(ctx, "victim");
+                                                                              String sire = StringArgumentType.getString(ctx, "sire");
+                                                                              return this.executePowCommand(ctx, "admin", "sire", victim, sire);
+                                                                            })
+                                                                    )
+
+                                                    )
+                                    )
                     )
                     .executes(ctx -> this.executePowCommand(ctx, "help")))
                     .build(),

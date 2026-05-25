@@ -30,12 +30,12 @@ public class VampireSireManager {
       plugin.logInfo("VampireSireManager initialized with " + this.sireMap.size() + " sire mappings");
    }
 
-   private void putSire(String vampireName, String sireName) {
-      this.sireMap.put(vampireName.toLowerCase(), sireName);
+   public String getSire(Player vampire) {
+      return this.getSireByName(vampire.getName());
    }
 
-   public String getSire(Player vampire) {
-      return this.sireMap.get(vampire.getName().toLowerCase());
+   public String getSireByName(String name) {
+      return this.sireMap.get(name.toLowerCase());
    }
 
    public boolean canBeCured(Player vampire) {
@@ -49,23 +49,6 @@ public class VampireSireManager {
       return sire.getGameMode() == GameMode.SPECTATOR
               // ... or, when enabled, if their sire has been cured.
               || this.plugin.getConfigManager().getCureAllowCuredSire() && this.plugin.getVampireManager().isHuman(sire);
-   }
-
-   public String getSireStatus(Player vampire) {
-      String sireName = this.getSire(vampire);
-      if (sireName == null) {
-         return "No sire assigned (can cure freely)";
-      }
-
-      Player sire = Bukkit.getPlayer(sireName);
-      if (sire == null) {
-         return "Sire '" + sireName + "' is OFFLINE (can cure)";
-      }
-
-      GameMode sireGameMode = sire.getGameMode();
-      return sireGameMode == GameMode.SPECTATOR
-         ? "Sire '" + sireName + "' is in SPECTATOR mode (can cure)"
-         : "Sire '" + sireName + "' is ALIVE in " + sireGameMode + " mode (CANNOT cure)";
    }
 
    public void setSire(String vampireName, String sireName) {
