@@ -33,7 +33,7 @@ public class PlayerChatManager implements Listener {
    @EventHandler(ignoreCancelled = true)
    public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
       Player player = event.getPlayer();
-      if (this.plugin.getConfigManager().isFirstMessageBlockingEnabled()) {
+      if (this.plugin.getSessionManager().isSessionActive() && this.plugin.getConfigManager().isFirstMessageBlockingEnabled()) {
          if (event.getPlayer().getScoreboardTags().contains("ChatPrevented")) {
             event.setCancelled(true);
             player.getServer().broadcastMessage("<" + player.getName() + "> " + event.getMessage());
