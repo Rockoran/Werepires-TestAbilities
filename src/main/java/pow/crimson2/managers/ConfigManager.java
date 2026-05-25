@@ -6,11 +6,11 @@ import java.util.List;
 
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
-import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ItemType;
 import org.bukkit.plugin.java.JavaPlugin;
 import pow.crimson2.beacons.BeaconSite;
 import pow.crimson2.utils.LeveledEnchantment;
@@ -91,11 +91,12 @@ public class ConfigManager {
    public List<LeveledEnchantment> getTomeEnchantmentTypes() {
       List<String> enchantStrings = this.config.getStringList("tome-chest-items.enchantments-available");
       List<LeveledEnchantment> enchants = new ArrayList<>();
+      Registry<Enchantment> enchantReg = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
       for (String enchantString : enchantStrings) {
          String[] parts = enchantString.split(" ");
          try {
             assert parts.length == 2;
-            Enchantment enchant = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT).get(NamespacedKey.minecraft(parts[0]));
+            Enchantment enchant = enchantReg.get(NamespacedKey.minecraft(parts[0]));
             if (enchant == null) {
                this.plugin.getLogger().warning("Unknown enchantment: " + parts[0]);
                continue;
@@ -117,6 +118,34 @@ public class ConfigManager {
       } else {
          return enchants;
       }
+   }
+
+   public int getTomeMiscCount() {
+      return this.config.getInt("tome-chest-items.misc-items-count", 0);
+   }
+
+   public List<ItemStack> getTomeMiscTypes() {
+      List<String> miscStrings = this.config.getStringList("tome-chest-items.misc-items");
+      List<ItemStack> miscItems = new ArrayList<>();
+      for (String miscString : miscStrings) {
+         String[] parts = miscString.split(" ");
+         try {
+            assert parts.length <= 2;
+            int count = 1;
+            if (parts.length == 2) {
+               count = Integer.parseInt(parts[1]);
+            }
+            Material mat = Material.getMaterial(parts[0]);
+            if (mat == null) {
+               this.plugin.getLogger().warning("Unknown item: " + parts[0]);
+               continue;
+            }
+            miscItems.add(new ItemStack(mat, count));
+         } catch (Exception e) {
+            this.plugin.getLogger().warning("Invalid item format: " + miscString);
+         }
+      }
+      return miscItems;
    }
 
    public boolean addTomeChestLocation(Location location) {

@@ -80,6 +80,15 @@ tome-chest-items:
   - knockback 1
   - sweeping_edge 1
 
+  # How many miscellaneous items spawn every time tomes are distributed.
+  # Default: 0
+  misc-items-count: 0
+
+  # Which miscellaneous items (and optional amounts) will spawn in tome chests.
+  misc-items:
+    - SPLASH_POTION # Holy Water
+    - COBWEB 4
+
 # ============================================================================
 # TOME CHEST LOCATIONS
 # ============================================================================

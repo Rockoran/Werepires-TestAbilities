@@ -5,13 +5,13 @@ import java.util.*;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.scheduler.BukkitTask;
 import pow.crimson2.VampireSMPPlugin;
+import pow.crimson2.abilities.tome.BlessingTomeAbility;
 import pow.crimson2.abilities.tome.TomeAbility;
 import pow.crimson2.listeners.CureBookReadingListener;
 import pow.crimson2.utils.LeveledEnchantment;
@@ -90,20 +90,35 @@ public class TomeDistributionManager {
             this.plugin.getLogger().warning("TomeDistributionManager: No tome locations available for distribution");
          } else {
             this.clearAllTomeChests();
-            List<Location> tomeSelectedLocations = this.selectRandomLocations();
+            List<Location> locations = new ArrayList<>(this.tomeLocations);
+            Collections.shuffle(locations, this.random);
 
-            // spawn tome books
-            if (!this.tomeTypes.isEmpty()) {
-               for (Location location : tomeSelectedLocations) {
-                  String randomTome = this.tomeTypes.get(this.random.nextInt(this.tomeTypes.size()));
-                  this.distributeTomeToLocation(location, randomTome);
+            // spawn misc items
+            int miscCount = Math.min(this.plugin.getConfigManager().getTomeMiscCount(), locations.size());
+            List<ItemStack> miscTypes = this.plugin.getConfigManager().getTomeMiscTypes();
+            if (!miscTypes.isEmpty()) {
+               for (int i = 0; i < miscCount; i++) {
+                  ItemStack item = new ItemStack(miscTypes.get(this.random.nextInt(miscTypes.size())));
+                  // Semi-arbitrary special case: if the item is holy water, give it appropriate name and lore.
+                  // Nothing breaks if we don't do this, just makes it consistent with holy water made with Blessing.
+                  if (item.getType() == Material.SPLASH_POTION) {
+                     BlessingTomeAbility.addHolyWaterDescription(this.plugin, item);
+                  }
+                  this.distributeItemToLocation(locations.removeLast(), item);
                }
             }
 
-            List<Location> emptyLocations = new ArrayList<>(this.tomeLocations);
-            emptyLocations.removeAll(tomeSelectedLocations);
+            // spawn tome books
+            int tomeCount = Math.min(this.plugin.getConfigManager().getTomeCount(), locations.size());
+            if (!this.tomeTypes.isEmpty()) {
+               for (int i = 0; i < tomeCount; i++) {
+                  String randomTome = this.tomeTypes.get(this.random.nextInt(this.tomeTypes.size()));
+                  this.distributeTomeToLocation(locations.removeLast(), randomTome);
+               }
+            }
 
-            for (Location location : emptyLocations) {
+            // spawn enchantment books
+            for (Location location : locations) {
                this.addEnchantmentBookToLocation(location);
             }
 
@@ -119,9 +134,11 @@ public class TomeDistributionManager {
             this.plugin
                .logInfo(
                   "TomeDistributionManager: Distributed "
-                     + tomeSelectedLocations.size()
+                     + miscCount
+                     + " miscellaneous items, "
+                     + tomeCount
                      + " tomes, "
-                     + emptyLocations.size()
+                     + locations.size()
                      + " enchantment books"
                      + (cureBookAdded ? ", and 1 cure book (replaced a chest)" : "")
                      + " to chest locations"
@@ -140,14 +157,13 @@ public class TomeDistributionManager {
       }
    }
 
-   private List<Location> selectRandomLocations() {
-      List<Location> availableLocations = new ArrayList<>(this.tomeLocations);
-      Collections.shuffle(availableLocations, this.random);
-      int locationsToSelect = Math.min(this.plugin.getConfigManager().getTomeCount(), availableLocations.size());
-      return availableLocations.subList(0, locationsToSelect);
+   private void distributeTomeToLocation(Location location, String tomeType) {
+      ItemStack tome = this.createTomeItem(tomeType);
+      distributeItemToLocation(location, tome);
+      this.plugin.logInfo("TomeDistributionManager: Added " + tomeType + " tome to chest at " + this.locationToString(location));
    }
 
-   private void distributeTomeToLocation(Location location, String tomeType) {
+   private void distributeItemToLocation(Location location, ItemStack item) {
       Block block = location.getBlock();
       if (block.getType() != Material.CHEST) {
          block.setType(Material.CHEST);
@@ -155,10 +171,8 @@ public class TomeDistributionManager {
       }
 
       Chest chest = (Chest)block.getState();
-      ItemStack tome = this.createTomeItem(tomeType);
       Inventory chestInventory = chest.getInventory();
-      chestInventory.addItem(new ItemStack[]{tome});
-      this.plugin.logInfo("TomeDistributionManager: Added " + tomeType + " tome to chest at " + this.locationToString(location));
+      chestInventory.addItem(new ItemStack[]{item});
    }
 
    private ItemStack createTomeItem(String tomeType) {

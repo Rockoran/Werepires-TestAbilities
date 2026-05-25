@@ -37,7 +37,7 @@ public class BlessingTomeAbility extends TomeAbility {
          if (mainHandItem.getAmount() > 1) {
             mainHandItem.setAmount(mainHandItem.getAmount() - 1);
             ItemStack splashWater = new ItemStack(Material.SPLASH_POTION, 1);
-            this.addHolyWaterDescription(splashWater);
+            this.addHolyWaterDescription(plugin, splashWater);
             if (inventory.firstEmpty() != -1) {
                inventory.addItem(new ItemStack[]{splashWater});
             } else {
@@ -46,7 +46,7 @@ public class BlessingTomeAbility extends TomeAbility {
             }
          } else {
             ItemStack splashWater = new ItemStack(Material.SPLASH_POTION, 1);
-            this.addHolyWaterDescription(splashWater);
+            this.addHolyWaterDescription(plugin, splashWater);
             inventory.setItemInMainHand(splashWater);
          }
 
@@ -62,9 +62,9 @@ public class BlessingTomeAbility extends TomeAbility {
       }
    }
 
-   private void addHolyWaterDescription(ItemStack item) {
+   public static void addHolyWaterDescription(VampireSMPPlugin plugin, ItemStack item) {
       if (item.getItemMeta() instanceof PotionMeta potionMeta) {
-         int durationSeconds = this.plugin.getConfigManager().getHolyWaterDisableDurationSeconds();
+         int durationSeconds = plugin.getConfigManager().getHolyWaterDisableDurationSeconds();
          String durationText;
          if (durationSeconds >= 60) {
             int minutes = durationSeconds / 60;
