@@ -20,6 +20,8 @@ import pow.crimson2.managers.BeaconManager;
 import pow.crimson2.managers.VampireManager;
 import pow.crimson2.managers.VampireSireManager;
 
+import java.util.List;
+
 public class ForcedVampireCureCommand implements CommandExecutor {
    private final VampireSMPPlugin plugin;
    private final VampireManager vampireManager;
@@ -96,17 +98,38 @@ public class ForcedVampireCureCommand implements CommandExecutor {
          BeaconSite targetNearestBeacon = this.beaconManager.getNearestHolyBeacon(target.getLocation(), cureDistance);
          if (targetNearestBeacon != null && targetNearestBeacon.equals(nearestHolyBeacon)) {
             String sireName = this.sireManager.getSire(target);
-            if (sireName != null && !this.sireManager.canBeCured(target)) {
-               if (this.plugin.getConfigManager().getCureAllowCuredSire()) {
-                  caster.sendMessage(
-                          "§4The curse cannot be broken while " + target.getName() + "'s sire, " + sireName + ", still walks the world in undeath..."
-                  );
-                  caster.sendMessage("§4The blood bond must be severed through the maker's true death or redemption.");
+            List<String> sireLine = this.sireManager.getCureSireLineage(target);
+            if (sireName != null && !sireLine.isEmpty()) {
+               if (sireLine.size() == 1) {
+                  if (this.plugin.getConfigManager().getCureAllowCuredSire()) {
+                     caster.sendMessage(
+                             "§4The curse cannot be broken while " + target.getName() + "'s sire, " + sireName + ", still walks the world in undeath..."
+                     );
+                     caster.sendMessage("§4The blood bond must be severed through the maker's true death or redemption.");
+                  } else {
+                     caster.sendMessage(
+                             "§4The curse cannot be broken while " + target.getName() + "'s sire, " + sireName + ", still walks the world in mortal form..."
+                     );
+                     caster.sendMessage("§4The blood bond must be severed through the maker's true death.");
+                  }
                } else {
-                  caster.sendMessage(
-                          "§4The curse cannot be broken while " + target.getName() + "'s sire, " + sireName + ", still walks the world in mortal form..."
-                  );
-                  caster.sendMessage("§4The blood bond must be severed through the maker's true death.");
+                  String message = "§4The curse cannot be broken while " + target.getName() + "'s lineage of sires, ";
+                  if (sireLine.size() == 2) {
+                     message += sireLine.get(0) + " and " + sireLine.get(1);
+                  } else {
+                     String lastSire = sireLine.removeLast();
+                     for (String sire : sireLine) {
+                        message += sire + ", ";
+                     }
+                     message += "and " + lastSire;
+                  }
+                  if (this.plugin.getConfigManager().getCureAllowCuredSire()) {
+                     target.sendMessage(message + ", all walk the world in undeath...");
+                     target.sendMessage("§4The blood bond must be severed through one of the makers' true death or redemption.");
+                  } else {
+                     target.sendMessage(message + ", all walk the world in mortal form...");
+                     target.sendMessage("§4The blood bond must be severed through one of the makers' true death.");
+                  }
                }
                return true;
             } else {

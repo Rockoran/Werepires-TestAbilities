@@ -317,6 +317,8 @@ public class ConfigManager {
       return this.config.getDouble("cure.cure-distance", 25.0);
    }
 
+   public int getCureSireLineLength() { return this.config.getInt("cure.sire-line-length", 1); }
+
    public boolean getCureAllowCuredSire() { return this.config.getBoolean("cure.allow-cured-sire", false); }
 
    public boolean getCureNeedsDaytime() { return this.config.getBoolean("cure.needs-daytime", true); }

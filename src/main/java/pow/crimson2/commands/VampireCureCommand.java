@@ -23,6 +23,8 @@ import pow.crimson2.managers.BeaconManager;
 import pow.crimson2.managers.VampireManager;
 import pow.crimson2.managers.VampireSireManager;
 
+import java.util.List;
+
 public class VampireCureCommand implements CommandExecutor {
    private final VampireSMPPlugin plugin;
    private final VampireManager vampireManager;
@@ -68,13 +70,34 @@ public class VampireCureCommand implements CommandExecutor {
         return true;
      }
      String sireName = this.sireManager.getSire(player);
-     if (sireName != null && !this.sireManager.canBeCured(player)) {
-        if (this.plugin.getConfigManager().getCureAllowCuredSire()) {
-           player.sendMessage("§4The curse cannot be broken while your sire, " + sireName + ", still walks the world in undeath...");
-           player.sendMessage("§4Only through your maker's true death or redemption can you find release.");
+     List<String> sireLine = this.sireManager.getCureSireLineage(player);
+     if (sireName != null && !sireLine.isEmpty()) {
+        if (sireLine.size() == 1) {
+           if (this.plugin.getConfigManager().getCureAllowCuredSire()) {
+              player.sendMessage("§4The curse cannot be broken while your sire, " + sireName + ", still walks the world in undeath...");
+              player.sendMessage("§4Only through your maker's true death or redemption can you find release.");
+           } else {
+              player.sendMessage("§4The curse cannot be broken while your sire, " + sireName + ", still walks the world in mortal form...");
+              player.sendMessage("§4Only through your maker's true death can you find release.");
+           }
         } else {
-          player.sendMessage("§4The curse cannot be broken while your sire, " + sireName + ", still walks the world in mortal form...");
-          player.sendMessage("§4Only through your maker's true death can you find release.");
+           String message = "§4The curse cannot be broken while your lineage of sires, ";
+           if (sireLine.size() == 2) {
+              message += sireLine.get(0) + " and " + sireLine.get(1);
+           } else {
+              String lastSire = sireLine.removeLast();
+              for (String sire : sireLine) {
+                 message += sire + ", ";
+              }
+              message += "and " + lastSire;
+           }
+           if (this.plugin.getConfigManager().getCureAllowCuredSire()) {
+              player.sendMessage(message + ", all walk the world in undeath...");
+              player.sendMessage("§4Only through one of your makers' true death or redemption can you find release.");
+           } else {
+              player.sendMessage(message + ", all walk the world in mortal form...");
+              player.sendMessage("§4Only through one of your makers' true death can you find release.");
+           }
         }
         return true;
      }

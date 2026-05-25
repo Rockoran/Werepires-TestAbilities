@@ -5,7 +5,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.bukkit.Bukkit;
@@ -38,17 +40,25 @@ public class VampireSireManager {
       return this.sireMap.get(name.toLowerCase());
    }
 
-   public boolean canBeCured(Player vampire) {
-      String sireName = this.getSire(vampire);
-      // Vampires without sires can always be cured.
-      if (sireName == null) return true;
-      Player sire = Bukkit.getPlayer(sireName);
-      // Offline sires are considered dead.
-      if (sire == null) return true;
-      // Vampires can be cured if their sire is dead...
-      return sire.getGameMode() == GameMode.SPECTATOR
-              // ... or, when enabled, if their sire has been cured.
-              || this.plugin.getConfigManager().getCureAllowCuredSire() && this.plugin.getVampireManager().isHuman(sire);
+   public List<String> getCureSireLineage(Player vampire) {
+      List<String> sireLine = new ArrayList<>();
+      int maxSireLine = this.plugin.getConfigManager().getCureSireLineLength();
+      for (int i = 0; i < maxSireLine; i++) {
+         String sireName = this.getSire(vampire);
+         // Player has no sire.
+         if (sireName == null) break;
+         Player sire = Bukkit.getPlayer(sireName);
+         // Player's sire is offline.
+         if (sire == null
+                 // Player's sire is dead.
+                 ||sire.getGameMode() == GameMode.SPECTATOR
+                 // Player's sire is cured.
+                 || this.plugin.getConfigManager().getCureAllowCuredSire() && this.plugin.getVampireManager().isHuman(sire))
+            return new ArrayList<>();
+         sireLine.add(sireName);
+         vampire = sire;
+      }
+      return sireLine;
    }
 
    public void setSire(String vampireName, String sireName) {
