@@ -40,44 +40,46 @@ public class VampireCureCommand implements CommandExecutor {
       if (!(sender instanceof Player player)) {
          sender.sendMessage("§cThis command can only be used by players.");
          return true;
-      } else if (!CureBookReadingListener.hasReadAllCureBooks(player)) {
-         player.sendMessage("§cYou do not know these ancient words...");
-         player.sendMessage("§7You must first read all three cure books to learn the ritual.");
-         return true;
-      } else if (!this.vampireManager.isVampire(player)) {
-         player.sendMessage("§cOnly vampires can use this cure ritual.");
-         return true;
-      } else {
-         long time = player.getWorld().getTime();
-         boolean isDay = time >= 0L && time < 12300L;
-         if (!isDay) {
-            player.sendMessage("§cThis ritual can only be performed during the day.");
-            return true;
-         } else {
-            ItemStack holyWater = this.findHolyWater(player);
-            if (holyWater == null) {
-               player.sendMessage("§cYou need holy water to perform this ritual.");
-               return true;
-            } else {
-               double cureDistance = this.plugin.getConfigManager().getCureBeaconDistance();
-               BeaconSite nearestHolyBeacon = this.beaconManager.getNearestHolyBeacon(player.getLocation(), cureDistance);
-               if (nearestHolyBeacon == null) {
-                  player.sendMessage("§cYou must be close to a holy beacon to perform this ritual.");
-                  return true;
-               } else {
-                  String sireName = this.sireManager.getSire(player);
-                  if (sireName != null && !this.sireManager.isSireDead(player)) {
-                     player.sendMessage("§4The curse cannot be broken while your sire, " + sireName + ", still walks the world in mortal form...");
-                     player.sendMessage("§4Only through your maker's true death can you find release.");
-                     return true;
-                  } else {
-                     this.performCure(player, holyWater, nearestHolyBeacon);
-                     return true;
-                  }
-               }
-            }
-         }
       }
+     if (!CureBookReadingListener.hasReadAllCureBooks(player)) {
+        player.sendMessage("§cYou do not know these ancient words...");
+        player.sendMessage("§7You must first read all three cure books to learn the ritual.");
+        return true;
+     }
+     if (!this.vampireManager.isVampire(player)) {
+        player.sendMessage("§cOnly vampires can use this cure ritual.");
+        return true;
+     }
+     long time = player.getWorld().getTime();
+     boolean isDay = time >= 0L && time < 12300L;
+     if (!isDay && this.plugin.getConfigManager().getCureNeedsDaytime()) {
+        player.sendMessage("§cThis ritual can only be performed during the day.");
+        return true;
+     }
+     ItemStack holyWater = this.findHolyWater(player);
+     if (holyWater == null) {
+        player.sendMessage("§cYou need holy water to perform this ritual.");
+        return true;
+     }
+     double cureDistance = this.plugin.getConfigManager().getCureBeaconDistance();
+     BeaconSite nearestHolyBeacon = this.beaconManager.getNearestHolyBeacon(player.getLocation(), cureDistance);
+     if (nearestHolyBeacon == null) {
+        player.sendMessage("§cYou must be close to a holy beacon to perform this ritual.");
+        return true;
+     }
+     String sireName = this.sireManager.getSire(player);
+     if (sireName != null && !this.sireManager.canBeCured(player)) {
+        if (this.plugin.getConfigManager().getCureAllowCuredSire()) {
+           player.sendMessage("§4The curse cannot be broken while your sire, " + sireName + ", still walks the world in undeath...");
+           player.sendMessage("§4Only through your maker's true death or redemption can you find release.");
+        } else {
+          player.sendMessage("§4The curse cannot be broken while your sire, " + sireName + ", still walks the world in mortal form...");
+          player.sendMessage("§4Only through your maker's true death can you find release.");
+        }
+        return true;
+     }
+     this.performCure(player, holyWater, nearestHolyBeacon);
+     return true;
    }
 
    private ItemStack findHolyWater(Player player) {

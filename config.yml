@@ -175,7 +175,7 @@ thirst:
   max-feeding-per-session: 60
 
 # ============================================================================
-# VAMPIRE RESPAWN LOCATION
+# VAMPIRE SETTINGS
 # ============================================================================
 vampire:
   # Respawn location for vampire players (x,y,z coordinates)
@@ -185,6 +185,22 @@ vampire:
   # Controls whether all vampires will automatically have their turning toggled off after a new vampire is created.
   # Default: true
   disable-turning-after-turn: true
+
+# ============================================================================
+# CURE CONDITIONS
+# ============================================================================
+cure:
+  # The maximum distance a vampire (and the caster of a force cure, if applicable) can be from a holy beacon.
+  # Default: 25.0 blocks
+  cure-distance: 25.0
+
+  # Controls whether the fledglings of a cured player can be cured. If false, a vampire can be cured only if their direct sire is dead.
+  # Default: false
+  allow-cured-sire: false
+
+  # Controls whether the cure must be performed during the day. If false, the cure can be done any time of day.
+  # Default: true
+  needs-daytime: true
 
 # ============================================================================
 # NEW VAMPIRE INDICATOR

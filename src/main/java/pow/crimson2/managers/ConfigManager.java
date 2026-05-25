@@ -34,6 +34,31 @@ public class ConfigManager {
       this.plugin.saveConfig();
    }
 
+   public boolean isCureBooksEnabled() {
+      return this.config.getBoolean("cure_books_enabled", true);
+   }
+
+   public double getCureBooksSpawnChance() {
+      return this.config.getDouble("cure_books_spawn_chance", 0.3);
+   }
+
+   public boolean isFirstMessageBlockingEnabled() {
+      return this.config.getBoolean("chat.first-message-blocking-enabled", true);
+   }
+
+   public String getFirstMessageBlockedMessage() {
+      return this.config
+              .getString(
+                      "chat.first-message-blocked-message",
+                      "&eIt looks like you've attempted to send a message! Vampire SMP is geared to revolve around immersion, consider finding the person you need to speak to, or messaging them on discord. If you still need to send your chat message, [Click Here]&e. This prevention message will not appear again until your next log on if you do choose to send your message via the blue text."
+              );
+   }
+
+   public long getTomeDistributionIntervalTicks() {
+      int minutes = this.config.getInt("tome-distribution-interval-minutes", 20);
+      return minutes * 60L * 20L;
+   }
+
    public List<Location> getTomeChestLocations() {
       List<String> locationStrings = this.config.getStringList("tome-chests.locations");
       List<Location> locations = new ArrayList<>();
@@ -266,6 +291,36 @@ public class ConfigManager {
       return this.config.getInt("thirst.max-feeding-per-session", 60);
    }
 
+   public Location getVampireRespawnLocation(World world) {
+      String locationStr = this.config.getString("vampire.respawn-location", "40,101,-113");
+      String[] parts = locationStr.split(",");
+
+      try {
+         double x = Double.parseDouble(parts[0].trim());
+         double y = Double.parseDouble(parts[1].trim());
+         double z = Double.parseDouble(parts[2].trim());
+         return new Location(world, x, y, z);
+      } catch (Exception e) {
+         this.plugin.getLogger().warning("Invalid vampire respawn location format: " + locationStr + ". Using default.");
+         return new Location(world, 40.0, 101.0, -113.0);
+      }
+   }
+
+   public void setVampireRespawnLocation(String locationStr) {
+      this.config.set("vampire.respawn-location", locationStr);
+      this.plugin.saveConfig();
+   }
+
+   public boolean getDisableTurningAfterTurn() { return this.config.getBoolean("vampire.disable-turning-after-turn", true); }
+
+   public double getCureBeaconDistance() {
+      return this.config.getDouble("cure.cure-distance", 25.0);
+   }
+
+   public boolean getCureAllowCuredSire() { return this.config.getBoolean("cure.allow-cured-sire", false); }
+
+   public boolean getCureNeedsDaytime() { return this.config.getBoolean("cure.needs-daytime", true); }
+
    public boolean getTrackingEnabled() { return this.config.getBoolean("vampire-indicator.enabled", true); }
 
    public int getTrackingDurationSeconds() { return this.config.getInt("vampire-indicator.duration-seconds", 120); }
@@ -345,57 +400,6 @@ public class ConfigManager {
    public int getWoodenStakeCooldownTicks() {
       return this.config.getInt("combat.wooden-stake-cooldown-ticks", 80);
    }
-
-   public boolean isCureBooksEnabled() {
-      return this.config.getBoolean("cure_books_enabled", true);
-   }
-
-   public double getCureBooksSpawnChance() {
-      return this.config.getDouble("cure_books_spawn_chance", 0.3);
-   }
-
-   public long getTomeDistributionIntervalTicks() {
-      int minutes = this.config.getInt("tome-distribution-interval-minutes", 20);
-      return minutes * 60L * 20L;
-   }
-
-   public double getCureBeaconDistance() {
-      return this.config.getDouble("cure.cure-distance", 25.0);
-   }
-
-   public boolean isFirstMessageBlockingEnabled() {
-      return this.config.getBoolean("chat.first-message-blocking-enabled", true);
-   }
-
-   public String getFirstMessageBlockedMessage() {
-      return this.config
-         .getString(
-            "chat.first-message-blocked-message",
-            "&eIt looks like you've attempted to send a message! Vampire SMP is geared to revolve around immersion, consider finding the person you need to speak to, or messaging them on discord. If you still need to send your chat message, [Click Here]&e. This prevention message will not appear again until your next log on if you do choose to send your message via the blue text."
-         );
-   }
-
-   public Location getVampireRespawnLocation(World world) {
-      String locationStr = this.config.getString("vampire.respawn-location", "40,101,-113");
-      String[] parts = locationStr.split(",");
-
-      try {
-         double x = Double.parseDouble(parts[0].trim());
-         double y = Double.parseDouble(parts[1].trim());
-         double z = Double.parseDouble(parts[2].trim());
-         return new Location(world, x, y, z);
-      } catch (Exception e) {
-         this.plugin.getLogger().warning("Invalid vampire respawn location format: " + locationStr + ". Using default.");
-         return new Location(world, 40.0, 101.0, -113.0);
-      }
-   }
-
-   public void setVampireRespawnLocation(String locationStr) {
-      this.config.set("vampire.respawn-location", locationStr);
-      this.plugin.saveConfig();
-   }
-
-   public boolean getDisableTurningAfterTurn() { return this.config.getBoolean("vampire.disable-turning-after-turn", true); }
 
    public String getOakhurstName() {
       return this.config.getString("oakhurst.name", "Oakhurst");

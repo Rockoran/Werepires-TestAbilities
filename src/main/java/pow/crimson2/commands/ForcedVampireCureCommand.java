@@ -96,11 +96,18 @@ public class ForcedVampireCureCommand implements CommandExecutor {
          BeaconSite targetNearestBeacon = this.beaconManager.getNearestHolyBeacon(target.getLocation(), cureDistance);
          if (targetNearestBeacon != null && targetNearestBeacon.equals(nearestHolyBeacon)) {
             String sireName = this.sireManager.getSire(target);
-            if (sireName != null && !this.sireManager.isSireDead(target)) {
-               caster.sendMessage(
-                  "§4The curse cannot be broken while " + target.getName() + "'s sire, " + sireName + ", still walks the world in mortal form..."
-               );
-               caster.sendMessage("§4The blood bond must be severed through the maker's true death.");
+            if (sireName != null && !this.sireManager.canBeCured(target)) {
+               if (this.plugin.getConfigManager().getCureAllowCuredSire()) {
+                  caster.sendMessage(
+                          "§4The curse cannot be broken while " + target.getName() + "'s sire, " + sireName + ", still walks the world in undeath..."
+                  );
+                  caster.sendMessage("§4The blood bond must be severed through the maker's true death or redemption.");
+               } else {
+                  caster.sendMessage(
+                          "§4The curse cannot be broken while " + target.getName() + "'s sire, " + sireName + ", still walks the world in mortal form..."
+                  );
+                  caster.sendMessage("§4The blood bond must be severed through the maker's true death.");
+               }
                return true;
             } else {
                holyWater.setAmount(holyWater.getAmount() - 1);

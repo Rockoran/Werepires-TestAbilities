@@ -38,23 +38,17 @@ public class VampireSireManager {
       return this.sireMap.get(vampire.getName().toLowerCase());
    }
 
-   public boolean isSireDead(Player vampire) {
-      String sireName = this.getSire(vampire);
-      if (sireName == null) {
-         return true;
-      }
-
-      Player sire = Bukkit.getPlayer(sireName);
-      if (sire == null) {
-         return true;
-      }
-
-      GameMode sireGameMode = sire.getGameMode();
-      return sireGameMode == GameMode.SPECTATOR;
-   }
-
    public boolean canBeCured(Player vampire) {
-      return this.isSireDead(vampire);
+      String sireName = this.getSire(vampire);
+      // Vampires without sires can always be cured.
+      if (sireName == null) return true;
+      Player sire = Bukkit.getPlayer(sireName);
+      // Offline sires are considered dead.
+      if (sire == null) return true;
+      // Vampires can be cured if their sire is dead...
+      return sire.getGameMode() == GameMode.SPECTATOR
+              // ... or, when enabled, if their sire has been cured.
+              || this.plugin.getConfigManager().getCureAllowCuredSire() && this.plugin.getVampireManager().isHuman(sire);
    }
 
    public String getSireStatus(Player vampire) {
