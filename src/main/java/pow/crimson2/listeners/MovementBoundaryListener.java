@@ -24,7 +24,8 @@ public class MovementBoundaryListener implements Listener {
       if (to != null) {
          Location from = event.getFrom();
          if (from.getBlockX() != to.getBlockX() || from.getBlockY() != to.getBlockY() || from.getBlockZ() != to.getBlockZ()) {
-            if (player.getGameMode() != GameMode.CREATIVE) {
+            GameMode gameMode = player.getGameMode();
+            if (gameMode != GameMode.CREATIVE && gameMode != GameMode.SPECTATOR) {
                double minX = this.plugin.getConfigManager().getOakhurstMinX();
                double maxX = this.plugin.getConfigManager().getOakhurstMaxX();
                double minZ = this.plugin.getConfigManager().getOakhurstMinZ();
