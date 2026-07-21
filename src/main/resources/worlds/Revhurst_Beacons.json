@@ -1,0 +1,98 @@
+{
+  "town": {
+    "name": "Town",
+    "worldName": "world",
+    "x": 79.5,
+    "y": 86.0,
+    "z": 440.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "crypt": {
+    "name": "Crypt",
+    "worldName": "world",
+    "x": 454.5,
+    "y": 138.0,
+    "z": 395.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "obelisk": {
+    "name": "Obelisk",
+    "worldName": "world",
+    "x": -374.5,
+    "y": 72.0,
+    "z": 73.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "end": {
+    "name": "End",
+    "worldName": "world_the_end",
+    "x": 91.5,
+    "y": 58.0,
+    "z": -6.5,
+    "state": "NEUTRAL",
+    "captureRadius": 5,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "chapel": {
+    "name": "Chapel",
+    "worldName": "world",
+    "x": 39.5,
+    "y": 104.0,
+    "z": -170.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "paleoakforest": {
+    "name": "PaleOakForest",
+    "worldName": "world",
+    "x": 481.5,
+    "y": 113.0,
+    "z": -433.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "lake": {
+    "name": "Lake",
+    "worldName": "world",
+    "x": -328.5,
+    "y": 76.0,
+    "z": 492.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "ruinedtower": {
+    "name": "RuinedTower",
+    "worldName": "world",
+    "x": -300.5,
+    "y": 231.0,
+    "z": -371.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  }
+}

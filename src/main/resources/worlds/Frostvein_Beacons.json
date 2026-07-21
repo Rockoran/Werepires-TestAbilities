@@ -1,0 +1,86 @@
+{
+  "cavern": {
+    "name": "Cavern",
+    "worldName": "world",
+    "x": -1144.5,
+    "y": 81.0,
+    "z": -1011.5,
+    "state": "NEUTRAL",
+    "captureRadius": 5,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "town": {
+    "name": "Town",
+    "worldName": "world",
+    "x": -1031.5,
+    "y": 78.0,
+    "z": -140.5,
+    "state": "NEUTRAL",
+    "captureRadius": 5,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "lighthouse": {
+    "name": "Lighthouse",
+    "worldName": "world",
+    "x": -1451.5,
+    "y": 139.0,
+    "z": -188.5,
+    "state": "NEUTRAL",
+    "captureRadius": 3,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "sawmill": {
+    "name": "Sawmill",
+    "worldName": "world",
+    "x": -1024.5,
+    "y": 104.0,
+    "z": -594.5,
+    "state": "NEUTRAL",
+    "captureRadius": 4,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "greenhouse": {
+    "name": "Greenhouse",
+    "worldName": "world",
+    "x": -331.5,
+    "y": 77.0,
+    "z": -524.5,
+    "state": "NEUTRAL",
+    "captureRadius": 3,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "skull": {
+    "name": "Skull",
+    "worldName": "world",
+    "x": -1425.5,
+    "y": 144.0,
+    "z": -698.5,
+    "state": "NEUTRAL",
+    "captureRadius": 5,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "icicle": {
+    "name": "Icicle",
+    "worldName": "world",
+    "x": -646.5,
+    "y": 90.0,
+    "z": -931.5,
+    "state": "NEUTRAL",
+    "captureRadius": 5,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  }
+}

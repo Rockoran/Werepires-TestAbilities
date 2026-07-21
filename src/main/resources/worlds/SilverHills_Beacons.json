@@ -1,0 +1,86 @@
+{
+  "refinery": {
+    "name": "Refinery",
+    "worldName": "world",
+    "x": 358.5,
+    "y": 76.0,
+    "z": -271.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "mines": {
+    "name": "Mines",
+    "worldName": "world",
+    "x": -417.5,
+    "y": 47.0,
+    "z": -16.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "town": {
+    "name": "Town",
+    "worldName": "world",
+    "x": 103.5,
+    "y": 32.0,
+    "z": -54.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "barn": {
+    "name": "Barn",
+    "worldName": "world",
+    "x": -195.5,
+    "y": 86.0,
+    "z": 309.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "underground": {
+    "name": "Underground",
+    "worldName": "world",
+    "x": -248.5,
+    "y": 54.0,
+    "z": -170.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "waterfall": {
+    "name": "WaterFall",
+    "worldName": "world",
+    "x": 577.5,
+    "y": 77.0,
+    "z": -51.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  },
+  "church": {
+    "name": "Church",
+    "worldName": "world",
+    "x": 416.5,
+    "y": 79.0,
+    "z": 323.5,
+    "state": "NEUTRAL",
+    "captureRadius": 10,
+    "lastStateChangeTime": 0,
+    "lastChangedBy": null,
+    "conversionCooldownUntil": 0
+  }
+}

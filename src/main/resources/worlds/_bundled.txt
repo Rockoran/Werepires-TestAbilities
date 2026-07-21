@@ -1,0 +1,8 @@
+# Bundled world names — one per line.
+# On startup the plugin extracts any world listed here that is missing from
+# plugins/VampireSMP/worlds/.  Each entry requires a matching .zip in this
+# resources/worlds/ folder, plus optional _Config.yml / _Beacons.json etc.
+# World zips are no longer bundled in the jar.
+# Drop WorldName.zip into plugins/VampireSMP/worlds/ and restart — the plugin
+# will auto-extract it.  Config.yml / Beacons.json defaults are still bundled
+# below and will be used as fallbacks if the zip doesn't include them.
