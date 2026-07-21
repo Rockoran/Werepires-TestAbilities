@@ -1,0 +1,76 @@
+{
+    "providers": [
+        {
+            "type": "bitmap",
+            "file": "minecraft:font/arrow_n.png",
+            "ascent": 16,
+            "height": 16,
+            "chars": [
+                "\uE00A"
+            ]
+        },    
+        {
+            "type": "bitmap",
+            "file": "minecraft:font/arrow_ne.png",
+            "ascent": 16,
+            "height": 16,
+            "chars": [
+                "\uE00B"
+            ]
+        },    
+        {
+            "type": "bitmap",
+            "file": "minecraft:font/arrow_e.png",
+            "ascent": 16,
+            "height": 16,
+            "chars": [
+                "\uE00C"
+            ]
+        },    
+        {
+            "type": "bitmap",
+            "file": "minecraft:font/arrow_se.png",
+            "ascent": 16,
+            "height": 16,
+            "chars": [
+                "\uE00D"
+            ]
+        },    
+        {
+            "type": "bitmap",
+            "file": "minecraft:font/arrow_s.png",
+            "ascent": 16,
+            "height": 16,
+            "chars": [
+                "\uE00E"
+            ]
+        },    
+        {
+            "type": "bitmap",
+            "file": "minecraft:font/arrow_sw.png",
+            "ascent": 16,
+            "height": 16,
+            "chars": [
+                "\uE00F"
+            ]
+        },    
+        {
+            "type": "bitmap",
+            "file": "minecraft:font/arrow_w.png",
+            "ascent": 16,
+            "height": 16,
+            "chars": [
+                "\uE010"
+            ]
+        },    
+        {
+            "type": "bitmap",
+            "file": "minecraft:font/arrow_nw.png",
+            "ascent": 16,
+            "height": 16,
+            "chars": [
+                "\uE011"
+            ]
+        }
+    ]
+}

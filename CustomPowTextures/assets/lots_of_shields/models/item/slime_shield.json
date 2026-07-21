@@ -1,0 +1,32 @@
+{
+    "parent": "lots_of_shields:custom/slime",
+    "gui_light": "front",
+  "textures": {
+    "0": "lots_of_shields:blocks/slime",
+        "particle": "lots_of_shields:items/slime"
+    },
+    "display": {
+        "firstperson_righthand": {
+            "rotation": [ 0, 0, -5 ],
+            "translation": [ -4, -9, 4 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ 0, 0, -5 ],
+            "translation": [ -4, -9, 4 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        }
+    },
+    "overrides": [
+        {
+            "predicate": {
+                "blocking": 1
+            },
+            "model": "item/shield_blocking"
+        }
+    ]
+}
+
+
+
+

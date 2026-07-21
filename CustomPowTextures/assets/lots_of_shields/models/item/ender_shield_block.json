@@ -1,0 +1,22 @@
+{
+    "parent": "lots_of_shields:custom/ender2",
+    "gui_light": "front",
+    "textures": {
+    "2": "lots_of_shields:blocks/ender",
+    "particle": "lots_of_shields:items/ender"
+    },
+    "display": {
+        "firstperson_righthand": {
+            "rotation": [ 0, 0, 5 ],
+            "translation": [ -5, -7, 0.5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ 0, 0, 5 ],
+            "translation": [ -5, -7, 0.5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        }
+    }
+}
+
+

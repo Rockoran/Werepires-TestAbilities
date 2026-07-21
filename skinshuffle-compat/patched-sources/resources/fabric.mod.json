@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "skinshuffle",
+  "version": "${mod_version}",
+  "name": "VampireSMP Compatibility Mod",
+  "description": "VampireSMP client compatibility: in-game skin switching (SkinShuffle) plus ghost/haunt noclip support.",
+  "authors": [
+    "IMB11 (mineblock11)",
+    "enjarai"
+  ],
+  "contact": {
+    "repo": "https://github.com/IMB11/skinshuffle"
+  },
+  "license": "MIT",
+  "icon": "assets/skinshuffle/icon.png",
+  "accessWidener": "aw/${minecraft_version}.accesswidener",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "dev.imb11.skinshuffle.client.SkinShuffleClient"
+    ],
+    "main": [
+      "dev.imb11.skinshuffle.SkinShuffle"
+    ],
+    "modmenu": [
+      "dev.imb11.skinshuffle.compat.ModMenuCompat"
+    ]
+  },
+  "mixins": [
+    "SkinShuffle.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "yet_another_config_lib_v3": ">=${target_yacl}",
+    "minecraft": "${target_minecraft}"
+  },
+  "suggests": {
+    "capes": "*"
+  }
+}

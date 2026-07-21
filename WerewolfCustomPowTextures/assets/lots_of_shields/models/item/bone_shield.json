@@ -1,0 +1,19 @@
+{
+  "parent": "lots_of_shields:custom/shield",
+  "textures": {
+    "0": "lots_of_shields:blocks/kalkam",
+    "particle": "lots_of_shields:items/kalkam"
+    },
+    "display": {
+        "firstperson_righthand": {
+            "rotation": [ 0, 180, 5 ],
+            "translation": [ -1, -23.7, -5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ 0, 180, 5 ],
+            "translation": [ -1, -23.7, -5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        }
+    }
+}

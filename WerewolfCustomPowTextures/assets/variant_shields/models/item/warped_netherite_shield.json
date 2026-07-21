@@ -1,0 +1,28 @@
+{
+  "gui_light": "front",
+  "parent":"fabricshieldlib:item/fabric_shield",
+  "textures":{
+    "shield":"variant_shields:item/warped_netherite_shield",
+    "particle":"#shield"
+ },
+    "display": {
+        "firstperson_righthand": {
+            "rotation": [ 0, 180, 5 ],
+            "translation": [ -3, -16.1, 2 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ 0, 180, 5 ],
+            "translation": [ 2, -17, 2 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        }
+    },
+  "overrides": [
+    {
+      "predicate": {
+        "blocking": 1
+      },
+      "model": "variant_shields:item/warped_netherite_shield_blocking"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+    "parent": "lots_of_shields:custom/creeper",
+    "gui_light": "front",
+  "textures": {
+    "0": "lots_of_shields:blocks/creper",
+        "particle": "lots_of_shields:items/creper"
+    },
+    "display": {
+        "firstperson_righthand": {
+            "rotation": [ 0, 180, 5 ],
+            "translation": [ -1, -16.7, -5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ 0, 180, 5 ],
+            "translation": [ -1, -16.7, -5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        }
+    },
+    "overrides": [
+        {
+            "predicate": {
+                "blocking": 1
+            },
+            "model": "item/shield_blocking"
+        }
+    ]
+}
+
+
+

@@ -1,0 +1,15 @@
+
+{
+  "parent": "item/shield",
+  "textures": {
+    "particle": "block/netherite_block"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "upgradednetherite_ultimate:blocking": 1
+      },
+      "model": "upgradednetherite_ultimate:item/ultimate_upgraded_netherite_shield_blocking"
+    }
+  ]
+}

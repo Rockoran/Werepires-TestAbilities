@@ -1,0 +1,14 @@
+{
+    "parent": "item/shield",
+    "textures": {
+        "particle": "block/gold_block"
+    },
+    "overrides": [
+        {
+            "predicate": {
+                "battleshields:blocking": 1
+            },
+            "model": "battleshields:item/gold_shield_blocking"
+        }
+    ]
+}

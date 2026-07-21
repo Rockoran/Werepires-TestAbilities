@@ -1,0 +1,23 @@
+{
+    "parent": "lots_of_shields:custom/slime2",
+    "gui_light": "front",
+    "textures": {
+    "1": "lots_of_shields:blocks/slime",
+    "particle": "lots_of_shields:items/slime"
+    },
+    "display": {
+        "firstperson_righthand": {
+            "rotation": [ 0, 0, 5 ],
+            "translation": [ -5, -7.4, 0.5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ 0, 0, 5 ],
+            "translation": [ -5, -7.4, 0.5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        }
+    }
+}
+
+
+

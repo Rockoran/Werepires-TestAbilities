@@ -1,0 +1,22 @@
+{
+    "parent": "lots_of_shields:custom/glow2",
+    "gui_light": "front",
+    "textures": {
+    "0": "lots_of_shields:blocks/glow",
+    "particle": "lots_of_shields:items/glow"
+    },
+    "display": {
+        "firstperson_righthand": {
+            "rotation": [ 0, 180, -5 ],
+            "translation": [ -3.5, -14, -5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ 0, 180, -5 ],
+            "translation": [ -3.5, -14, -5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        }
+    }
+}
+
+

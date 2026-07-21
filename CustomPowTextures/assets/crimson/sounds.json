@@ -1,0 +1,32 @@
+{
+  "crimson.sound.crimson_warning_1": {
+    "sounds": [
+      "crimson/crimson_warning_1"
+    ]
+  },
+  "crimson.sound.crimson_warning_2": {
+    "sounds": [
+      "crimson/crimson_warning_2"
+    ]
+  },
+  "crimson.sound.crimson_swipe_1": {
+    "sounds": [
+      "crimson/crimson_swipe_1"
+    ]
+  },
+  "crimson.sound.crimson_swipe_2": {
+    "sounds": [
+      "crimson/crimson_swipe_2"
+    ]
+  },
+  "crimson.sound.crimson_swipe_3": {
+    "sounds": [
+      "crimson/crimson_swipe_3"
+    ]
+  },
+  "crimson.sound.crimson_swipe_4": {
+    "sounds": [
+      "crimson/crimson_swipe_4"
+    ]
+  }
+}

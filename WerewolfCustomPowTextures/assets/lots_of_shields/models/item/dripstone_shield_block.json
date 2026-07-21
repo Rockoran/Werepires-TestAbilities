@@ -1,0 +1,21 @@
+{
+    "parent": "lots_of_shields:custom/drip2",
+    "gui_light": "front",
+    "textures": {
+    "1": "lots_of_shields:blocks/drip1",
+    "particle": "lots_of_shields:items/drip1"
+    },
+    "display": {
+        "firstperson_righthand": {
+            "rotation": [ 0, 180, -5 ],
+            "translation": [ -3.5, -14, -5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ 0, 180, -5 ],
+            "translation": [ -3.5, -14, -5 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        }
+    }
+}
+

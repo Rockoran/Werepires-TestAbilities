@@ -1,0 +1,81 @@
+{
+	"format_version": 2,
+	"header": {
+		"description": "For fixing patterns and lowering Shield [v1.5]",
+		"name": "Shield Corrections §c[Colored]§r",
+		"uuid": "a9ceb836-c08b-4503-9c2c-b999c8befe50",
+		"version": [1, 5, 0],
+        "min_engine_version": [1, 13, 0]
+	},
+	"modules": [
+      {
+		"description": "For fixing patterns and lowering Shield [v1.5]",
+        "type": "resources",
+        "uuid": "aa8e2d8a-338c-46dc-9a23-2fed87961b79",
+        "version": [1, 5, 0]
+      }
+    ],
+   "settings": [
+   {
+	   "type": "label",
+	   "text": "§7Choose shield variant based on wood type."
+   }
+    ],
+   "subpacks": [
+   {
+      "folder_name": "cherry_shield",
+      "name": "Cherry Shield",
+      "memory_tier": 0
+    },
+   {
+      "folder_name": "bamboo_shield",
+      "name": "Bamboo Shield",
+      "memory_tier": 0
+   },
+   {
+      "folder_name": "Mangrove_shield",
+      "name": "Mangrove Shield",
+      "memory_tier": 0
+   },
+   {
+      "folder_name": "warped_shield",
+      "name": "Warped Shield",
+      "memory_tier": 0
+   },
+   {
+      "folder_name": "crimson_shield",
+      "name": "Crimson Shield",
+      "memory_tier": 0
+   },
+   {
+      "folder_name": "dark_oak_shield",
+      "name": "Dark Oak Shield",
+      "memory_tier": 0
+   },
+   {
+      "folder_name": "acacia_shield",
+      "name": "Acacia Shield",
+      "memory_tier": 0
+   },
+   {
+      "folder_name": "jungle_shield",
+      "name": "Jungle Shield",
+      "memory_tier": 0
+   },
+   {
+      "folder_name": "birch_shield",
+      "name": "Birch Shield",
+      "memory_tier": 0
+   },
+   {
+      "folder_name": "spruce_shield",
+      "name": "Spruce Shield",
+      "memory_tier": 0
+   },
+   {
+      "folder_name": "oak_shield",
+      "name": "Oak Shield",
+      "memory_tier": 0
+   }
+   ]
+}

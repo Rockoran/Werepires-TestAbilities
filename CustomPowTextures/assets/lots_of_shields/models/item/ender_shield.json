@@ -1,0 +1,31 @@
+{
+    "parent": "lots_of_shields:custom/ender",
+    "gui_light": "front",
+  "textures": {
+    "2": "lots_of_shields:blocks/ender",
+        "particle": "lots_of_shields:items/ender"
+    },
+    "display": {
+        "firstperson_righthand": {
+            "rotation": [ 0, 0, -5 ],
+            "translation": [ -4, -9, 4 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        },
+        "firstperson_lefthand": {
+            "rotation": [ 0, 0, -5 ],
+            "translation": [ -4, -9, 4 ],
+            "scale": [ 1.25, 1.25, 1.25 ]
+        }
+    },
+    "overrides": [
+        {
+            "predicate": {
+                "blocking": 1
+            },
+            "model": "item/shield_blocking"
+        }
+    ]
+}
+
+
+
