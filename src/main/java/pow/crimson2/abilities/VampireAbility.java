@@ -13,7 +13,21 @@ public abstract class VampireAbility {
 
    public abstract int getCooldownSeconds(VampireSMPPlugin var1);
 
+   /** Stage-aware override — abilities that have per-stage cooldowns override this. */
+   public int getCooldownSeconds(VampireSMPPlugin plugin, Player player) {
+      return getCooldownSeconds(plugin);
+   }
+
    public abstract int getMinimumStage();
+
+   /**
+    * Whether this ability is enabled on the server. New abilities override this to read a
+    * config toggle; the built-in ones are always enabled. Checked before use so abilities can
+    * be disabled live via config without removing them.
+    */
+   public boolean isEnabled(VampireSMPPlugin plugin) {
+      return true;
+   }
 
    public boolean canUse(Player player, VampireManager vampireManager) {
       if (!vampireManager.isVampire(player)) {

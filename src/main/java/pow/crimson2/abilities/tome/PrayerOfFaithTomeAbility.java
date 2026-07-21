@@ -13,9 +13,9 @@ import pow.crimson2.VampireSMPPlugin;
 import pow.crimson2.managers.VampireAbilityManager;
 
 public class PrayerOfFaithTomeAbility extends TomeAbility {
-   private static final int PRAYER_DURATION = 60;
-   private static final int ABSORPTION_DURATION = 12000;
-   private static final int ABSORPTION_AMPLIFIER = 2;
+   private final int PRAYER_DURATION;
+   private final int ABSORPTION_DURATION;
+   private final int ABSORPTION_AMPLIFIER;
    private static final Map<UUID, PrayerOfFaithTomeAbility.PrayerSession> activePrayers = new HashMap<>();
 
    public PrayerOfFaithTomeAbility(VampireSMPPlugin plugin) {
@@ -29,6 +29,9 @@ public class PrayerOfFaithTomeAbility extends TomeAbility {
          },
          plugin.getConfigManager().getTomePrayerOfFaithCooldown()
       );
+      this.PRAYER_DURATION = plugin.getConfig().getInt("abilities.tome.prayeroffaith.channel-seconds", 60);
+      this.ABSORPTION_DURATION = plugin.getConfig().getInt("abilities.tome.prayeroffaith.absorption-duration-ticks", 12000);
+      this.ABSORPTION_AMPLIFIER = plugin.getConfig().getInt("abilities.tome.prayeroffaith.absorption-amplifier", 2);
    }
 
    @Override
@@ -77,7 +80,7 @@ public class PrayerOfFaithTomeAbility extends TomeAbility {
          this.player = player;
          this.originalLocation = originalLocation;
          this.startTime = System.currentTimeMillis();
-         this.secondsRemaining = 60;
+         this.secondsRemaining = PrayerOfFaithTomeAbility.this.PRAYER_DURATION;
       }
 
       public void startMonitoring() {
@@ -133,7 +136,7 @@ public class PrayerOfFaithTomeAbility extends TomeAbility {
       }
 
       private void completePrayer() {
-         this.player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 12000, 2, false, false));
+         this.player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, PrayerOfFaithTomeAbility.this.ABSORPTION_DURATION, PrayerOfFaithTomeAbility.this.ABSORPTION_AMPLIFIER, false, false));
          this.player.playSound(this.player.getLocation(), "minecraft:block.beacon.activate", 1.0F, 1.5F);
          this.player.sendMessage("§7You feel divinely protected with absorption for 10 minutes.");
          PrayerOfFaithTomeAbility.this.plugin.getSessionManager().sendActionBar(this.player, "§a✦ Prayer Complete ✦");

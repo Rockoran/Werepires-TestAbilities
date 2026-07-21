@@ -45,15 +45,44 @@ public class DeathHandler implements Listener {
       Player player = event.getPlayer();
       boolean wasVampire = this.vampireManager.isVampire(player);
       boolean wasHuman = this.vampireManager.isHuman(player);
+
+      // ── Force respawn into the currently-active world ──────────────────────
+      // Without this, vanilla uses a cached bed/anchor that may still point to
+      // a world that was swapped out, sending the player to the wrong map.
+      if (this.vampireManager.isVampire(player)) {
+         Location cryptLoc = this.plugin.getVampireRespawnLocation();
+         if (cryptLoc != null && cryptLoc.getWorld() != null) {
+            event.setRespawnLocation(cryptLoc);
+         }
+      } else {
+         // For humans: honour a bed/anchor only if it's already in the active world.
+         // If it's stale (from a previous map), fall back to the active world's spawn.
+         org.bukkit.World activeWorld = this.plugin.getWorldManager().getActiveWorld();
+         if (activeWorld != null) {
+            boolean validBedOrAnchor = (event.isBedSpawn() || event.isAnchorSpawn())
+                  && event.getRespawnLocation() != null
+                  && activeWorld.equals(event.getRespawnLocation().getWorld());
+            if (!validBedOrAnchor) {
+               event.setRespawnLocation(activeWorld.getSpawnLocation());
+            }
+         }
+      }
+      // ─────────────────────────────────────────────────────────────────────
       if (this.vampireManager.isVampire(player) && player.getScoreboardTags().contains("PermaKilled")) {
          this.vampireManager.killVampirePermanently(player);
          player.removeScoreboardTag("PermaKilled");
       } else if (this.vampireManager.isHuman(player) && player.getScoreboardTags().contains("PermadeathChosen")) {
          this.vampireManager.killVampirePermanently(player);
          player.removeScoreboardTag("PermadeathChosen");
+         this.broadcastHumanPermadeath(player);
       } else if (this.vampireManager.isVampire(player) && player.getScoreboardTags().contains("PromotionBanPending")) {
          this.vampireManager.applyPromotionBan(player);
          player.removeScoreboardTag("PromotionBanPending");
+      }
+
+      if (this.vampireManager.isWerewolf(player) && player.getScoreboardTags().contains("WerewolfDeathPenaltyPending")) {
+         this.vampireManager.applyWerewolfDeathPenalty(player);
+         player.removeScoreboardTag("WerewolfDeathPenaltyPending");
       }
 
       if (this.vampireManager.isHuman(player)) {
@@ -63,9 +92,10 @@ public class DeathHandler implements Listener {
                Objective deathObjective = mainScoreboard.getObjective("vsmp_death");
                if (deathObjective != null) {
                   int currentDeaths = deathObjective.getScore(player.getName()).getScore();
-                  if (currentDeaths > 5) {
-                     deathObjective.getScore(player.getName()).setScore(5);
-                     this.plugin.logInfo("Capped death count for " + player.getName() + " at 5 (was " + currentDeaths + ")");
+                  int deathCap = this.plugin.getConfigManager().getHumanDeathScoreCap();
+                  if (currentDeaths > deathCap) {
+                     deathObjective.getScore(player.getName()).setScore(deathCap);
+                     this.plugin.logInfo("Capped death count for " + player.getName() + " at " + deathCap + " (was " + currentDeaths + ")");
                   }
                }
             } catch (Exception e) {
@@ -83,12 +113,6 @@ public class DeathHandler implements Listener {
          player.setHealth(maxHealth);
          this.plugin.getLogger().fine(player.getName() + " respawned with " + maxHealth + " HP (full health)");
       }, 5L);
-      this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
-         if (!event.isBedSpawn() && this.vampireManager.isVampire(player)) {
-            player.setRespawnLocation(this.plugin.getVampireRespawnLocation());
-            player.teleport(this.plugin.getVampireRespawnLocation());
-         }
-      }, 7L);
       this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> checkAndAnnounceTeamElimination(this.plugin, wasHuman, wasVampire), 10L);
    }
 
@@ -208,6 +232,11 @@ public class DeathHandler implements Listener {
          }
       }
 
+      if (this.vampireManager.isWerewolf(victim)) {
+         victim.addScoreboardTag("WerewolfDeathPenaltyPending");
+         this.plugin.logInfo("WEREWOLF DEATH PENALTY: Applied WerewolfDeathPenaltyPending tag to " + victim.getName());
+      }
+
       if (killer != null) {
          this.handlePvPDeath(victim, killer, event);
       } else if (this.vampireManager.isVampire(victim)) {
@@ -287,6 +316,35 @@ public class DeathHandler implements Listener {
 
       String killerType = this.vampireManager.isVampire(killer) ? "vampire" : "human";
       this.plugin.logInfo("PERMA-KILL: " + victim.getName() + " was permanently killed by " + killerType + " " + killer.getName());
+   }
+
+   /**
+    * Announce that a human has permanently died (chose permadeath). Messages are configurable
+    * under {@code messages.human-permadeath} and differ for vampire vs human recipients;
+    * {@code {player}} is replaced with the victim's name. The victim is skipped (their own
+    * permadeath UI is handled by the ghost/spectator prompt).
+    */
+   private void broadcastHumanPermadeath(Player victim) {
+      org.bukkit.configuration.file.FileConfiguration cfg = this.plugin.getConfig();
+      if (!cfg.getBoolean("messages.human-permadeath.enabled", true)) {
+         return;
+      }
+      String toVampires = cfg.getString("messages.human-permadeath.to-vampires",
+            "&4A mortal soul slips beneath the veil... somewhere, the night grows one heartbeat richer.");
+      String toHumans = cfg.getString("messages.human-permadeath.to-humans",
+            "&cA cold dread settles over you... somewhere, one of the living has drawn their final breath.");
+
+      // Deliberately nameless — the victim is never identified.
+      toVampires = org.bukkit.ChatColor.translateAlternateColorCodes('&', toVampires);
+      toHumans = org.bukkit.ChatColor.translateAlternateColorCodes('&', toHumans);
+
+      for (Player player : Bukkit.getOnlinePlayers()) {
+         if (player.getUniqueId().equals(victim.getUniqueId())) {
+            continue;
+         }
+         player.sendMessage(this.vampireManager.isVampire(player) ? toVampires : toHumans);
+      }
+      this.plugin.logInfo("PERMADEATH: Human " + victim.getName() + " has permanently died.");
    }
 
    private boolean isWoodenWeapon(ItemStack item) {

@@ -19,8 +19,8 @@ import pow.crimson2.VampireSMPPlugin;
 import pow.crimson2.managers.VampireAbilityManager;
 
 public class StopTheBleedingTomeAbility extends TomeAbility {
-   private static final int HEALING_DURATION_TICKS = 1200;
-   private static final double PROXIMITY_DISTANCE = 2.0;
+   private final int HEALING_DURATION_TICKS;
+   private final double PROXIMITY_DISTANCE;
    private static final int PARTICLE_INTERVAL_TICKS = 20;
    private final Map<UUID, StopTheBleedingTomeAbility.HealingSession> activeHealingSessions = new HashMap<>();
    private static final String ACTIVE_TAG = "stopthebleeding_active";
@@ -36,6 +36,8 @@ public class StopTheBleedingTomeAbility extends TomeAbility {
          },
          plugin.getConfigManager().getTomeStopTheBleedingCooldown()
       );
+      this.HEALING_DURATION_TICKS = plugin.getConfig().getInt("abilities.tome.stopthebleeding.channel-ticks", 1200);
+      this.PROXIMITY_DISTANCE = plugin.getConfig().getDouble("abilities.tome.stopthebleeding.proximity-distance", 2.0);
    }
 
    @Override
@@ -56,7 +58,7 @@ public class StopTheBleedingTomeAbility extends TomeAbility {
          return false;
       }
 
-      Player target = this.findNearestPlayer(player, 2.0);
+      Player target = this.findNearestPlayer(player, this.PROXIMITY_DISTANCE);
       if (target == null) {
          target = player;
       }
@@ -214,7 +216,7 @@ public class StopTheBleedingTomeAbility extends TomeAbility {
          this.healerUUID = healer.getUniqueId();
          this.targetUUID = target.getUniqueId();
          this.isSelfHeal = this.healerUUID.equals(this.targetUUID);
-         this.ticksRemaining = 1200;
+         this.ticksRemaining = StopTheBleedingTomeAbility.this.HEALING_DURATION_TICKS;
          this.particleCounter = 0;
       }
 
@@ -234,7 +236,7 @@ public class StopTheBleedingTomeAbility extends TomeAbility {
                         StopTheBleedingTomeAbility.this.cancelHealing(currentHealer, "You stopped crouching - Your healing procedure is cancelled.");
                      } else if (HealingSession.this.isSelfHeal
                         || currentHealer.getWorld().equals(currentTarget.getWorld())
-                           && !(currentHealer.getLocation().distance(currentTarget.getLocation()) > 2.0)) {
+                           && !(currentHealer.getLocation().distance(currentTarget.getLocation()) > StopTheBleedingTomeAbility.this.PROXIMITY_DISTANCE)) {
                         if (HealingSession.this.particleCounter % 20 == 0) {
                            currentTarget.getWorld().spawnParticle(Particle.SCRAPE, currentTarget.getLocation().add(0.0, 1.0, 0.0), 3, 0.3, 0.5, 0.3, 0.02);
                         }
@@ -260,7 +262,7 @@ public class StopTheBleedingTomeAbility extends TomeAbility {
 
                         if (HealingSession.this.ticksRemaining % 200 == 0
                            && HealingSession.this.ticksRemaining > 0
-                           && HealingSession.this.ticksRemaining < 1200) {
+                           && HealingSession.this.ticksRemaining < StopTheBleedingTomeAbility.this.HEALING_DURATION_TICKS) {
                            currentHealer.sendMessage("§7[§aStop the Bleeding§7] §e" + secondsRemaining + " seconds remaining...");
                         }
 

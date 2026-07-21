@@ -167,11 +167,12 @@ public class EffectManager {
 
    private void applyHumansFinalStandHealthReduction(Player player) {
       if (this.plugin.getSessionManager().isHumansFinalStandActive()) {
+         double cap = this.plugin.getConfigManager().getHumanFinalStandHealthCap();
          AttributeInstance healthAttribute = player.getAttribute(Attribute.MAX_HEALTH);
-         if (healthAttribute != null && healthAttribute.getBaseValue() > 6.0) {
-            healthAttribute.setBaseValue(6.0);
-            if (player.getHealth() > 6.0) {
-               player.setHealth(6.0);
+         if (healthAttribute != null && healthAttribute.getBaseValue() > cap) {
+            healthAttribute.setBaseValue(cap);
+            if (player.getHealth() > cap) {
+               player.setHealth(cap);
             }
          }
       }

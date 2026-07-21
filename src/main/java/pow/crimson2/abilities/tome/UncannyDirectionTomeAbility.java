@@ -25,8 +25,9 @@ public class UncannyDirectionTomeAbility extends TomeAbility {
       } else {
          final double townCenterX = this.plugin.getConfigManager().getOakhurstTownCenterX();
          final double townCenterZ = this.plugin.getConfigManager().getOakhurstTownCenterZ();
+         final int animationTicks = this.plugin.getConfigManager().getUncannyDirectionAnimationTicks();
          (new BukkitRunnable() {
-            int ticksRemaining = 140;
+            int ticksRemaining = animationTicks;
 
             public void run() {
                if (this.ticksRemaining > 0 && player.isOnline()) {

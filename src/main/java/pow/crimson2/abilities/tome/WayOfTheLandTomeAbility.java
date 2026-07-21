@@ -15,6 +15,7 @@ import pow.crimson2.VampireSMPPlugin;
 public class WayOfTheLandTomeAbility extends TomeAbility implements Listener {
    private static final int NO_COOLDOWN = 0;
    private final Random random = new Random();
+   private final double doubleDropChance;
 
    public WayOfTheLandTomeAbility(VampireSMPPlugin plugin) {
       super(
@@ -25,6 +26,7 @@ public class WayOfTheLandTomeAbility extends TomeAbility implements Listener {
          },
          0
       );
+      this.doubleDropChance = plugin.getConfig().getDouble("abilities.tome.wayoftheland.double-drop-chance", 0.75);
       Bukkit.getPluginManager().registerEvents(this, plugin);
    }
 
@@ -50,7 +52,7 @@ public class WayOfTheLandTomeAbility extends TomeAbility implements Listener {
       if (this.plugin.getTomeManager().hasAbility(player, "wayoftheland")) {
          if (this.isFullyGrownCrop(block)) {
             if (block.getType() != Material.BEETROOTS) {
-               if (this.random.nextDouble() < 0.75) {
+               if (this.random.nextDouble() < this.doubleDropChance) {
                   for (ItemStack drop : block.getDrops(player.getInventory().getItemInMainHand())) {
                      if (drop != null && drop.getType() != Material.AIR) {
                         ItemStack extraDrop = drop.clone();

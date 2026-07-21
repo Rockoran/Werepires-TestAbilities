@@ -32,12 +32,21 @@ public class InvisibilityAbility extends VampireAbility {
    }
 
    @Override
+   public int getCooldownSeconds(VampireSMPPlugin plugin, org.bukkit.entity.Player player) {
+      int stage = plugin.getVampireManager().getVampireStage(player);
+      return plugin.getConfigManager().getVampireVanishCooldownStage(stage);
+   }
+
+   @Override
    public int getMinimumStage() {
       return 2;
    }
 
    @Override
    public boolean execute(Player player, VampireManager vampireManager, VampireSMPPlugin plugin) {
+      if (plugin.getBatTransformationManager().isInBatForm(player)) {
+         return false;
+      }
       if (player.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
          player.removePotionEffect(PotionEffectType.INVISIBILITY);
          plugin.getVampireAbilityManager().clearInvisibilityAttackCount(player);
@@ -47,7 +56,7 @@ public class InvisibilityAbility extends VampireAbility {
          return true;
       } else {
          int vampireStage = vampireManager.getVampireStage(player);
-         int durationTicks = this.getInvisibilityDuration(vampireStage);
+         int durationTicks = this.getInvisibilityDuration(vampireStage, plugin);
          this.createVanishEffects(player, true);
          PotionEffect invisibility = new PotionEffect(PotionEffectType.INVISIBILITY, durationTicks, 0, false, false, false);
          player.addPotionEffect(invisibility);
@@ -58,15 +67,8 @@ public class InvisibilityAbility extends VampireAbility {
       }
    }
 
-   private int getInvisibilityDuration(int stage) {
-      switch (stage) {
-         case 2:
-            return 2400;
-         case 3:
-            return 4800;
-         default:
-            return 1600;
-      }
+   private int getInvisibilityDuration(int stage, VampireSMPPlugin plugin) {
+      return plugin.getConfigManager().getVampireVanishDurationTicks(stage);
    }
 
    private void createVanishEffects(Player player, boolean isVanishing) {

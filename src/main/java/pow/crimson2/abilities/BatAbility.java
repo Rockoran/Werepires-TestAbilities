@@ -28,6 +28,12 @@ public class BatAbility extends VampireAbility {
    }
 
    @Override
+   public int getCooldownSeconds(VampireSMPPlugin plugin, org.bukkit.entity.Player player) {
+      int stage = plugin.getVampireManager().getVampireStage(player);
+      return plugin.getConfigManager().getVampireBatCooldownStage(stage);
+   }
+
+   @Override
    public int getMinimumStage() {
       return 1;
    }

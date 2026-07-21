@@ -38,12 +38,20 @@ public class IronWeaknessListener implements Listener {
    private final VampireManager vampireManager;
    private final Set<Material> ironMaterials;
    private final Map<UUID, Long> knockbackCooldowns;
-   private double repelDistance = 2.0;
-   private double repelStrength = 0.5;
+   private final double repelDistance;
+   private final double repelStrength;
+   private final double proximityRadius;
+   private final int weaknessDurationTicks;
+   private final int weaknessAmplifier;
 
    public IronWeaknessListener(VampireSMPPlugin plugin, VampireManager vampireManager) {
       this.plugin = plugin;
       this.vampireManager = vampireManager;
+      this.repelDistance = plugin.getConfigManager().getIronRepelDistance();
+      this.repelStrength = plugin.getConfigManager().getIronRepelStrength();
+      this.proximityRadius = plugin.getConfigManager().getIronProximityRadius();
+      this.weaknessDurationTicks = plugin.getConfigManager().getIronWeaknessDurationTicks();
+      this.weaknessAmplifier = plugin.getConfigManager().getIronWeaknessAmplifier();
       this.ironMaterials = this.initializeIronMaterials();
       this.knockbackCooldowns = new HashMap<>();
       (new BukkitRunnable() {
@@ -269,7 +277,7 @@ public class IronWeaknessListener implements Listener {
       for (Player player : Bukkit.getOnlinePlayers()) {
          if (this.vampireManager.isVampire(player)) {
             Location playerLoc = player.getLocation();
-            if (this.isNearIronBlock(playerLoc, 5.0)) {
+            if (this.isNearIronBlock(playerLoc, this.proximityRadius)) {
                this.applyIronEffects(player);
             }
          }
@@ -296,7 +304,7 @@ public class IronWeaknessListener implements Listener {
    }
 
    private void applyIronEffects(Player player) {
-      player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 40, 2, false, false));
+      player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, this.weaknessDurationTicks, this.weaknessAmplifier, false, false));
       if (!player.getScoreboardTags().contains("informed_iron_block_effects")) {
          player.addScoreboardTag("informed_iron_block_effects");
          player.sendMessage("§cA source of silver nearby is weakening you...");

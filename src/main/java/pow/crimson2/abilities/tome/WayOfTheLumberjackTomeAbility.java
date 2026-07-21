@@ -25,6 +25,7 @@ import com.google.gson.reflect.TypeToken;
 public class WayOfTheLumberjackTomeAbility extends TomeAbility implements Listener {
    private static final int NO_COOLDOWN = 0;
    private final Random random = new Random();
+   private final double doubleDropChance;
    private final Gson gson = new Gson();
    private final File placedLogsFile;
    private Set<String> placedLogs = new HashSet<>();
@@ -48,6 +49,7 @@ public class WayOfTheLumberjackTomeAbility extends TomeAbility implements Listen
          new String[]{"You gain knowledge on how to fell the forest.", "You permanently gain a 30% chance to harvest", "twice the yield from each harvest."},
          0
       );
+      this.doubleDropChance = plugin.getConfig().getDouble("abilities.tome.wayofthelumberjack.double-drop-chance", 0.30);
       this.placedLogsFile = new File(plugin.getDataFolder(), "placed_logs.json");
       this.loadPlacedLogs();
       Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -88,7 +90,7 @@ public class WayOfTheLumberjackTomeAbility extends TomeAbility implements Listen
             this.placedLogs.remove(locationKey);
             this.savePlacedLogs();
          } else if (this.plugin.getTomeManager().hasAbility(player, "wayofthelumberjack")) {
-            if (this.random.nextDouble() < 0.3) {
+            if (this.random.nextDouble() < this.doubleDropChance) {
                ItemStack drop = new ItemStack(block.getType(), 1);
                block.getWorld().dropItemNaturally(block.getLocation(), drop);
             }

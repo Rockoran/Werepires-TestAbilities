@@ -37,10 +37,7 @@ public class PassiveMobSpawningManager {
       this.plugin = plugin;
       this.configManager = configManager;
       this.random = new Random();
-      this.mobTypeWeights.put(EntityType.COW, 30);
-      this.mobTypeWeights.put(EntityType.PIG, 30);
-      this.mobTypeWeights.put(EntityType.SHEEP, 25);
-      this.mobTypeWeights.put(EntityType.CHICKEN, 15);
+      this.mobTypeWeights.putAll(configManager.getPassiveMobSpawnWeights());
       this.initializeBiomeBlacklist();
       if (configManager.isPassiveMobAutoSpawnEnabled()) {
          this.startAutoSpawnTask();

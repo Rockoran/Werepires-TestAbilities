@@ -21,8 +21,10 @@ public class BeaconMajorityManager {
    private static final UUID VAMPIRE_MAJORITY_HEALTH_UUID = UUID.fromString("a1b2c3d4-5e6f-7890-1234-567890abcdef");
    private static final UUID HUMAN_MAJORITY_HEALTH_UUID = UUID.fromString("f1e2d3c4-b5a6-9870-4321-fedcba098765");
    private static final UUID DEATH_PENALTY_HEALTH_UUID = UUID.fromString("d1e2a3d4-b5e6-7890-abcd-1234567890ef");
+   private static final UUID WEREWOLF_MAJORITY_HEALTH_UUID = UUID.fromString("e2f3a4b5-c6d7-8901-2345-6789abcdef12");
    private int currentVampireBonus = 0;
    private int currentHumanBonus = 0;
+   private int currentWerewolfBonus = 0;
 
    public BeaconMajorityManager(VampireSMPPlugin plugin) {
       this.plugin = plugin;
@@ -36,21 +38,37 @@ public class BeaconMajorityManager {
       } else {
          int holyBeacons = this.beaconManager.getHolyBeacons().size();
          int evilBeacons = this.beaconManager.getAllEvilBeacons().size();
-         int difference = Math.abs(holyBeacons - evilBeacons);
-         this.plugin
-            .logInfo(
-               "Beacon majority check: " + holyBeacons + " holy, " + evilBeacons + " evil (desecrated + permanently desecrated), difference: " + difference
-            );
-         if (holyBeacons > evilBeacons) {
+         int primalBeacons = this.beaconManager.getPrimalBeacons().size();
+
+         this.plugin.logInfo(
+            "Beacon majority check: " + holyBeacons + " holy, " + evilBeacons + " evil, " + primalBeacons + " primal"
+         );
+
+         // Determine the winner: must be strictly greater than BOTH others
+         if (holyBeacons > evilBeacons && holyBeacons > primalBeacons) {
+            int secondHighest = Math.max(evilBeacons, primalBeacons);
+            int difference = holyBeacons - secondHighest;
             this.applyBonusToHumans(difference);
             this.removeBonusFromVampires();
+            this.removeBonusFromWerewolves();
             this.plugin.logInfo("Humans gain beacon majority bonus: +" + difference + " hearts");
-         } else if (evilBeacons > holyBeacons) {
+         } else if (evilBeacons > holyBeacons && evilBeacons > primalBeacons) {
+            int secondHighest = Math.max(holyBeacons, primalBeacons);
+            int difference = evilBeacons - secondHighest;
             this.applyBonusToVampires(difference);
             this.removeBonusFromHumans();
+            this.removeBonusFromWerewolves();
             this.plugin.logInfo("Vampires gain beacon majority bonus: +" + difference + " hearts");
+         } else if (primalBeacons > holyBeacons && primalBeacons > evilBeacons) {
+            int secondHighest = Math.max(holyBeacons, evilBeacons);
+            int difference = primalBeacons - secondHighest;
+            this.applyBonusToWerewolves(difference);
+            this.removeBonusFromHumans();
+            this.removeBonusFromVampires();
+            this.plugin.logInfo("Werewolves gain beacon majority bonus: +" + difference + " hearts");
          } else {
             this.removeAllBonuses();
+            this.plugin.logInfo("No beacon majority — no bonuses active");
          }
       }
    }
@@ -58,6 +76,7 @@ public class BeaconMajorityManager {
    private void applyBonusToHumans(int bonusHearts) {
       this.currentHumanBonus = bonusHearts;
       this.currentVampireBonus = 0;
+      this.currentWerewolfBonus = 0;
 
       for (Player player : Bukkit.getOnlinePlayers()) {
          if (this.vampireManager.isHuman(player)) {
@@ -71,11 +90,25 @@ public class BeaconMajorityManager {
    private void applyBonusToVampires(int bonusHearts) {
       this.currentVampireBonus = bonusHearts;
       this.currentHumanBonus = 0;
+      this.currentWerewolfBonus = 0;
       double healthBonus = bonusHearts * 2.0;
 
       for (Player player : Bukkit.getOnlinePlayers()) {
          if (this.vampireManager.isVampire(player)) {
             this.applyHealthModifier(player, healthBonus, VAMPIRE_MAJORITY_HEALTH_UUID, "Beacon Majority (Vampire)");
+         }
+      }
+   }
+
+   private void applyBonusToWerewolves(int bonusHearts) {
+      this.currentWerewolfBonus = bonusHearts;
+      this.currentHumanBonus = 0;
+      this.currentVampireBonus = 0;
+      double healthBonus = bonusHearts * 2.0;
+
+      for (Player player : Bukkit.getOnlinePlayers()) {
+         if (this.vampireManager.isWerewolf(player)) {
+            this.applyHealthModifier(player, healthBonus, WEREWOLF_MAJORITY_HEALTH_UUID, "Beacon Majority (Werewolf)");
          }
       }
    }
@@ -101,13 +134,25 @@ public class BeaconMajorityManager {
       }
    }
 
+   private void removeBonusFromWerewolves() {
+      this.currentWerewolfBonus = 0;
+
+      for (Player player : Bukkit.getOnlinePlayers()) {
+         if (this.vampireManager.isWerewolf(player)) {
+            this.removeHealthModifier(player, WEREWOLF_MAJORITY_HEALTH_UUID);
+         }
+      }
+   }
+
    private void removeAllBonuses() {
       this.currentVampireBonus = 0;
       this.currentHumanBonus = 0;
+      this.currentWerewolfBonus = 0;
 
       for (Player player : Bukkit.getOnlinePlayers()) {
          this.removeHealthModifier(player, VAMPIRE_MAJORITY_HEALTH_UUID);
          this.removeHealthModifier(player, HUMAN_MAJORITY_HEALTH_UUID);
+         this.removeHealthModifier(player, WEREWOLF_MAJORITY_HEALTH_UUID);
          if (this.vampireManager.isHuman(player)) {
             this.applyDeathPenalty(player);
          }
@@ -156,6 +201,9 @@ public class BeaconMajorityManager {
          if (this.vampireManager.isVampire(player) && this.currentVampireBonus > 0) {
             double healthBonus = this.currentVampireBonus * 2.0;
             this.applyHealthModifier(player, healthBonus, VAMPIRE_MAJORITY_HEALTH_UUID, "Beacon Majority (Vampire)");
+         } else if (this.vampireManager.isWerewolf(player) && this.currentWerewolfBonus > 0) {
+            double healthBonus = this.currentWerewolfBonus * 2.0;
+            this.applyHealthModifier(player, healthBonus, WEREWOLF_MAJORITY_HEALTH_UUID, "Beacon Majority (Werewolf)");
          } else if (this.vampireManager.isHuman(player)) {
             if (this.currentHumanBonus > 0) {
                double healthBonus = this.currentHumanBonus * 2.0;
@@ -170,6 +218,7 @@ public class BeaconMajorityManager {
    public void removeBonusesFromPlayer(Player player) {
       this.removeHealthModifier(player, VAMPIRE_MAJORITY_HEALTH_UUID);
       this.removeHealthModifier(player, HUMAN_MAJORITY_HEALTH_UUID);
+      this.removeHealthModifier(player, WEREWOLF_MAJORITY_HEALTH_UUID);
       this.removeHealthModifier(player, DEATH_PENALTY_HEALTH_UUID);
    }
 
@@ -177,7 +226,7 @@ public class BeaconMajorityManager {
       if (this.vampireManager.isHuman(player)) {
          int deathCount = this.getPlayerDeathCount(player);
          if (deathCount > 0) {
-            double healthPenalty = -(deathCount * 2.0);
+            double healthPenalty = -(deathCount * this.plugin.getConfigManager().getHumanDeathHpPenalty());
             this.applyHealthModifier(player, healthPenalty, DEATH_PENALTY_HEALTH_UUID, "Death Penalty");
             this.plugin.getLogger().fine("Applied -" + deathCount + " hearts death penalty to " + player.getName());
          } else {
@@ -204,14 +253,18 @@ public class BeaconMajorityManager {
       int holyBeacons = this.beaconManager.getHolyBeacons().size();
       int evilBeacons = this.beaconManager.getAllEvilBeacons().size();
       int neutralBeacons = this.beaconManager.getNeutralBeacons().size();
+      int primalBeacons = this.beaconManager.getPrimalBeacons().size();
       String status = "§6=== Beacon Majority Status ===\n";
       status = status + "§f  Holy Beacons: §a" + holyBeacons + "\n";
       status = status + "§f  Evil Beacons: §c" + evilBeacons + "\n";
       status = status + "§f  Neutral Beacons: §7" + neutralBeacons + "\n";
+      status = status + "§f  Primal Beacons: §e" + primalBeacons + "\n";
       if (this.currentHumanBonus > 0) {
          status = status + "§a  Human Bonus: +" + this.currentHumanBonus + " hearts\n";
       } else if (this.currentVampireBonus > 0) {
          status = status + "§c  Vampire Bonus: +" + this.currentVampireBonus + " hearts\n";
+      } else if (this.currentWerewolfBonus > 0) {
+         status = status + "§e  Werewolf Bonus: +" + this.currentWerewolfBonus + " hearts\n";
       } else {
          status = status + "§7  No bonuses active\n";
       }
@@ -227,6 +280,7 @@ public class BeaconMajorityManager {
       this.healthModifiers.clear();
       this.currentVampireBonus = 0;
       this.currentHumanBonus = 0;
+      this.currentWerewolfBonus = 0;
       this.plugin.logInfo("BeaconMajorityManager shutdown - all health bonuses removed");
    }
 }

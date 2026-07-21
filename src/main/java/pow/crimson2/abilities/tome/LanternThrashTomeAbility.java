@@ -13,9 +13,9 @@ import org.bukkit.scheduler.BukkitRunnable;
 import pow.crimson2.VampireSMPPlugin;
 
 public class LanternThrashTomeAbility extends TomeAbility {
-   private static final int FIRE_RADIUS = 6;
-   private static final int FIRE_INNER_RADIUS = 2;
-   private static final int FIRE_RESISTANCE_DURATION = 6000;
+   private final int FIRE_RADIUS;
+   private final int FIRE_INNER_RADIUS;
+   private final int FIRE_RESISTANCE_DURATION;
    private static final int FIRE_RESISTANCE_AMPLIFIER = 0;
 
    public LanternThrashTomeAbility(VampireSMPPlugin plugin) {
@@ -29,6 +29,9 @@ public class LanternThrashTomeAbility extends TomeAbility {
          },
          plugin.getConfigManager().getTomeLanternThrashCooldown()
       );
+      this.FIRE_RADIUS = plugin.getConfig().getInt("abilities.tome.lanthrash.fire-radius", 6);
+      this.FIRE_INNER_RADIUS = plugin.getConfig().getInt("abilities.tome.lanthrash.fire-inner-radius", 2);
+      this.FIRE_RESISTANCE_DURATION = plugin.getConfig().getInt("abilities.tome.lanthrash.fire-resistance-duration-ticks", 6000);
    }
 
    @Override
@@ -45,7 +48,7 @@ public class LanternThrashTomeAbility extends TomeAbility {
          List<Location> fireLocations = this.calculateFireLocations(playerLoc);
          this.sortLocationsByAngle(fireLocations, playerLoc, playerYaw);
          player.playSound(player.getLocation(), "minecraft:item.firecharge.use", 1.0F, 1.0F);
-         player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 6000, 0, false, false));
+         player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, this.FIRE_RESISTANCE_DURATION, FIRE_RESISTANCE_AMPLIFIER, false, false));
          this.sendSuccessMessage(player, "You thrash your lantern wildly, igniting the ground around you!");
          this.startFireSpread(player, fireLocations);
          return true;

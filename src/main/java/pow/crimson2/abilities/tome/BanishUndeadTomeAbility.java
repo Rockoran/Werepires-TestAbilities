@@ -23,7 +23,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import pow.crimson2.VampireSMPPlugin;
 
 public class BanishUndeadTomeAbility extends TomeAbility {
-   private static final int RADIUS = 40;
+   private final int RADIUS;
    private final List<Class<? extends Entity>> undeadMobTypes = Arrays.asList(
       Zombie.class,
       Skeleton.class,
@@ -46,6 +46,7 @@ public class BanishUndeadTomeAbility extends TomeAbility {
          new String[]{"All undead mobs within a 40 block radius of you die instantly."},
          plugin.getConfigManager().getTomeBanishUndeadCooldown()
       );
+      this.RADIUS = plugin.getConfig().getInt("abilities.tome.banishundead.radius", 40);
    }
 
    @Override
@@ -62,7 +63,7 @@ public class BanishUndeadTomeAbility extends TomeAbility {
 
       int mobsKilled = 0;
 
-      for (Entity entity : player.getNearbyEntities(40.0, 40.0, 40.0)) {
+      for (Entity entity : player.getNearbyEntities(this.RADIUS, this.RADIUS, this.RADIUS)) {
          if (this.isUndeadMob(entity) && entity instanceof LivingEntity livingEntity) {
             livingEntity.setHealth(0.0);
             mobsKilled++;

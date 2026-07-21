@@ -76,9 +76,9 @@ public class BeaconTeleportListener implements Listener {
       player.sendMessage("§7Destination: §f" + beacon.getName());
       player.sendMessage("§c§lDo not move for 5 seconds.");
       player.playSound(player.getLocation(), Sound.BLOCK_PORTAL_AMBIENT, 0.5F, 1.5F);
+      final int totalTicks = this.plugin.getConfigManager().getBeaconTeleportChannelTicks();
       BukkitTask channelingTask = (new BukkitRunnable() {
          int ticksElapsed = 0;
-         final int totalTicks = 100;
 
          public void run() {
             BeaconTeleportListener.ChannelingData data = BeaconTeleportListener.this.channelingPlayers.get(playerId);
@@ -93,7 +93,7 @@ public class BeaconTeleportListener implements Listener {
                } else {
                   this.ticksElapsed++;
                   if (this.ticksElapsed % 20 == 0) {
-                     int secondsRemaining = (100 - this.ticksElapsed) / 20;
+                     int secondsRemaining = (totalTicks - this.ticksElapsed) / 20;
                      if (secondsRemaining > 0) {
                         player.sendMessage("§7Channeling... §e" + VampireAbilityManager.formatTime(secondsRemaining) + " remaining");
                         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.3F, 1.0F + secondsRemaining * 0.1F);
@@ -106,7 +106,7 @@ public class BeaconTeleportListener implements Listener {
                      player.getWorld().spawnParticle(Particle.ENCHANT, particleLoc, 1, 0.3, 0.3, 0.3, 0.5);
                   }
 
-                  if (this.ticksElapsed >= 100) {
+                  if (this.ticksElapsed >= totalTicks) {
                      BeaconTeleportListener.this.completeChanneling(playerId);
                      this.cancel();
                   }

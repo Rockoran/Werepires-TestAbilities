@@ -116,18 +116,23 @@ public class BeaconManager {
    }
 
    private void forceLoadBeaconChunks() {
-      int chunksLoaded = 0;
+      int chunksRequested = 0;
 
       for (BeaconSite beacon : this.beacons.values()) {
          Location location = beacon.getLocation();
-         if (location != null && location.getWorld() != null && !location.getWorld().isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) {
-            location.getWorld().loadChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4);
-            chunksLoaded++;
+         if (location != null && location.getWorld() != null) {
+            int chunkX = location.getBlockX() >> 4;
+            int chunkZ = location.getBlockZ() >> 4;
+            if (!location.getWorld().isChunkLoaded(chunkX, chunkZ)) {
+               // Use async loading — synchronous loadChunk() deadlocks on Paper 1.21
+               location.getWorld().getChunkAtAsync(chunkX, chunkZ);
+               chunksRequested++;
+            }
          }
       }
 
-      if (chunksLoaded > 0) {
-         this.plugin.getLogger().fine("Force loaded " + chunksLoaded + " beacon chunks");
+      if (chunksRequested > 0) {
+         this.plugin.getLogger().fine("Async-requested " + chunksRequested + " beacon chunks");
       }
    }
 
@@ -280,6 +285,8 @@ public class BeaconManager {
             return "666";
          case PERMANENTLY_DESECRATED:
             return "668";
+         case PRIMAL:
+            return "667";
          case NEUTRAL:
          default:
             return "665";
@@ -452,6 +459,26 @@ public class BeaconManager {
       return this.getNearestHolyBeacon(location) != null;
    }
 
+   /** Nearest desecrated (or permanently-desecrated) beacon within {@code maxRange}, or null. */
+   public BeaconSite getNearestDesecratedBeacon(Location location, double maxRange) {
+      if (location == null || location.getWorld() == null) return null;
+      BeaconSite nearest = null;
+      double nearestDistance = Double.MAX_VALUE;
+      for (BeaconSite beacon : this.beacons.values()) {
+         BeaconSite.BeaconState s = beacon.getState();
+         if (s != BeaconSite.BeaconState.DESECRATED && s != BeaconSite.BeaconState.PERMANENTLY_DESECRATED) continue;
+         Location beaconLoc = beacon.getLocation();
+         if (beaconLoc != null && beaconLoc.getWorld() != null && beaconLoc.getWorld().equals(location.getWorld())) {
+            double distance = beaconLoc.distance(location);
+            if (distance <= maxRange && distance < nearestDistance) {
+               nearest = beacon;
+               nearestDistance = distance;
+            }
+         }
+      }
+      return nearest;
+   }
+
    private void showAllConversionAndSuppressionCircles() {
       for (BeaconSite beacon : this.beacons.values()) {
          Location particleLoc = beacon.getParticleLocation();
@@ -469,6 +496,7 @@ public class BeaconManager {
          return false;
       } else if (location != null && location.getWorld() != null) {
          BeaconSite beacon = new BeaconSite(name, location);
+         beacon.setCaptureRadius(this.plugin.getConfigManager().getBeaconCaptureRadius());
          this.beacons.put(name.toLowerCase(), beacon);
          this.createBeaconDisplay(beacon);
          this.saveBeacons();
@@ -531,6 +559,10 @@ public class BeaconManager {
 
    public List<BeaconSite> getHolyBeacons() {
       return this.beacons.values().stream().filter(beacon -> beacon.getState() == BeaconSite.BeaconState.HOLY).collect(Collectors.toList());
+   }
+
+   public List<BeaconSite> getPrimalBeacons() {
+      return this.beacons.values().stream().filter(beacon -> beacon.getState() == BeaconSite.BeaconState.PRIMAL).collect(Collectors.toList());
    }
 
    public List<BeaconSite> getNeutralBeacons() {
@@ -629,6 +661,24 @@ public class BeaconManager {
       }
    }
 
+   public boolean setBeaconPrimal(String name) {
+      BeaconSite beacon = this.beacons.get(name.toLowerCase());
+      if (beacon != null) {
+         this.cancelPendingNeutralBroadcast(name.toLowerCase());
+         beacon.setState(BeaconSite.BeaconState.PRIMAL);
+         beacon.setLastChangedBy("Admin command");
+         beacon.setConversionCooldownUntil(0L);
+         this.updateBeaconDisplay(beacon);
+         this.saveBeacons();
+         this.plugin.logInfo("Set beacon '" + name + "' as primal (cooldown cleared)");
+         this.plugin.getBeaconMajorityManager().updateBeaconMajorityBonuses();
+         this.broadcastBeaconGainToTeam(beacon, BeaconSite.BeaconState.PRIMAL);
+         return true;
+      } else {
+         return false;
+      }
+   }
+
    public boolean setBeaconNeutral(String name) {
       return this.setBeaconNeutral(name, false);
    }
@@ -705,6 +755,10 @@ public class BeaconManager {
                break;
             case DESECRATED:
                this.showDesecratedParticles(location);
+               break;
+            case PRIMAL:
+               this.showPrimalParticles(location);
+               break;
             case PERMANENTLY_DESECRATED:
             case NEUTRAL:
          }
@@ -724,6 +778,25 @@ public class BeaconManager {
       location.getWorld().spawnParticle(Particle.ENCHANT, location, 5, 0.5, 0.5, 0.5, 0.5);
       if (Math.random() < 0.3) {
          location.getWorld().spawnParticle(Particle.END_ROD, location, 3, 0.3, 0.3, 0.3, 0.1);
+      }
+   }
+
+   private void showPrimalParticles(Location location) {
+      for (int i = 0; i < 6; i++) {
+         double angle = (Math.PI * 2) * i / 6.0;
+         double radius = 1.3;
+         Location particleLoc = location.clone().add(Math.cos(angle) * radius, Math.sin(System.currentTimeMillis() / 900.0) * 0.25, Math.sin(angle) * radius);
+         DustOptions dustOptions = new DustOptions(Color.fromRGB(205, 133, 63), 1.1F);
+         location.getWorld().spawnParticle(Particle.DUST, particleLoc, 1, 0.1, 0.1, 0.1, dustOptions);
+      }
+
+      if (Math.random() < 0.3) {
+         DustOptions earthDust = new DustOptions(Color.fromRGB(101, 67, 33), 1.0F);
+         location.getWorld().spawnParticle(Particle.DUST, location, 2, 0.3, 0.3, 0.3, earthDust);
+      }
+
+      if (Math.random() < 0.2) {
+         location.getWorld().spawnParticle(Particle.WARPED_SPORE, location, 3, 0.4, 0.4, 0.4, 0.01);
       }
    }
 
@@ -815,6 +888,11 @@ public class BeaconManager {
                case DESECRATED:
                   DustOptions darkRedDust = new DustOptions(Color.fromRGB(150, 0, 0), 1.2F);
                   location.getWorld().spawnParticle(Particle.DUST, location, 1, 0.0, 0.0, 0.0, darkRedDust);
+                  break;
+               case PRIMAL:
+                  DustOptions amberDust = new DustOptions(Color.fromRGB(205, 133, 63), 1.2F);
+                  location.getWorld().spawnParticle(Particle.DUST, location, 1, 0.0, 0.0, 0.0, amberDust);
+                  break;
                case PERMANENTLY_DESECRATED:
                case NEUTRAL:
             }
@@ -914,10 +992,14 @@ public class BeaconManager {
                   break;
                case DESECRATED:
                   icon = "☠ ";
+                  break;
                case PERMANENTLY_DESECRATED:
-               default:
+                  break;
+               case PRIMAL:
+                  icon = "✾ ";
                   break;
                case NEUTRAL:
+               default:
                   icon = "◯ ";
             }
 
@@ -1011,9 +1093,9 @@ public class BeaconManager {
 
    private void createDefaultBeacons() {
       this.beacons.clear();
-      World world = this.plugin.getServer().getWorld("world");
+      World world = this.plugin.getWorld();
       if (world == null) {
-         this.plugin.getLogger().severe("World 'world' not found! Cannot create default beacons.");
+         this.plugin.getLogger().severe("World not found! Cannot create default beacons.");
       } else {
          BeaconSite town = new BeaconSite("Town", new Location(world, 79.5, 86.0, 440.5));
          town.setState(BeaconSite.BeaconState.NEUTRAL);
@@ -1151,6 +1233,64 @@ public class BeaconManager {
       this.plugin.logInfo("Reloaded beacons from file.");
    }
 
+   /**
+    * Loads beacons from a world-specific JSON file (e.g. worlds/Oakhurst_Beacons.json).
+    * Every loaded beacon's worldName is overwritten to match {@code worldName} so that
+    * the beacons resolve correctly regardless of whether the world was loaded as "world"
+    * or as a named world.  The result is persisted to the main beacons.json.
+    *
+    * @param worldBeaconsFile  path to the world-specific beacons JSON
+    * @param worldName         the Bukkit world name currently active (e.g. "world" or "Oakhurst")
+    */
+   public void loadBeaconsFromWorldFile(File worldBeaconsFile, String worldName) {
+      try (FileReader reader = new FileReader(worldBeaconsFile)) {
+         Type mapType = new TypeToken<Map<String, BeaconSite>>() {}.getType();
+         Map<String, BeaconSite> loaded = this.gson.fromJson(reader, mapType);
+
+         if (loaded == null) {
+            this.plugin.getLogger().warning("[BeaconManager] World beacons file parsed as null: "
+                  + worldBeaconsFile.getName());
+            return;
+         }
+
+         int valid = 0, invalid = 0;
+         for (Map.Entry<String, BeaconSite> entry : loaded.entrySet()) {
+            BeaconSite beacon = entry.getValue();
+            if (beacon == null || beacon.getName() == null) {
+               this.plugin.getLogger().warning("[BeaconManager] Skipping null beacon entry: "
+                     + entry.getKey());
+               invalid++;
+            } else {
+               // Correct worldName to match the active world
+               beacon.setWorldName(worldName);
+               valid++;
+            }
+         }
+
+         this.beacons.clear();
+         this.beacons.putAll(loaded);
+         this.plugin.logInfo("[BeaconManager] Loaded " + valid + " beacons from "
+               + worldBeaconsFile.getName() + " (world=" + worldName + ")"
+               + (invalid > 0 ? ", skipped " + invalid + " invalid" : ""));
+
+         // Persist corrected data to main beacons.json
+         this.saveBeacons();
+
+         // Refresh item displays once the world has settled (1-second delay)
+         this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
+            this.recreateAllDisplays();
+            this.validateBeacons();
+         }, 20L);
+
+      } catch (IOException e) {
+         this.plugin.getLogger().severe("[BeaconManager] Failed to load world beacons from "
+               + worldBeaconsFile.getName() + ": " + e.getMessage());
+      } catch (com.google.gson.JsonSyntaxException e) {
+         this.plugin.getLogger().severe("[BeaconManager] JSON error in "
+               + worldBeaconsFile.getName() + ": " + e.getMessage());
+      }
+   }
+
    private void migrateBeaconCooldownsToSessionTime() {
       this.plugin.logInfo("Migrating existing beacon cooldowns from system time to session time...");
       long currentSystemTime = System.currentTimeMillis();
@@ -1267,6 +1407,8 @@ public class BeaconManager {
                message = "§7Beacon §e" + beacon.getName() + " §7has lost its divine protection...";
             } else if (previousState == BeaconSite.BeaconState.DESECRATED) {
                message = "§7Beacon §e" + beacon.getName() + " §7has been cleansed of dark influence...";
+            } else if (previousState == BeaconSite.BeaconState.PRIMAL) {
+               message = "§7Beacon §e" + beacon.getName() + " §7has broken free from the wilds...";
             } else {
                message = "§7Beacon §e" + beacon.getName() + " §7is now neutral.";
             }
@@ -1293,12 +1435,12 @@ public class BeaconManager {
       String message;
       if (newState == BeaconSite.BeaconState.HOLY) {
          message = "§aBeacon §e" + beacon.getName() + " §ahas been blessed with divine energy!";
-      } else {
-         if (newState != BeaconSite.BeaconState.DESECRATED) {
-            return;
-         }
-
+      } else if (newState == BeaconSite.BeaconState.DESECRATED) {
          message = "§4Beacon §e" + beacon.getName() + " §4has been consumed by dark forces!";
+      } else if (newState == BeaconSite.BeaconState.PRIMAL) {
+         message = "§6Beacon §e" + beacon.getName() + " §6has been claimed by the wild!";
+      } else {
+         return;
       }
 
       for (Player player : this.plugin.getServer().getOnlinePlayers()) {

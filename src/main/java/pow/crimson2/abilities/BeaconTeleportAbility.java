@@ -36,6 +36,12 @@ public class BeaconTeleportAbility extends VampireAbility {
    }
 
    @Override
+   public int getCooldownSeconds(VampireSMPPlugin plugin, org.bukkit.entity.Player player) {
+      int stage = plugin.getVampireManager().getVampireStage(player);
+      return plugin.getConfigManager().getVampireBeaconTeleportCooldownStage(stage);
+   }
+
+   @Override
    public int getMinimumStage() {
       return 2;
    }
@@ -52,7 +58,7 @@ public class BeaconTeleportAbility extends VampireAbility {
 
    @Override
    public boolean execute(Player player, VampireManager vampireManager, VampireSMPPlugin plugin) {
-      if (player.getHealth() < player.getMaxHealth()) {
+      if (plugin.getConfigManager().getBeaconTeleportRequireFullHealth() && player.getHealth() < player.getMaxHealth()) {
          player.sendMessage("§cYou find yourself too weak to use that ability... Rest up and heal first.");
          return false;
       } else {

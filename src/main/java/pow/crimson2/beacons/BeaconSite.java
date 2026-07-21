@@ -50,7 +50,7 @@ public class BeaconSite {
       this.state = newState;
       this.lastChangedBy = changedBy;
       this.lastStateChangeTime = System.currentTimeMillis();
-      if (newState == BeaconSite.BeaconState.HOLY || newState == BeaconSite.BeaconState.DESECRATED) {
+      if (newState == BeaconSite.BeaconState.HOLY || newState == BeaconSite.BeaconState.DESECRATED || newState == BeaconSite.BeaconState.PRIMAL) {
          this.conversionCooldownUntil = sessionManager.getSessionTime() + cooldownMs;
       }
    }
@@ -63,7 +63,7 @@ public class BeaconSite {
       this.state = newState;
       this.lastChangedBy = changedBy;
       this.lastStateChangeTime = System.currentTimeMillis();
-      if (newState == BeaconSite.BeaconState.HOLY || newState == BeaconSite.BeaconState.DESECRATED) {
+      if (newState == BeaconSite.BeaconState.HOLY || newState == BeaconSite.BeaconState.DESECRATED || newState == BeaconSite.BeaconState.PRIMAL) {
          this.conversionCooldownUntil = System.currentTimeMillis() + cooldownMs;
       }
    }
@@ -264,7 +264,8 @@ public class BeaconSite {
       NEUTRAL("Neutral", "§7"),
       HOLY("Holy", "§f"),
       DESECRATED("Desecrated", "§4"),
-      PERMANENTLY_DESECRATED("Corrupted", "§8");
+      PERMANENTLY_DESECRATED("Corrupted", "§8"),
+      PRIMAL("Primal", "§6");
 
       private final String displayName;
       private final String colorCode;

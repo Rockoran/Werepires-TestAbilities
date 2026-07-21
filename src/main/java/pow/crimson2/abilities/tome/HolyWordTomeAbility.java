@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityMountEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -21,8 +22,8 @@ import pow.crimson2.VampireSMPPlugin;
 import pow.crimson2.managers.VampireManager;
 
 public class HolyWordTomeAbility extends TomeAbility implements Listener {
-   private static final int RADIUS = 20;
-   private static final int PARALYSIS_DURATION = 300;
+   private final int RADIUS;
+   private final int PARALYSIS_DURATION;
    private final Map<UUID, BukkitTask> paralyzedPlayers = new HashMap<>();
 
    public HolyWordTomeAbility(VampireSMPPlugin plugin) {
@@ -36,6 +37,8 @@ public class HolyWordTomeAbility extends TomeAbility implements Listener {
          },
          plugin.getConfigManager().getTomeHolyWordCooldown()
       );
+      this.RADIUS = plugin.getConfigManager().getHolyWordRadius();
+      this.PARALYSIS_DURATION = plugin.getConfigManager().getHolyWordParalysisDurationTicks();
       Bukkit.getPluginManager().registerEvents(this, plugin);
    }
 
@@ -52,22 +55,23 @@ public class HolyWordTomeAbility extends TomeAbility implements Listener {
       int stage2And3Paralyzed = 0;
 
       for (Player target : nearbyPlayers) {
-         if (!target.equals(player) && !(target.getLocation().distance(player.getLocation()) > 20.0)) {
+         if (!target.equals(player) && !(target.getLocation().distance(player.getLocation()) > this.RADIUS)) {
             if (vampireManager.isVampireStage1(target)) {
                target.sendMessage("§cA holy word sends your mind reeling, but you hold fast against it's paralysing effects.");
                stage1Affected++;
             } else if (vampireManager.isVampireStage2(target) || vampireManager.isVampireStage3(target)) {
                target.sendMessage("§cYou are frozen by divine power!");
-               target.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 300, 255, false, false));
+               target.leaveVehicle();
+               target.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, this.PARALYSIS_DURATION, 255, false, false));
                UUID targetId = target.getUniqueId();
-               BukkitTask paralysisTask = Bukkit.getScheduler().runTaskLater(this.plugin, () -> this.paralyzedPlayers.remove(targetId), 300L);
+               BukkitTask paralysisTask = Bukkit.getScheduler().runTaskLater(this.plugin, () -> this.paralyzedPlayers.remove(targetId), (long) this.PARALYSIS_DURATION);
                this.paralyzedPlayers.put(targetId, paralysisTask);
                target.getWorld().playSound(target.getLocation(), "minecraft:entity.zombie_villager.cure", 0.8F, 2.0F);
                Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
                   if (target.isOnline()) {
                      target.sendMessage("§7The divine paralysis fades... You can move again.");
                   }
-               }, 300L);
+               }, (long) this.PARALYSIS_DURATION);
                stage2And3Paralyzed++;
             }
          }
@@ -92,6 +96,14 @@ public class HolyWordTomeAbility extends TomeAbility implements Listener {
          if (this.paralyzedPlayers.containsKey(playerId)) {
             event.setCancelled(true);
          }
+      }
+   }
+
+   @EventHandler
+   public void onEntityMount(EntityMountEvent event) {
+      if (event.getEntity() instanceof Player player && this.paralyzedPlayers.containsKey(player.getUniqueId())) {
+         event.setCancelled(true);
+         player.sendMessage("§4You are frozen by divine power and cannot mount!");
       }
    }
 

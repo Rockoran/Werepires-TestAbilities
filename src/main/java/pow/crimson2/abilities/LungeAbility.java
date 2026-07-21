@@ -29,6 +29,12 @@ public class LungeAbility extends VampireAbility {
    }
 
    @Override
+   public int getCooldownSeconds(VampireSMPPlugin plugin, org.bukkit.entity.Player player) {
+      int stage = plugin.getVampireManager().getVampireStage(player);
+      return plugin.getConfigManager().getVampireLungeCooldownStage(stage);
+   }
+
+   @Override
    public int getMinimumStage() {
       return 2;
    }
@@ -36,7 +42,7 @@ public class LungeAbility extends VampireAbility {
    @Override
    public boolean execute(Player player, VampireManager vampireManager, VampireSMPPlugin plugin) {
       int vampireStage = vampireManager.getVampireStage(player);
-      double lungePower = this.getLungePower(vampireStage);
+      double lungePower = this.getLungePower(vampireStage, plugin);
       vampireManager.addFallProtection(player);
       Vector direction = player.getLocation().getDirection().normalize();
       Vector lungeVector = direction.multiply(lungePower);
@@ -45,17 +51,8 @@ public class LungeAbility extends VampireAbility {
       return true;
    }
 
-   private double getLungePower(int stage) {
-      switch (stage) {
-         case 1:
-            return 1.6;
-         case 2:
-            return 2.0;
-         case 3:
-            return 2.5;
-         default:
-            return 1.0;
-      }
+   private double getLungePower(int stage, VampireSMPPlugin plugin) {
+      return plugin.getConfigManager().getVampireLungeStrengthStage(stage);
    }
 
    private void sendLungeMessage(Player player, int stage) {

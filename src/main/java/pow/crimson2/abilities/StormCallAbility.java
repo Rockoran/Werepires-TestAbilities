@@ -21,7 +21,7 @@ public class StormCallAbility extends VampireAbility {
 
    @Override
    public String getDescription() {
-      return "Summon dark rain clouds to shroud the world in storm for 10 minutes. Only the most powerful vampires can command the very skies.";
+      return "Summon dark rain clouds to shroud the world in storm. Only the most powerful vampires can command the very skies.";
    }
 
    @Override
@@ -41,13 +41,14 @@ public class StormCallAbility extends VampireAbility {
          player.sendMessage("§8The skies are already under your influence...");
          return false;
       } else {
+         int duration = plugin.getConfigManager().getVampireStormCallDurationSeconds();
          this.createStormSummonEffects(player);
-         this.sendStormCallMessage(player);
+         this.sendStormCallMessage(player, duration);
          this.playStormCallSound(player);
          world.setStorm(true);
          world.setThundering(false);
          this.broadcastStormArrival(world, player);
-         this.scheduleStormClearing(world, player, plugin);
+         this.scheduleStormClearing(world, player, plugin, duration);
          return true;
       }
    }
@@ -68,8 +69,11 @@ public class StormCallAbility extends VampireAbility {
       }
    }
 
-   private void sendStormCallMessage(Player player) {
-      player.sendMessage("§7Rain will fall for the next 10 minutes.");
+   private void sendStormCallMessage(Player player, int durationSeconds) {
+      int min = durationSeconds / 60;
+      int sec = durationSeconds % 60;
+      String dur = sec == 0 ? min + " minute" + (min != 1 ? "s" : "") : min + "m " + sec + "s";
+      player.sendMessage("§7Rain will fall for the next " + dur + ".");
    }
 
    private void playStormCallSound(Player player) {
@@ -92,7 +96,9 @@ public class StormCallAbility extends VampireAbility {
       }
    }
 
-   private void scheduleStormClearing(World world, Player caster, VampireSMPPlugin plugin) {
+   private void scheduleStormClearing(World world, Player caster, VampireSMPPlugin plugin, int durationSeconds) {
+      int durationTicks = durationSeconds * 20;
+      int warningTicks = Math.max(20, durationTicks - 60 * 20); // warn 60 s before end
       plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
          if (world.hasStorm()) {
             String warningMessage = "§7§oThe clouds are beginning to thin... The storm will pass soon.";
@@ -102,19 +108,19 @@ public class StormCallAbility extends VampireAbility {
                worldPlayer.playSound(worldPlayer, Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.WEATHER, 0.3F, 0.8F);
             }
          }
-      }, 10800L);
+      }, warningTicks);
       plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
          if (world.hasStorm()) {
             world.setStorm(false);
             world.setThundering(false);
-            world.setClearWeatherDuration(6000);
+            world.setClearWeatherDuration(plugin.getConfigManager().getVampireStormClearWeatherTicks());
             if (caster.isOnline()) {
                this.createStormClearingEffects(caster);
             }
 
             this.broadcastStormClearing(world, caster);
          }
-      }, 12000L);
+      }, durationTicks);
    }
 
    private void createStormClearingEffects(Player caster) {

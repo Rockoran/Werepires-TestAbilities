@@ -8,7 +8,9 @@ import org.bukkit.scoreboard.Team;
 import pow.crimson2.VampireSMPPlugin;
 
 public class TurnUndeadTomeAbility extends TomeAbility {
-   private static final int EFFECT_DURATION = 300;
+   private final int DISGUISE_DURATION_TICKS;
+   private final int DARKNESS_TICKS;
+   private final int SLOWNESS_TICKS;
 
    public TurnUndeadTomeAbility(VampireSMPPlugin plugin) {
       super(
@@ -17,6 +19,9 @@ public class TurnUndeadTomeAbility extends TomeAbility {
          new String[]{"You die. Temporarily.", "For the duration of this ability, undead mobs see you as one of their own,", "and do not attack you."},
          plugin.getConfigManager().getTomeTurnUndeadCooldown()
       );
+      this.DISGUISE_DURATION_TICKS = plugin.getConfig().getInt("abilities.tome.turnundead.disguise-duration-ticks", 6000);
+      this.DARKNESS_TICKS = plugin.getConfig().getInt("abilities.tome.turnundead.darkness-ticks", 200);
+      this.SLOWNESS_TICKS = plugin.getConfig().getInt("abilities.tome.turnundead.slowness-ticks", 100);
    }
 
    @Override
@@ -31,8 +36,8 @@ public class TurnUndeadTomeAbility extends TomeAbility {
             return false;
          } else {
             vampireCastTeam.addEntry(player.getName());
-            player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 200, 0, false, false));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 1, false, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, this.DARKNESS_TICKS, 0, false, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, this.SLOWNESS_TICKS, 1, false, false));
             this.plugin.getWorld().playSound(player.getLocation(), "minecraft:ambient.warped_forest.mood", 1.0F, 1.0F);
             this.sendSuccessMessage(player, "You feel the cold embrace of death wash over you...");
             player.sendMessage("§7Undead creatures now see you as one of their own.");
@@ -46,7 +51,7 @@ public class TurnUndeadTomeAbility extends TomeAbility {
                } else {
                   vampireCastTeam.removeEntry(player.getName());
                }
-            }, 6000L);
+            }, this.DISGUISE_DURATION_TICKS);
             return true;
          }
       }

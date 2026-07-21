@@ -17,17 +17,17 @@ import org.bukkit.util.Vector;
 import pow.crimson2.VampireSMPPlugin;
 
 public class ShoulderBargeTomeAbility extends TomeAbility {
-   private static final int CHARGE_DURATION = 20;
-   private static final double CHARGE_VELOCITY = 1.5;
-   private static final double UPWARD_VELOCITY = 0.3;
-   private static final double KNOCKBACK_STRENGTH = 1.2;
-   private static final int SLOWNESS_DURATION = 300;
-   private static final double DAMAGE_TO_PLAYERS = 10.0;
-   private static final double DAMAGE_TO_MOBS = 20.0;
+   private final int CHARGE_DURATION;
+   private final double CHARGE_VELOCITY;
+   private final double UPWARD_VELOCITY;
+   private final double KNOCKBACK_STRENGTH;
+   private final int SLOWNESS_DURATION;
+   private final double DAMAGE_TO_PLAYERS;
+   private final double DAMAGE_TO_MOBS;
    private final Map<UUID, BukkitTask> chargingPlayers = new HashMap<>();
    private final Map<UUID, Set<UUID>> chargeHitEntities = new HashMap<>();
    private final Map<UUID, Long> recentlyBargedEntities = new HashMap<>();
-   private static final long TARGET_COOLDOWN_MS = 3000L;
+   private final long TARGET_COOLDOWN_MS;
 
    public ShoulderBargeTomeAbility(VampireSMPPlugin plugin) {
       super(
@@ -40,6 +40,14 @@ public class ShoulderBargeTomeAbility extends TomeAbility {
          },
          plugin.getConfigManager().getTomeShoulderBargeCooldown()
       );
+      this.CHARGE_DURATION = plugin.getConfigManager().getShoulderBargeChargeDurationTicks();
+      this.CHARGE_VELOCITY = plugin.getConfig().getDouble("abilities.tome.shoulderbarge.charge-velocity", 1.5);
+      this.UPWARD_VELOCITY = plugin.getConfigManager().getShoulderBargeUpwardVelocity();
+      this.KNOCKBACK_STRENGTH = plugin.getConfig().getDouble("abilities.tome.shoulderbarge.knockback-strength", 1.2);
+      this.SLOWNESS_DURATION = plugin.getConfig().getInt("abilities.tome.shoulderbarge.slowness-duration-ticks", 300);
+      this.DAMAGE_TO_PLAYERS = plugin.getConfig().getDouble("abilities.tome.shoulderbarge.damage-to-players", 10.0);
+      this.DAMAGE_TO_MOBS = plugin.getConfig().getDouble("abilities.tome.shoulderbarge.damage-to-mobs", 20.0);
+      this.TARGET_COOLDOWN_MS = plugin.getConfigManager().getShoulderBargeTargetCooldownMs();
       Bukkit.getScheduler().runTaskTimer(plugin, this::cleanupOldEntries, 600L, 600L);
    }
 
@@ -57,8 +65,8 @@ public class ShoulderBargeTomeAbility extends TomeAbility {
 
       Vector direction = player.getLocation().getDirection();
       direction.setY(Math.max(direction.getY(), 0.1));
-      Vector chargeVelocity = direction.multiply(1.5);
-      chargeVelocity.setY(0.3);
+      Vector chargeVelocity = direction.multiply(this.CHARGE_VELOCITY);
+      chargeVelocity.setY(UPWARD_VELOCITY);
       player.setVelocity(chargeVelocity);
       player.getWorld().playSound(player.getLocation(), "minecraft:entity.player.attack.crit", 0.8F, 1.2F);
       this.sendSuccessMessage(player, "You lower your shoulder and charge forward!");
@@ -68,7 +76,7 @@ public class ShoulderBargeTomeAbility extends TomeAbility {
       }
 
       BukkitRunnable collisionTask = new BukkitRunnable() {
-         int ticksRemaining = 20;
+         int ticksRemaining = ShoulderBargeTomeAbility.this.CHARGE_DURATION;
 
          public void run() {
             if (this.ticksRemaining > 0 && player.isOnline() && ShoulderBargeTomeAbility.this.chargingPlayers.containsKey(playerId)) {
@@ -87,7 +95,7 @@ public class ShoulderBargeTomeAbility extends TomeAbility {
          }
 
          collisionTask.cancel();
-      }, 20L);
+      }, (long) this.CHARGE_DURATION);
       this.chargingPlayers.put(playerId, chargeTask);
       return true;
    }
@@ -111,7 +119,7 @@ public class ShoulderBargeTomeAbility extends TomeAbility {
             if (!entity.equals(player)) {
                synchronized (this.recentlyBargedEntities) {
                   Long lastBargeTime = this.recentlyBargedEntities.get(entityId);
-                  if (lastBargeTime != null && System.currentTimeMillis() - lastBargeTime < 3000L) {
+                  if (lastBargeTime != null && System.currentTimeMillis() - lastBargeTime < this.TARGET_COOLDOWN_MS) {
                      continue;
                   }
                }
@@ -137,18 +145,12 @@ public class ShoulderBargeTomeAbility extends TomeAbility {
 
       knockbackDirection = knockbackDirection.normalize();
       knockbackDirection.setY(Math.max(knockbackDirection.getY(), 0.2));
-      Vector knockback = knockbackDirection.multiply(1.2);
+      Vector knockback = knockbackDirection.multiply(this.KNOCKBACK_STRENGTH);
       target.setVelocity(knockback);
       if (target instanceof LivingEntity livingTarget) {
-         double damageAmount;
-         if (target instanceof Player) {
-            damageAmount = 10.0;
-         } else {
-            damageAmount = 20.0;
-         }
-
+         double damageAmount = (target instanceof Player) ? this.DAMAGE_TO_PLAYERS : this.DAMAGE_TO_MOBS;
          livingTarget.damage(damageAmount, player);
-         livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 300, 1, false, false));
+         livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, this.SLOWNESS_DURATION, 1, false, false));
       }
 
       player.getWorld().playSound(player.getLocation(), "minecraft:entity.player.attack.knockback", 1.0F, 0.8F);
@@ -166,7 +168,7 @@ public class ShoulderBargeTomeAbility extends TomeAbility {
    private void cleanupOldEntries() {
       long currentTime = System.currentTimeMillis();
       synchronized (this.recentlyBargedEntities) {
-         this.recentlyBargedEntities.entrySet().removeIf(entry -> currentTime - entry.getValue() > 3000L);
+         this.recentlyBargedEntities.entrySet().removeIf(entry -> currentTime - entry.getValue() > this.TARGET_COOLDOWN_MS);
       }
    }
 

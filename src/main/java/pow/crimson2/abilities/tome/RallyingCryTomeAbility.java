@@ -7,9 +7,9 @@ import org.bukkit.potion.PotionEffectType;
 import pow.crimson2.VampireSMPPlugin;
 
 public class RallyingCryTomeAbility extends TomeAbility {
-   private static final int EFFECT_RADIUS = 20;
-   private static final int STRENGTH_DURATION = 600;
-   private static final int STRENGTH_AMPLIFIER = 0;
+   private final double EFFECT_RADIUS;
+   private final int STRENGTH_DURATION;
+   private final int STRENGTH_AMPLIFIER;
 
    public RallyingCryTomeAbility(VampireSMPPlugin plugin) {
       super(
@@ -18,6 +18,9 @@ public class RallyingCryTomeAbility extends TomeAbility {
          new String[]{"You learn the secrets needed to inspire man.", "At your word, you and humans around you", "gain strength for 30 seconds."},
          plugin.getConfigManager().getTomeRallyingCryCooldown()
       );
+      this.EFFECT_RADIUS = plugin.getConfig().getDouble("abilities.tome.rallyingcry.radius", 20.0);
+      this.STRENGTH_DURATION = plugin.getConfig().getInt("abilities.tome.rallyingcry.strength-duration-ticks", 600);
+      this.STRENGTH_AMPLIFIER = plugin.getConfig().getInt("abilities.tome.rallyingcry.strength-amplifier", 0);
    }
 
    @Override
@@ -28,15 +31,15 @@ public class RallyingCryTomeAbility extends TomeAbility {
       }
 
       int affectedCount = 0;
-      player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 600, 0, false, false));
+      player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, this.STRENGTH_DURATION, this.STRENGTH_AMPLIFIER, false, false));
       affectedCount++;
-      List<Player> nearbyHumans = player.getNearbyEntities(20.0, 20.0, 20.0)
+      List<Player> nearbyHumans = player.getNearbyEntities(this.EFFECT_RADIUS, this.EFFECT_RADIUS, this.EFFECT_RADIUS)
          .stream()
          .filter(entity -> entity instanceof Player)
          .map(entity -> (Player)entity)
          .filter(nearbyPlayer -> this.plugin.getVampireManager().isHuman(nearbyPlayer))
          .toList();
-      List<Player> nearbyVampires = player.getNearbyEntities(20.0, 20.0, 20.0)
+      List<Player> nearbyVampires = player.getNearbyEntities(this.EFFECT_RADIUS, this.EFFECT_RADIUS, this.EFFECT_RADIUS)
          .stream()
          .filter(entity -> entity instanceof Player)
          .map(entity -> (Player)entity)
@@ -44,7 +47,7 @@ public class RallyingCryTomeAbility extends TomeAbility {
          .toList();
 
       for (Player nearbyHuman : nearbyHumans) {
-         nearbyHuman.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 600, 0, false, false));
+         nearbyHuman.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, this.STRENGTH_DURATION, this.STRENGTH_AMPLIFIER, false, false));
          nearbyHuman.sendMessage("§6" + player.getName() + "'s rallying cry fills you with strength.");
          affectedCount++;
       }

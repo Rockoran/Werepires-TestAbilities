@@ -32,8 +32,9 @@ public class BatTransformationManager {
    private final VampireSMPPlugin plugin;
    private final ArmorStorageManager armorStorageManager;
    public static final String BAT_FORM_TAG = "bat_form";
-   private static final long BAT_DURATION_TICKS = 2400L;
-   private static final long BAT_DURATION_MS = 120000L;
+   private final long batDurationStage1Ms;
+   private final long batDurationStage2Ms;
+   private final long batDurationStage3Ms;
    private final Map<UUID, BatTransformationManager.BatData> activeBats = new ConcurrentHashMap<>();
    private File batStateFile;
    private BukkitTask batCheckTask;
@@ -41,6 +42,9 @@ public class BatTransformationManager {
    public BatTransformationManager(VampireSMPPlugin plugin) {
       this.plugin = plugin;
       this.armorStorageManager = new ArmorStorageManager(plugin);
+      this.batDurationStage1Ms = plugin.getConfigManager().getVampireBatDurationSeconds(1) * 1000L;
+      this.batDurationStage2Ms = plugin.getConfigManager().getVampireBatDurationSeconds(2) * 1000L;
+      this.batDurationStage3Ms = plugin.getConfigManager().getVampireBatDurationSeconds(3) * 1000L;
       this.setupPersistence();
       this.startBatCheckTask();
       this.loadBatStates();
@@ -192,7 +196,10 @@ public class BatTransformationManager {
 
       try {
          Location currentLoc = player.getLocation().clone();
-         BatTransformationManager.BatData batData = new BatTransformationManager.BatData(System.currentTimeMillis());
+         int stage = this.plugin.getVampireManager().getVampireStage(player);
+         long durationMs = stage >= 3 ? this.batDurationStage3Ms
+                 : (stage == 2 ? this.batDurationStage2Ms : this.batDurationStage1Ms);
+         BatTransformationManager.BatData batData = new BatTransformationManager.BatData(System.currentTimeMillis(), durationMs);
          batData.lastValidLocation = currentLoc;
          boolean armorStored = this.armorStorageManager.storeAndClearPlayerArmor(player.getUniqueId(), player);
          if (armorStored) {
@@ -403,7 +410,7 @@ public class BatTransformationManager {
             if (parts.length == 2) {
                UUID playerId = UUID.fromString(parts[0]);
                long startTime = Long.parseLong(parts[1]);
-               BatTransformationManager.BatData batData = new BatTransformationManager.BatData(startTime);
+               BatTransformationManager.BatData batData = new BatTransformationManager.BatData(startTime, this.batDurationStage1Ms);
                this.activeBats.put(playerId, batData);
             }
          }
@@ -463,9 +470,9 @@ public class BatTransformationManager {
       public BukkitTask transformationTask;
       public Location lastValidLocation;
 
-      public BatData(long startTime) {
+      public BatData(long startTime, long durationMs) {
          this.startTime = startTime;
-         this.endTime = startTime + 120000L;
+         this.endTime = startTime + durationMs;
          this.lastValidLocation = null;
       }
 
