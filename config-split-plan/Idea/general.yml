@@ -1,0 +1,293 @@
+# ============================================================================
+# SERVER / GENERAL
+# ============================================================================
+
+# Require the VampireSMP Compatibility Mod (skins + ghost). Players without it are
+# kicked a few seconds after joining (players with vampiresmp.modgate.bypass — default op — are exempt).
+require-compatibility-mod: true
+
+# Disable non-essential (info-level) logging to reduce console noise.
+# When true, only warnings and errors will appear in console.
+# Default: false (all logging enabled)
+disable-nonessential-logging: false
+
+# Ghost / haunt mode performance.
+# Ghosts fly and noclip freely, so each one loads & ticks chunks wherever it roams. To stop the
+# server lag from stacking with every active ghost, each ghost gets a small per-player view and
+# simulation distance (these only affect ghosts; living players are unaffected). Minimum 2.
+ghost:
+  view-distance: 4        # how many chunks a ghost can see/load (lower = less lag, more fog)
+  simulation-distance: 2  # how many chunks tick around a ghost (lower = less lag)
+
+
+# ============================================================================
+# CORE GAMEPLAY
+# ============================================================================
+
+# Controls the percentage of damage reduction for all players.
+# Valid values: 0-100 (0 = no suppression, 100 = no damage taken). Default: 50
+damage_suppression: 50
+
+# How often vampire health is checked and regenerated (in ticks; 20 ticks = 1 second).
+# Default: 9 ticks (0.45 seconds)
+vampire_health_check_ticks: 9
+
+# Allow players to permanently kill themselves with /pow permakill (a confirmation is shown).
+# Admins can always use /pow admin permakill <player> regardless of this setting.
+allow-self-permakill: true
+
+
+# ============================================================================
+# BROADCAST MESSAGES
+# ============================================================================
+# Use & for color codes. Kept deliberately nameless — a feeling, not a report.
+messages:
+  # Shown to everyone (except the victim) when a human permanently dies. No name is revealed.
+  human-permadeath:
+    enabled: true
+    to-vampires: "&4A mortal soul slips beneath the veil... somewhere, the night grows one heartbeat richer."
+    to-humans: "&cA cold dread settles over you... somewhere, one of the living has drawn their final breath."
+
+
+# ============================================================================
+# CHAT SYSTEM
+# ============================================================================
+chat:
+  # Enable/disable the first message blocking feature for immersion
+  # When enabled, player's first chat message each session is intercepted with an immersion warning
+  # Default: true (blocking enabled)
+  first-message-blocking-enabled: true
+
+  # The message shown when a player's first chat message is blocked
+  # Use [Click Here] to add a clickable link that sends the message - if omitted, no link is shown
+  first-message-blocked-message: "&eIt looks like you've attempted to send a message! Vampire SMP is geared to revolve around immersion, consider finding the person you need to speak to, or messaging them on discord. If you still need to send your chat message, [Click Here]&e. This prevention message will not appear again until your next log on if you do choose to send your message via the blue text."
+
+
+# ============================================================================
+# ── Skin Shuffle: vampire stage skins ──────────────────────────────────────
+# When enabled, the plugin changes a player's skin automatically when they
+# tier up or tier down as a vampire, and restores their original skin on cure.
+# Set each stage to the Minecraft username whose skin should be applied.
+# Leave blank ("") to keep the player's own skin at that stage.
+vampire-skins:
+  enabled: true
+  stage1: ""
+  stage2: ""
+  stage3: ""
+# ============================================================================
+# CURE & HOLY WATER
+# ============================================================================
+cure:
+  # The maximum distance a vampire (and the caster of a force cure, if applicable) can be from a holy beacon.
+  # Default: 25.0 blocks
+  cure-distance: 25.0
+
+  # How many links up the sire chain can still be alive for the cure to be valid.
+  # 1 = only your direct sire must be dead. 2 = sire AND sire's sire must be dead, etc.
+  # Default: 1
+  sire-line-length: 1
+
+  # Controls whether the fledglings of a cured player can be cured. If false, a vampire can be cured only if their direct sire is dead.
+  # Default: false
+  allow-cured-sire: false
+
+  # Controls whether the cure must be performed during the day. If false, the cure can be done any time of day.
+  # Default: true
+  needs-daytime: true
+
+# Whether cure books (1/3, 2/3, 3/3) should spawn in tome chest distribution. Default: true
+cure_books_enabled: true
+
+# Chance for a cure book to spawn in remaining empty chests (0.0 to 1.0). Default: 0.3
+cure_books_spawn_chance: 0.3
+
+# Whether "The Retribution 4/3" book should spawn in tome chests. Default: false
+fourth_book_spawn_enabled: false
+
+# ── Holy water ─────────────────────────────────────────────────────────────
+holy-water:
+  # Duration of the holy water disable effect on vampires (in seconds)
+  # Default: 120 seconds (2 minutes)
+  disable-duration-seconds: 120
+
+
+# ============================================================================
+# REVIVAL — RITE OF RETURN
+# ============================================================================
+# A forbidden ritual that calls a ghost back to life. The reviver must have read all four revival
+# books, hold a vial of vampire blood (consumed), perform it at night, and stand at a desecrated
+# beacon (which is consumed -> reset to neutral). The target ghost must linger nearby.
+# Latin command: /sanguine-et-nocte-te-ex-umbra-revoco <player>
+# Give books for testing: /pow admin give_revival_book <player> <1-4>
+revival:
+  enabled: true
+  # What a revived soul returns as: vampire | human | thrall | ghoul
+  outcome: vampire
+  # Max distance the target ghost (and the desecrated beacon) may be from the reviver
+  range: 25.0
+  # Require night to perform the rite
+  needs-night: true
+  # Spawn revival books in tome chests (like cure books)
+  books-in-chests: true
+  books-spawn-chance: 0.2
+  # In an ominous (cure) vault, chance the reward is a revival book instead of a cure book
+  ominous-vault-revival-chance: 0.5
+  ghoul:
+    # Reduced max health a ghoul revives with (20 = full; 14 = 7 hearts)
+    max-health: 14.0
+
+# ============================================================================
+# TOMES, TOME CHESTS & VAULTS
+# ============================================================================
+
+# How often tomes are distributed to chests (in minutes). Default: 20
+tome-distribution-interval-minutes: 20
+
+tome-chest-items:
+  # How many tome books spawn every time tomes are distributed. The remaining tome chests will be filled with enchanted books.
+  # Default: 4
+  tome-count: 4
+
+  # Which tome abilities will spawn in tome chests (and tome vaults).
+  # If this list is empty, the default is used.
+  tomes-available:
+  - BanishUndead
+  - Blessing
+  - EnlightenedEye
+  - HolyWord
+  - LanternThrash
+  - PrayerOfFaith
+  - RallyingCry
+  - ShoulderBarge
+  #- StopTheBleeding
+  - TurnUndead
+  - UncannyDirection
+  - UnnaturalHaste
+  - WayOfTheLand
+  - WayOfTheLumberjack
+  - WayOfTheProspector
+  - ConsecrateGround
+  - BlessedBlade
+  - Daybreak
+  - Sanctuary
+  - CleansingSmoke
+  - HuntersMark
+  - LastVigil
+
+  # Which enchantments and their level will spawn in the tome chests.
+  # If this list is empty, the default is used.
+  enchantments-available:
+  - efficiency 1
+  - protection 1
+  - feather_falling 1
+  - knockback 1
+  - sweeping_edge 1
+
+  # How many miscellaneous items spawn every time tomes are distributed.
+  # Default: 0
+  misc-items-count: 0
+
+  # Which miscellaneous items (and optional amounts) will spawn in tome chests.
+  misc-items:
+    - SPLASH_POTION # Holy Water
+    - COBWEB 4
+
+# Tome chest locations. Format: "x,y,z" — use /pow admin addtomechest to add in-game.
+tome-chests:
+  locations:
+    - "202,61,-305"
+    - "416,45,-109"
+    - "504,139,398"
+    - "494,125,593"
+    - "153,99,128"
+    - "-19,104,100"
+    - "-125,71,421"
+    - "76,80,407"
+    - "-397, 82, 364"
+
+# Tome / Ominous-Cure vaults: real vanilla VAULT blocks whose reward is swapped to a tome / cure
+# book. They behave exactly like trial-chamber vaults — unlock with a Trial Key (tome) or Ominous
+# Trial Key (cure), once per player, with the loot shown floating above. Manage with
+# /pow admin addtomevault | removetomevault | listtomevault and the addominouscurevault family.
+# Locations are stored below as "world,x,y,z" — edit via the commands, not by hand.
+vaults:
+  tome: []
+  cure: []
+
+# ============================================================================
+# WORLD: SPAWNING & OAKHURST
+# ============================================================================
+passive-mob-spawning:
+  # Enable automatic spawning every in-game morning
+  # Default: true
+  auto-spawn-enabled: true
+
+  # Minimum number of passive animals required before spawning is skipped
+  # If animal count is below this threshold, spawning will occur
+  # Default: 40
+  minimum-animal-threshold: 40
+
+  # Number of animals to spawn per cycle (morning auto-spawn or /pow admin spawnanimals)
+  # Default: 80
+  spawn-count: 80
+
+  # Weighted spawn table — higher weight = more likely to be chosen.
+  # Only EntityType names recognized by Bukkit are valid. Unknown names are skipped with a warning.
+  mob-weights:
+    COW: 30
+    PIG: 30
+    SHEEP: 25
+    CHICKEN: 15
+
+oakhurst:
+  # Alternate name (what to call the map instead of Oakhurst)
+  name: Oakhurst
+
+  # Town center (the main settlement location)
+  # Used for teleportation and direction-based abilities like Uncanny Direction
+  town-center-x: 79
+  town-center-z: 440
+
+  # Teleport radius - how far from town center players can be randomly teleported
+  # Default: 400 blocks
+  teleport-radius: 400
+
+  # Playable area boundary settings
+  # The border is defined by a center point and diameter (total width)
+  border:
+    # Center of the playable area
+    center-x: 50
+    center-z: 50
+    # Total width/height of the playable area (creates a square area)
+    # With center at 50 and diameter 1098: boundaries are -499 to 599
+    diameter: 1098
+
+# ── Human self blood draw ───────────────────────────────────────────────────
+  # Allows humans to sneak + right-click with a glass bottle to draw their own
+  # blood. Produces the same plain experience bottle as animal kill blood.
+  human-blood-draw:
+    # Master switch — set true to enable
+    enabled: false
+    # If true, only humans who are active thralls can draw their own blood
+    thralls-only: true
+    # Hearts of damage the human takes when drawing blood
+    damage-hearts: 2.0
+    # Cooldown between draws (seconds)
+    cooldown-seconds: 30
+
+
+# ============================================================================
+# BLOOD-DRAW SETTINGS
+# ============================================================================
+blood-draw:
+
+  # ── Animal blood collection ─────────────────────────────────────────────────
+  # Extends the original vampire animal-kill system to other player types.
+  # Kill an animal with a glass bottle in your off-hand to collect blood.
+  animal:
+    # Master switch
+    enabled: false
+    # Which player types can collect animal blood this way
+    allow-vampires: true   # true preserves vanilla vampire behaviour
+    allow-humans: true
+    allow-thralls: true

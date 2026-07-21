@@ -1,0 +1,91 @@
+# ============================================================================
+#                         WEREWOLF CONFIGURATION
+# ============================================================================
+# All werewolf-specific settings: combat, biting, pack, hunger, and spawning.
+# ============================================================================
+
+
+# ============================================================================
+# WEREWOLF SETTINGS
+# ============================================================================
+werewolf:
+
+  # ── Werewolf combat ────────────────────────────────────────────────────────
+  combat:
+    # Damage multiplier applied when hitting a werewolf with an iron weapon (silver weakness)
+    silver-weakness-multiplier: 1.75
+
+    # Bare-fist damage multipliers per stage
+    fist-multiplier-stage2: 1.5
+    fist-multiplier-stage3: 2.5
+
+  # ── Biting (turning) ───────────────────────────────────────────────────────
+  biting:
+    # Maximum distance (in blocks) between biter and victim before the bite is cancelled
+    max-distance: 3.5
+
+    # Ticks of continuous biting before the victim receives a warning message
+    notify-ticks: 200
+
+    # Total ticks from bite start until turning completes
+    complete-ticks: 300
+
+  # ── Pack bonus ─────────────────────────────────────────────────────────────
+  pack:
+    # Radius in blocks to search for nearby pack members
+    radius: 20.0
+
+    # Duration (in ticks) that pack potion effects last before the next refresh cycle
+    effect-duration-ticks: 80
+
+    # How often (in ticks) the pack bonus is recalculated and reapplied
+    check-interval-ticks: 60
+
+  # ── Hunger ─────────────────────────────────────────────────────────────────
+  hunger:
+    # Minutes for the hunger bar to drain completely from 1.0 to 0.0
+    depletion-minutes: 20
+
+    # How much the hunger bar fills per piece of meat eaten (0.0 - 1.0)
+    hunger-per-meat: 0.10
+
+    # Minutes of hunger immunity granted after a stage promotion or demotion.
+    immunity-minutes: 15
+
+  # ── Werewolf ability cooldowns (seconds) ───────────────────────────────────
+  # (Full ability tuning lives in abilities.yml under werewolf.abilities)
+  abilities:
+    feral-charge-cooldown: 12
+    feral-charge-power-stage2: 2.0
+    feral-charge-power-stage3: 3.0
+
+
+# ============================================================================
+# WORLD: SPAWNING & OAKHURST
+# ============================================================================
+passive-mob-spawning:
+  # Enable automatic spawning every in-game morning
+  auto-spawn-enabled: true
+
+  # Minimum number of passive animals required before spawning is skipped
+  minimum-animal-threshold: 40
+
+  # Number of animals to spawn per cycle
+  spawn-count: 80
+
+  # Weighted spawn table — higher weight = more likely to be chosen.
+  mob-weights:
+    COW: 30
+    PIG: 30
+    SHEEP: 25
+    CHICKEN: 15
+
+oakhurst:
+  name: Oakhurst
+  town-center-x: 79
+  town-center-z: 440
+  teleport-radius: 400
+  border:
+    center-x: 50
+    center-z: 50
+    diameter: 1098

@@ -1,0 +1,75 @@
+# ============================================================================
+# WEREWOLF SETTINGS
+# ============================================================================
+werewolf:
+
+  # ── Werewolf combat ────────────────────────────────────────────────────────
+  combat:
+    # Damage multiplier applied when hitting a werewolf with an iron weapon (silver weakness)
+    # Default: 1.75 (75% extra damage on top of base)
+    silver-weakness-multiplier: 1.75
+
+    # Bare-fist damage multipliers per stage (applied to base hit damage)
+    # Stage 1 has no bonus. Stage 2 and 3 gain increasing claw power.
+    # Default stage 2: 1.5, stage 3: 2.5
+    fist-multiplier-stage2: 1.5
+    fist-multiplier-stage3: 2.5
+
+  # ── Biting (turning) ───────────────────────────────────────────────────────
+  biting:
+    # Maximum distance (in blocks) between biter and victim before the bite is cancelled
+    # Default: 3.5 blocks
+    max-distance: 3.5
+
+    # Ticks of continuous biting before the victim receives a warning message (20 ticks = 1 second)
+    # Default: 200 ticks (10 seconds)
+    notify-ticks: 200
+
+    # Total ticks from bite start until turning completes
+    # Default: 300 ticks (15 seconds total — 10s silent + 5s after notification)
+    complete-ticks: 300
+
+  # ── Pack bonus ─────────────────────────────────────────────────────────────
+  pack:
+    # Radius in blocks to search for nearby pack members
+    # Default: 20.0 blocks
+    radius: 20.0
+
+    # Duration (in ticks) that pack potion effects last before the next refresh cycle
+    # Should be slightly longer than check-interval-ticks to avoid gaps
+    # Default: 80 ticks (4 seconds)
+    effect-duration-ticks: 80
+
+    # How often (in ticks) the pack bonus is recalculated and reapplied
+    # Default: 60 ticks (3 seconds)
+    check-interval-ticks: 60
+
+  # ── Hunger (mirrors ThirstManager — bar drains over time, meat refills it) ──
+  # Hitting 1.0 promotes the wolf; hitting 0.0 demotes and stage-caps them.
+  # After any stage change, 15-minute immunity prevents immediate drain.
+  hunger:
+    # Minutes for the hunger bar to drain completely from 1.0 to 0.0
+    # Default: 20
+    depletion-minutes: 20
+
+    # How much the hunger bar fills per piece of meat eaten (0.0 - 1.0)
+    # 0.10 = 10 pieces fills the bar from empty; bar starts at 0.25 after promotion
+    # Default: 0.10
+    hunger-per-meat: 0.10
+
+    # Minutes of hunger immunity granted after a stage promotion or demotion.
+    # Default: 15 minutes
+    immunity-minutes: 15
+
+  # ── Werewolf ability cooldowns (seconds) ───────────────────────────────────
+  abilities:
+    # Feral Charge cooldown (default: 12 seconds)
+    feral-charge-cooldown: 12
+
+    # Feral Charge launch power per stage (velocity multiplier)
+    # Stage 2: forward burst, Stage 3: stronger burst
+    # Default stage 2: 2.0, stage 3: 3.0
+    feral-charge-power-stage2: 2.0
+    feral-charge-power-stage3: 3.0
+
+

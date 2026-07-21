@@ -1,0 +1,68 @@
+﻿# ============================================================================
+#                        WEREWOLF CONFIGURATION
+# ============================================================================
+# All werewolf-specific settings: combat, biting, pack, hunger, and abilities.
+# ============================================================================
+
+
+# ============================================================================
+# WEREWOLF SETTINGS
+# ============================================================================
+werewolf:
+
+  # ── Combat ─────────────────────────────────────────────────────────────────
+  combat:
+    # Damage multiplier when hitting a werewolf with an iron weapon (silver weakness).
+    silver-weakness-multiplier: 1.75
+
+    # Bare-fist damage multipliers per stage (applied to base hit damage).
+    # Stage 1 has no bonus. Stage 2 and 3 gain increasing claw power.
+    fist-multiplier-stage2: 1.5
+    fist-multiplier-stage3: 2.5
+
+  # ── Biting (turning) ───────────────────────────────────────────────────────
+  biting:
+    # Maximum distance (blocks) between biter and victim before the bite is cancelled.
+    max-distance: 3.5
+
+    # Ticks of continuous biting before the victim receives a warning message.
+    notify-ticks: 200
+
+    # Total ticks from bite start until turning completes.
+    complete-ticks: 300
+
+  # ── Pack bonus ─────────────────────────────────────────────────────────────
+  pack:
+    # Radius in blocks to search for nearby pack members.
+    radius: 20.0
+
+    # Duration (ticks) that pack potion effects last before the next refresh cycle.
+    # Should be slightly longer than check-interval-ticks to avoid gaps.
+    effect-duration-ticks: 80
+
+    # How often (ticks) the pack bonus is recalculated and reapplied.
+    check-interval-ticks: 60
+
+  # ── Hunger ─────────────────────────────────────────────────────────────────
+  # Bar drains over time; meat refills it. Hitting 1.0 promotes the wolf;
+  # hitting 0.0 demotes and stage-caps them.
+  # After any stage change, immunity-minutes prevents immediate drain.
+  hunger:
+    # Minutes for the hunger bar to drain from 1.0 to 0.0.
+    depletion-minutes: 20
+
+    # How much the hunger bar fills per piece of meat eaten (0.0 - 1.0).
+    # 0.10 = 10 pieces fills the bar from empty.
+    hunger-per-meat: 0.10
+
+    # Minutes of immunity granted after a stage promotion or demotion.
+    immunity-minutes: 15
+
+  # ── Abilities ──────────────────────────────────────────────────────────────
+  abilities:
+    # Feral Charge cooldown (seconds).
+    feral-charge-cooldown: 12
+
+    # Feral Charge launch power per stage (velocity multiplier).
+    feral-charge-power-stage2: 2.0
+    feral-charge-power-stage3: 3.0

@@ -1,0 +1,182 @@
+﻿# ============================================================================
+#                          THRALL CONFIGURATION
+# ============================================================================
+# All thrall bond, progression, withdrawal, commands, and cooldown settings.
+# ============================================================================
+
+
+# ============================================================================
+# THRALL SYSTEM
+# ============================================================================
+thrall:
+
+  # Maximum thralls any one vampire can own (0 = no limit).
+  max-thralls: 3
+
+  # Global cap on total active thralls across the server (0 = no limit).
+  global-cap: 0
+
+  # Allow a thrall to be bonded to two separate masters simultaneously.
+  dual-master-enabled: true
+
+  # Automatically sever thrall bonds when the thrall turns vampire.
+  auto-unthrall-enabled: true
+
+  # Stage progression mode:
+  #   "bottles" — accumulate blood bottles to advance stages
+  #   "timer"   — one dose per N minutes advances a stage
+  stage-mode: "bottles"
+
+  # ── Bottles mode: bottles required to reach each stage ────────────────────
+  bottles:
+    stage1: 1
+    stage2: 3
+    stage3: 6
+
+  # ── Timer mode: minutes between doses (one dose = one stage level) ─────────
+  timer:
+    dose-minutes: 60
+
+  # ── Command success probability (%) ───────────────────────────────────────
+  # Primary master: stage1 & stage2 use these; stage3 always succeeds.
+  chance-stage1: 50
+  chance-stage2: 80
+  # Secondary master probabilities per stage.
+  secondary-chance-stage1: 25
+  secondary-chance-stage2: 50
+  secondary-chance-stage3: 75
+
+  # ── Blood draw ─────────────────────────────────────────────────────────────
+  blood-draw:
+    enabled: true
+    # Which vampire stages are allowed to bottle their own blood.
+    stage1: false
+    stage2: true
+    stage3: true
+    # Hearts of damage taken when drawing blood (1 = half a heart displayed).
+    damage-hearts: 2.0
+    # Cooldown between draws (seconds).
+    cooldown-seconds: 30
+    # Whether character profile names/tastes are embedded into blood bottle lore.
+    profiles-in-bottles: true
+
+  # ── Withdrawal ─────────────────────────────────────────────────────────────
+  withdrawal:
+    enabled: true
+    # Seconds after the last blood dose before withdrawal countdown begins.
+    seconds: 3600
+    # Warn the thrall at this many seconds remaining.
+    warn-seconds: 120
+    # Final warning at this many seconds remaining.
+    final-warn-seconds: 10
+    # Cooldown between poison pulses once withdrawal is active (seconds).
+    pulse-cooldown-seconds: 60
+    # Duration of each poison pulse (seconds).
+    poison-seconds: 8
+    # Deduction mode each pulse: none / deduct / deductAfterFirst / alternating
+    deduct-mode: "none"
+    # What is deducted: "bottle" or "stage"
+    deduct-type: "bottle"
+    # Amount deducted per pulse.
+    deduct-amount: 1
+
+  # ── Separation anxiety (Stage 2+) ─────────────────────────────────────────
+  sep-anxiety:
+    enabled: true
+    # Distance from primary master that triggers anxiety (blocks).
+    range: 150.0
+    # Seconds between anxiety pulses.
+    pulse-seconds: 30
+    # Duration of each effect (seconds).
+    nausea-seconds: 6
+    weakness-seconds: 8
+    slowness-seconds: 8
+
+  # ── Boss bar ───────────────────────────────────────────────────────────────
+  boss-bar:
+    enabled: true
+
+  # ── Force offer (Stage 2+ vampires) ───────────────────────────────────────
+  force:
+    enabled: true
+    # Max block distance from vampire to target.
+    range: 5.0
+    # Seconds the offer GUI stays open before auto-declining.
+    offer-seconds: 30
+
+  # ── Holy water ─────────────────────────────────────────────────────────────
+  holy-water:
+    enabled: true
+    # true = gradual reduce; false = instant bond break
+    gradual: true
+    # Mode: "bottle" (reduce bottle count) or "stage" (reduce stage level)
+    mode: "bottle"
+    # How many bottles/stages to reduce per hit.
+    bottle-decrease: 2
+    stage-decrease: 1
+
+  # ── Stay command ───────────────────────────────────────────────────────────
+  stay:
+    enabled: true
+    max-seconds: 60
+
+  # ── Punish command ─────────────────────────────────────────────────────────
+  punish:
+    enabled: true
+    range: 10.0
+    duration-seconds: 8
+
+  # ── Command (roleplay instructions to thralls) ─────────────────────────────
+  command:
+    enabled: true
+    # How long (seconds) the command text persists in the thrall's data.
+    expiry-seconds: 120
+
+  # ── Locate / findthrall ────────────────────────────────────────────────────
+  locate:
+    enabled: true
+    # Seconds between location ping updates shown to the tracking vampire.
+    track-pulse-seconds: 5
+
+  # ── Findmaster ─────────────────────────────────────────────────────────────
+  findmaster:
+    enabled: true
+
+  # ── Blood taste ────────────────────────────────────────────────────────────
+  blood-taste:
+    enabled: true
+    # Block range to detect a nearby player's taste.
+    range: 5.0
+    cooldown-seconds: 30
+    # Whether to include the character's name in the taste message.
+    show-name: true
+    # Display mode: "actionbar" or "chat"
+    mode: "actionbar"
+
+  # ── Tag offer (Stage 3 threshold choice) ───────────────────────────────────
+  tag-offer:
+    enabled: true
+    # Scoreboard tag added if the thrall chooses "Swear to Vampirism".
+    vampire-tag: "CuredVampire"
+
+  # ── Profiles ───────────────────────────────────────────────────────────────
+  profiles:
+    max: 5
+
+  # ── Command cooldowns (seconds) ────────────────────────────────────────────
+  cooldowns:
+    force-seconds: 600
+    stay-seconds: 120
+    punish-seconds: 60
+    command-seconds: 30
+    locate-seconds: 5
+
+  # ── Human self blood draw ───────────────────────────────────────────────────
+  # Allows humans to sneak + right-click with a glass bottle to draw their
+  # own blood.
+  human-blood-draw:
+    enabled: false
+    # If true, only humans who are active thralls can draw their own blood.
+    thralls-only: true
+    damage-hearts: 2.0
+    cooldown-seconds: 30

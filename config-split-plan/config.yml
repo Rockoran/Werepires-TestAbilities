@@ -1,0 +1,304 @@
+# ============================================================================
+#                        VampireSMP Configuration File
+# ----------------------------------------------------------------------------
+# Supplementary configs are split into:
+#   abilities.yml  — all ability cooldowns and tuning
+#   combat.yml     — beacons, iron weakness, garlic, cure, permadeath
+#   werewolf.yml   — werewolf settings, pack, hunger, spawning
+# ============================================================================
+
+
+# ============================================================================
+# WEREPIRES NETWORK
+# ============================================================================
+werepires-network:
+  server-key: ""
+  worlds-repo: "Rockoran/werepires-world1"
+
+
+# ============================================================================
+# SERVER / GENERAL
+# ============================================================================
+require-compatibility-mod: true
+disable-nonessential-logging: false
+
+ghost:
+  view-distance: 4
+  simulation-distance: 2
+
+
+# ============================================================================
+# CORE GAMEPLAY
+# ============================================================================
+damage_suppression: 50
+vampire_health_check_ticks: 9
+allow-self-permakill: true
+
+
+# ============================================================================
+# BROADCAST MESSAGES
+# ============================================================================
+messages:
+  human-permadeath:
+    enabled: true
+    to-vampires: "&4A mortal soul slips beneath the veil... somewhere, the night grows one heartbeat richer."
+    to-humans: "&cA cold dread settles over you... somewhere, one of the living has drawn their final breath."
+
+
+# ============================================================================
+# CHAT SYSTEM
+# ============================================================================
+chat:
+  first-message-blocking-enabled: true
+  first-message-blocked-message: "&eIt looks like you've attempted to send a message! Vampire SMP is geared to revolve around immersion, consider finding the person you need to speak to, or messaging them on discord. If you still need to send your chat message, [Click Here]&e. This prevention message will not appear again until your next log on if you do choose to send your message via the blue text."
+
+
+# ============================================================================
+# VAMPIRE SETTINGS
+# ============================================================================
+vampire:
+  respawn-location: "40,101,-113"
+  disable-turning-after-turn: true
+
+vampire-indicator:
+  enabled: true
+  duration-seconds: 120
+  distance: 0
+  tracker: true
+  minimum-stage: 1
+
+thirst:
+  depletion-minutes: 120
+  max-feeding-per-session: 60
+
+vampire-skins:
+  enabled: true
+  stage1: ""
+  stage2: ""
+  stage3: ""
+
+
+# ============================================================================
+# TOMES, TOME CHESTS & VAULTS
+# ============================================================================
+tome-distribution-interval-minutes: 20
+
+tome-chest-items:
+  tome-count: 4
+  tomes-available:
+  - BanishUndead
+  - Blessing
+  - EnlightenedEye
+  - HolyWord
+  - LanternThrash
+  - PrayerOfFaith
+  - RallyingCry
+  - ShoulderBarge
+  #- StopTheBleeding
+  - TurnUndead
+  - UncannyDirection
+  - UnnaturalHaste
+  - WayOfTheLand
+  - WayOfTheLumberjack
+  - WayOfTheProspector
+  - ConsecrateGround
+  - BlessedBlade
+  - Daybreak
+  - Sanctuary
+  - CleansingSmoke
+  - HuntersMark
+  - LastVigil
+
+  enchantments-available:
+  - efficiency 1
+  - protection 1
+  - feather_falling 1
+  - knockback 1
+  - sweeping_edge 1
+
+  misc-items-count: 0
+  misc-items:
+    - SPLASH_POTION
+    - COBWEB 4
+
+tome-chests:
+  locations:
+    - "202,61,-305"
+    - "416,45,-109"
+    - "504,139,398"
+    - "494,125,593"
+    - "153,99,128"
+    - "-19,104,100"
+    - "-125,71,421"
+    - "76,80,407"
+    - "-397, 82, 364"
+
+vaults:
+  tome: []
+  cure: []
+
+
+# ============================================================================
+# THRALL SYSTEM
+# ============================================================================
+thrall:
+  max-thralls: 3
+  global-cap: 0
+  dual-master-enabled: true
+  auto-unthrall-enabled: true
+  stage-mode: "bottles"
+
+  bottles:
+    stage1: 1
+    stage2: 3
+    stage3: 6
+
+  timer:
+    dose-minutes: 60
+
+  chance-stage1: 50
+  chance-stage2: 80
+  secondary-chance-stage1: 25
+  secondary-chance-stage2: 50
+  secondary-chance-stage3: 75
+
+  blood-draw:
+    enabled: true
+    stage1: false
+    stage2: true
+    stage3: true
+    damage-hearts: 2.0
+    cooldown-seconds: 30
+    profiles-in-bottles: true
+
+  withdrawal:
+    enabled: true
+    seconds: 3600
+    warn-seconds: 120
+    final-warn-seconds: 10
+    pulse-cooldown-seconds: 60
+    poison-seconds: 8
+    deduct-mode: "none"
+    deduct-type: "bottle"
+    deduct-amount: 1
+
+  sep-anxiety:
+    enabled: true
+    range: 150.0
+    pulse-seconds: 30
+    nausea-seconds: 6
+    weakness-seconds: 8
+    slowness-seconds: 8
+
+  boss-bar:
+    enabled: true
+
+  force:
+    enabled: true
+    range: 5.0
+    offer-seconds: 30
+
+  holy-water:
+    enabled: true
+    gradual: true
+    mode: "bottle"
+    bottle-decrease: 2
+    stage-decrease: 1
+
+  stay:
+    enabled: true
+    max-seconds: 60
+
+  punish:
+    enabled: true
+    range: 10.0
+    duration-seconds: 8
+
+  command:
+    enabled: true
+    expiry-seconds: 120
+
+  locate:
+    enabled: true
+    track-pulse-seconds: 5
+
+  findmaster:
+    enabled: true
+
+  blood-taste:
+    enabled: true
+    range: 5.0
+    cooldown-seconds: 30
+    show-name: true
+    mode: "actionbar"
+
+  tag-offer:
+    enabled: true
+    vampire-tag: "CuredVampire"
+
+  profiles:
+    max: 5
+
+  cooldowns:
+    force-seconds: 600
+    stay-seconds: 120
+    punish-seconds: 60
+    command-seconds: 30
+    locate-seconds: 5
+
+  human-blood-draw:
+    enabled: false
+    thralls-only: true
+    damage-hearts: 2.0
+    cooldown-seconds: 30
+
+
+# ============================================================================
+# BLOOD-DRAW SETTINGS
+# ============================================================================
+blood-draw:
+  animal:
+    enabled: false
+    allow-vampires: true
+    allow-humans: true
+    allow-thralls: true
+
+
+# ============================================================================
+# STARTER KIT SYSTEM
+# ============================================================================
+starterkit:
+  enabled: true
+  add-tools: true
+  add-food: true
+  add-bread: true
+  add-torches: true
+  add-book: true
+  add-armor: true
+  add-builder: true
+  add-vampire-exp: true
+  add-player-specific-items: true
+
+  jowoker-custom-enabled: true
+  lucifer-custom-enabled: true
+  marlow-custom-enabled: true
+  flynnley-custom-enabled: true
+  ludwig-custom-enabled: true
+  worven-custom-enabled: true
+
+  join-kit-delay: 40
+  builder-max-stacks: 4
+  broadcast-kitstart: true
+  broadcast-kitstop: true
+  broadcast-kitall: true
+  broadcast-kitgive: false
+
+
+# ============================================================================
+# INTERNAL STATE TRACKING - DO NOT MODIFY
+# ============================================================================
+first_beacon_converted: false
+humans_own_all_beacons: false
+vampires_own_all_beacons: false
+one_human_left: false
+fourth_book_has_spawned: false

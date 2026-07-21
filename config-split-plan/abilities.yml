@@ -1,0 +1,246 @@
+# ============================================================================
+#                          ABILITIES CONFIGURATION
+# ============================================================================
+# All ability cooldowns and tuning parameters for vampires, werewolves, and
+# human tome abilities.
+# ============================================================================
+
+
+# ============================================================================
+# VAMPIRE ABILITIES  (cooldowns in seconds; 20 ticks = 1 second)
+# ============================================================================
+abilities:
+  vampire:
+    # Bat transformation cooldown (default: 900 seconds = 15 minutes)
+    bat-cooldown: 900
+    bat-cooldown-stage1: 900
+    bat-cooldown-stage2: 900
+    bat-cooldown-stage3: 900
+
+    # Bat form duration in seconds per stage
+    bat-duration-seconds: 120
+    bat-duration-seconds-stage1: 120
+    bat-duration-seconds-stage2: 120
+    bat-duration-seconds-stage3: 180
+
+    # Lunge attack cooldown in seconds
+    lunge-cooldown: 45
+    lunge-cooldown-stage2: 45
+    lunge-cooldown-stage3: 45
+
+    # Lunge launch power per stage (velocity multiplier)
+    lunge-strength-stage2: 2.0
+    lunge-strength-stage3: 2.5
+
+    # Vanish/Invisibility cooldown in seconds
+    vanish-cooldown: 420
+    vanish-cooldown-stage2: 420
+    vanish-cooldown-stage3: 420
+
+    # Vanish duration in seconds per stage
+    vanish-duration-seconds-stage2: 120
+    vanish-duration-seconds-stage3: 240
+
+    # Vanish: number of attacks before invisibility breaks
+    vanish-attack-limit-stage2: 3
+    vanish-attack-limit-stage3: 3
+
+    # Storm Call cooldown and duration
+    storm-call-cooldown: 7200
+    storm-call-duration-seconds: 600
+
+    # Shadow Travel (Beacon Teleport)
+    beacon-teleport-channel-ticks: 100
+    beacon-teleport-cooldown: 300
+    beacon-teleport-cooldown-stage2: 300
+    beacon-teleport-cooldown-stage3: 300
+    beacon-teleport-require-full-health: true
+
+    # Vampire Vision cooldown
+    vampire-vision-cooldown: 1
+
+    # ── New vampire abilities ────────────────────────────────────────────────
+    mistform:
+      enabled: true
+      cooldown: 30
+      distance: 8.0
+      protect-ticks: 30
+    sanguinebite:
+      enabled: true
+      cooldown: 20
+      range: 4.0
+      damage: 4.0
+      heal: 6.0
+      quench: 15
+    hypnoticgaze:
+      enabled: true
+      cooldown: 45
+      range: 12
+      duration-ticks: 100
+      slowness-amplifier: 2
+      blindness-ticks: 60
+    bloodscent:
+      enabled: true
+      cooldown: 30
+      radius: 40.0
+      health-threshold: 10.0
+      duration-ticks: 200
+      interval-ticks: 10
+    crimsonveil:
+      enabled: true
+      cooldown: 120
+      radius: 8.0
+      duration-ticks: 200
+      interval-ticks: 20
+      vampire-regen-amplifier: 0
+      human-weakness-amplifier: 0
+    callswarm:
+      enabled: true
+      cooldown: 60
+      radius: 10.0
+      duration-ticks: 120
+      chip-damage: 1.0
+      blindness-ticks: 40
+      spawn-bats: true
+      bat-count: 6
+    sirescommand:
+      enabled: true
+      cooldown: 90
+      duration-ticks: 200
+      strength-amplifier: 0
+      speed-amplifier: 0
+
+
+# ============================================================================
+# TOME (HUMAN) ABILITIES
+# ============================================================================
+  tome:
+    # ── Cooldowns ────────────────────────────────────────────────────────────
+    blessing-cooldown: 7200
+    banish-undead-cooldown: 900
+    holy-word-cooldown: 600
+    enlightened-eye-cooldown: 900
+    lantern-thrash-cooldown: 300
+    prayer-of-faith-cooldown: 900
+    rallying-cry-cooldown: 1200
+    shoulder-barge-cooldown: 300
+    turn-undead-cooldown: 1800
+    uncanny-direction-cooldown: 30
+    unnatural-haste-cooldown: 900
+    way-of-the-land-cooldown: 600
+    way-of-the-lumberjack-cooldown: 600
+    way-of-the-prospector-cooldown: 600
+    stop-the-bleeding-cooldown: 7200
+
+    # ── Classic tome ability tuning ──────────────────────────────────────────
+    banishundead:
+      radius: 40
+    lanthrash:
+      fire-radius: 6
+      fire-inner-radius: 2
+      fire-resistance-duration-ticks: 6000
+    rallyingcry:
+      radius: 20.0
+      strength-duration-ticks: 600
+      strength-amplifier: 0
+    shoulderbarge:
+      charge-velocity: 1.5
+      knockback-strength: 1.2
+      slowness-duration-ticks: 300
+      damage-to-players: 10.0
+      damage-to-mobs: 20.0
+    turnundead:
+      disguise-duration-ticks: 6000
+      darkness-ticks: 200
+      slowness-ticks: 100
+    unnaturalhaste:
+      haste-duration-ticks: 6000
+      haste-amplifier: 1
+    prayeroffaith:
+      channel-seconds: 60
+      absorption-duration-ticks: 12000
+      absorption-amplifier: 2
+    stopthebleeding:
+      channel-ticks: 1200
+      proximity-distance: 2.0
+    enlightenedeye:
+      night-vision-duration-ticks: 6000
+    wayoftheland:
+      double-drop-chance: 0.75
+    wayofthelumberjack:
+      double-drop-chance: 0.30
+
+    # ── New tome abilities ───────────────────────────────────────────────────
+    consecrateground:
+      enabled: true
+      cooldown: 120
+      radius: 6.0
+      duration-ticks: 200
+      interval-ticks: 20
+      vampire-damage: 1.0
+    blessedblade:
+      enabled: true
+      cooldown: 90
+      duration-ticks: 200
+      bonus-multiplier: 1.5
+      weaken-ticks: 100
+      weaken-amplifier: 0
+    daybreak:
+      enabled: true
+      cooldown: 120
+      radius: 5.0
+      duration-ticks: 100
+      interval-ticks: 20
+      vampire-damage: 2.0
+      fire-ticks: 40
+    sanctuary:
+      enabled: true
+      cooldown: 120
+      radius: 6.0
+      duration-ticks: 100
+      resistance-amplifier: 3
+    cleansingsmoke:
+      enabled: true
+      cooldown: 90
+      radius: 6.0
+      shield-ticks: 120
+      vampire-weaken-ticks: 100
+      knockback: 1.2
+    huntersmark:
+      enabled: true
+      cooldown: 90
+      range: 24
+      duration-ticks: 300
+    lastvigil:
+      enabled: true
+      cooldown: 120
+      duration-ticks: 120
+      resistance-amplifier: 2
+      regeneration-amplifier: 1
+      absorption-amplifier: 1
+    firebreath:
+      cooldown: 600
+      range: 8.0
+      cone-angle: 35.0
+      duration-ticks: 20
+      particles-per-tick: 28
+      damage: 4.0
+      fire-ticks: 100
+    bluefirebreath:
+      cooldown: 900
+      range: 12.0
+      cone-angle: 28.0
+      duration-ticks: 25
+      particles-per-tick: 32
+      damage: 6.0
+      fire-ticks: 160
+
+
+# ============================================================================
+# WEREWOLF ABILITIES
+# ============================================================================
+werewolf:
+  abilities:
+    feral-charge-cooldown: 12
+    feral-charge-power-stage2: 2.0
+    feral-charge-power-stage3: 3.0

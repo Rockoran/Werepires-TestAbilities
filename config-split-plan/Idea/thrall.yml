@@ -1,0 +1,105 @@
+    warn-seconds: 120
+    # Final warning at this many seconds remaining
+    final-warn-seconds: 10
+    # Cooldown between poison pulses once withdrawal is active (seconds)
+    pulse-cooldown-seconds: 60
+    # Duration of each poison pulse (seconds)
+    poison-seconds: 8
+    # Deduction mode each pulse: none / deduct / deductAfterFirst / alternating
+    deduct-mode: "none"
+    # What is deducted: "bottle" or "stage"
+    deduct-type: "bottle"
+    # Amount deducted per pulse
+    deduct-amount: 1
+
+  # ── Separation anxiety (Stage 2+) ─────────────────────────────────────────
+  sep-anxiety:
+    enabled: true
+    # Distance from primary master that triggers anxiety (blocks)
+    range: 150.0
+    # Seconds between anxiety pulses
+    pulse-seconds: 30
+    # Duration of each effect (seconds)
+    nausea-seconds: 6
+    weakness-seconds: 8
+    slowness-seconds: 8
+
+  # ── Boss bar ───────────────────────────────────────────────────────────────
+  boss-bar:
+    enabled: true
+
+  # ── Force offer (Stage 2+ vampires) ───────────────────────────────────────
+  force:
+    enabled: true
+    # Max block distance from vampire to target
+    range: 5.0
+    # Seconds the offer GUI stays open before auto-declining
+    offer-seconds: 30
+
+  # ── Holy water ─────────────────────────────────────────────────────────────
+  holy-water:
+    enabled: true
+    # true = gradual reduce; false = instant bond break
+    gradual: true
+    # Mode: "bottle" (reduce bottle count) or "stage" (reduce stage level)
+    mode: "bottle"
+    # How many bottles/stages to reduce per hit
+    bottle-decrease: 2
+    stage-decrease: 1
+
+  # ── Stay command ───────────────────────────────────────────────────────────
+  stay:
+    enabled: true
+    max-seconds: 60
+
+  # ── Punish command ─────────────────────────────────────────────────────────
+  punish:
+    enabled: true
+    range: 10.0
+    duration-seconds: 8
+
+  # ── Command (roleplay instructions to thralls) ─────────────────────────────
+  command:
+    enabled: true
+    # How long (seconds) the command text persists in the thrall's data
+    expiry-seconds: 120
+
+  # ── Locate / findthrall ────────────────────────────────────────────────────
+  locate:
+    enabled: true
+    # Seconds between location ping updates shown to the tracking vampire
+    track-pulse-seconds: 5
+
+  # ── Findmaster ─────────────────────────────────────────────────────────────
+  findmaster:
+    enabled: true
+
+  # ── Blood taste (vampire detects a nearby thrall's character profile) ───────
+  blood-taste:
+    enabled: true
+    # Block range to detect a nearby player's taste
+    range: 5.0
+    # Cooldown between taste readings (seconds)
+    cooldown-seconds: 30
+    # Whether to include the character's name in the taste message
+    show-name: true
+    # Display mode: "actionbar" or "chat"
+    mode: "actionbar"
+
+  # ── Tag offer (Stage 3 threshold choice) ───────────────────────────────────
+  tag-offer:
+    enabled: true
+    # Scoreboard tag added if the thrall chooses "Swear to Vampirism"
+    vampire-tag: "CuredVampire"
+
+  # ── Profiles ───────────────────────────────────────────────────────────────
+  profiles:
+    max: 5
+
+  # ── Command cooldowns (seconds) ────────────────────────────────────────────
+  cooldowns:
+    force-seconds: 600
+    stay-seconds: 120
+    punish-seconds: 60
+    command-seconds: 30
+    locate-seconds: 5

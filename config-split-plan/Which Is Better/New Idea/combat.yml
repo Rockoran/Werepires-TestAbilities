@@ -1,0 +1,62 @@
+﻿# ============================================================================
+#                         COMBAT CONFIGURATION
+# ============================================================================
+# Iron weakness, garlic, and combat/permadeath settings.
+# ============================================================================
+
+
+# ============================================================================
+# IRON WEAKNESS
+# ============================================================================
+# Stage 2+ vampires are repelled by iron blocks and weakened near iron items.
+iron-weakness:
+  # Distance (blocks) at which an iron block physically repels the vampire.
+  repel-distance: 2.0
+
+  # Velocity applied when repelling a vampire from an iron block.
+  repel-strength: 0.5
+
+  # Radius (blocks) checked each second for iron proximity weakness.
+  proximity-radius: 5.0
+
+  # Duration of the Weakness effect applied when near iron (in ticks).
+  # Should be slightly longer than the check interval (20 ticks) to stay continuous.
+  weakness-duration-ticks: 40
+
+  # Amplifier of the Weakness effect (0 = Weakness I, 1 = Weakness II, 2 = Weakness III).
+  weakness-amplifier: 2
+
+
+# ============================================================================
+# GARLIC (BEETROOT) SYSTEM
+# ============================================================================
+garlic:
+  # Processing time range in seconds (time for garlic to take effect after eating).
+  processing-time-min-seconds: 480
+  processing-time-max-seconds: 720
+
+  # Immunity duration range in seconds (how long immunity lasts).
+  immunity-duration-min-seconds: 480
+  immunity-duration-max-seconds: 600
+
+
+# ============================================================================
+# COMBAT & PERMADEATH
+# ============================================================================
+combat:
+  # Maximum HP cap imposed on vampires during the "one human left" Final Stand phase.
+  humans-final-stand-health-cap: 6.0
+
+  # Maximum deaths recorded on the scoreboard for a human player (excess is clamped).
+  human-death-score-cap: 5
+
+  # HP penalty subtracted per death for humans under beacon majority bonus.
+  human-death-hp-penalty: 2.0
+
+  # Maximum vampire stage that can be staked for permadeath.
+  # Vampires at this stage or BELOW can be perma-killed by wooden stakes.
+  # Valid values: 1, 2, or 3.
+  permadeath-minimum-stage: 1
+
+  # Wooden stake cooldown in ticks (20 ticks = 1 second).
+  wooden-stake-cooldown-ticks: 80

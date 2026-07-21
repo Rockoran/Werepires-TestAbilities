@@ -1,0 +1,36 @@
+﻿# ============================================================================
+#                         BEACON CONFIGURATION
+# ============================================================================
+# Beacon capture, conversion timings, and majority bonuses.
+# ============================================================================
+
+
+# ============================================================================
+# BEACON SYSTEM
+# ============================================================================
+beacons:
+  # Radius (in blocks) within which a player must stand to capture a beacon.
+  capture-radius: 10
+
+  # Base conversion time for beacons (in seconds).
+  conversion-time-seconds: 300
+
+  # Cooldown after converting a beacon before it can be converted again (in minutes).
+  conversion-cooldown-minutes: 60
+
+  # Speed multiplier for humans converting beacons.
+  # Default: 1.5 (50% faster than vampires)
+  human-speed-multiplier: 1.5
+
+  # Speed multiplier for single human "Final Stand" scenario.
+  # Default: 6.0 (6x faster conversion when one human remains)
+  final-stand-multiplier: 6.0
+
+  # Delay before announcing neutral beacon conversions (in seconds).
+  # Beacon texture changes immediately; announcement is delayed.
+  neutral-announcement-delay-seconds: 60
+
+  # Whether corrupted beacons trap humans by counting toward the total required to leave.
+  # When true, corrupted beacons count as desecrated — humans can never reclaim them.
+  # When false, corrupted beacons are excluded from the total for both sides.
+  corrupted-beacons-trap-humans: true

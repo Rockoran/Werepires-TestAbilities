@@ -1,0 +1,49 @@
+﻿# ============================================================================
+#                       STARTER KIT CONFIGURATION
+# ============================================================================
+# Controls what players receive when the kit system is active.
+# ============================================================================
+
+
+# ============================================================================
+# STARTER KIT SYSTEM
+# ============================================================================
+starterkit:
+
+  # Global enable/disable. When false, /kitstart has no effect and no kits
+  # are handed out on join.
+  enabled: true
+
+  # ── Kit components ─────────────────────────────────────────────────────────
+  # Each flag controls whether that portion of the kit is included.
+  add-tools: true
+  add-food: true
+  add-bread: true
+  add-torches: true
+  add-book: true
+  add-armor: true
+  add-builder: true
+  add-vampire-exp: true
+  add-player-specific-items: true
+
+  # ── Per-character custom items ─────────────────────────────────────────────
+  jowoker-custom-enabled: true
+  lucifer-custom-enabled: true
+  marlow-custom-enabled: true
+  flynnley-custom-enabled: true
+  ludwig-custom-enabled: true
+  worven-custom-enabled: true
+
+  # ── Timing ─────────────────────────────────────────────────────────────────
+  # Ticks after join before the kit is delivered (20 ticks = 1 second).
+  join-kit-delay: 40
+
+  # ── Builder pack ───────────────────────────────────────────────────────────
+  # Maximum stacks of each material included in the builder pack.
+  builder-max-stacks: 4
+
+  # ── Broadcast flags ────────────────────────────────────────────────────────
+  broadcast-kitstart: true
+  broadcast-kitstop: true
+  broadcast-kitall: true
+  broadcast-kitgive: false

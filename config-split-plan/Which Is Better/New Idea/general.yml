@@ -1,0 +1,237 @@
+﻿# ============================================================================
+#                          GENERAL CONFIGURATION
+# ============================================================================
+# Server-wide settings: network, core gameplay, chat, cure, revival, tomes,
+# world spawning, blood-draw, and internal state tracking.
+# ============================================================================
+
+
+# ============================================================================
+# WEREPIRES NETWORK
+# ============================================================================
+werepires-network:
+  server-key: ""
+  worlds-repo: "Rockoran/werepires-world1"
+
+
+# ============================================================================
+# SERVER / GENERAL
+# ============================================================================
+
+# Require the VampireSMP Compatibility Mod (skins + ghost).
+# Players without it are kicked a few seconds after joining.
+# (players with vampiresmp.modgate.bypass — default op — are exempt)
+require-compatibility-mod: true
+
+# Disable non-essential (info-level) logging to reduce console noise.
+# When true, only warnings and errors will appear in console.
+disable-nonessential-logging: false
+
+# Ghost / haunt mode performance.
+# Each ghost gets a small per-player view and simulation distance.
+# These only affect ghosts; living players are unaffected. Minimum 2.
+ghost:
+  view-distance: 4        # how many chunks a ghost can see/load
+  simulation-distance: 2  # how many chunks tick around a ghost
+
+
+# ============================================================================
+# CORE GAMEPLAY
+# ============================================================================
+
+# Percentage of damage reduction for all players.
+# Valid values: 0-100 (0 = no suppression, 100 = no damage taken).
+damage_suppression: 50
+
+# How often vampire health is checked and regenerated (in ticks; 20 ticks = 1 second).
+vampire_health_check_ticks: 9
+
+# Allow players to permanently kill themselves with /pow permakill.
+# Admins can always use /pow admin permakill <player> regardless of this setting.
+allow-self-permakill: true
+
+
+# ============================================================================
+# BROADCAST MESSAGES
+# ============================================================================
+# Use & for color codes. Kept deliberately nameless — a feeling, not a report.
+messages:
+  human-permadeath:
+    enabled: true
+    to-vampires: "&4A mortal soul slips beneath the veil... somewhere, the night grows one heartbeat richer."
+    to-humans: "&cA cold dread settles over you... somewhere, one of the living has drawn their final breath."
+
+
+# ============================================================================
+# CHAT SYSTEM
+# ============================================================================
+chat:
+  # Player's first chat message each session is intercepted with an immersion warning.
+  first-message-blocking-enabled: true
+
+  # The message shown when a player's first chat message is blocked.
+  # Use [Click Here] to add a clickable link that sends the message.
+  first-message-blocked-message: "&eIt looks like you've attempted to send a message! Vampire SMP is geared to revolve around immersion, consider finding the person you need to speak to, or messaging them on discord. If you still need to send your chat message, [Click Here]&e. This prevention message will not appear again until your next log on if you do choose to send your message via the blue text."
+
+
+# ============================================================================
+# CURE & HOLY WATER
+# ============================================================================
+cure:
+  # Max distance a vampire can be from a holy beacon during the cure.
+  cure-distance: 25.0
+
+  # How many links up the sire chain can still be alive for the cure to be valid.
+  # 1 = only your direct sire must be dead.
+  sire-line-length: 1
+
+  # Whether the fledglings of a cured player can also be cured.
+  allow-cured-sire: false
+
+  # Whether the cure must be performed during the day.
+  needs-daytime: true
+
+# Cure book spawn settings
+cure_books_enabled: true
+cure_books_spawn_chance: 0.3
+fourth_book_spawn_enabled: false
+
+# Holy water
+holy-water:
+  # Duration of the holy water disable effect on vampires (in seconds).
+  disable-duration-seconds: 120
+
+
+# ============================================================================
+# REVIVAL — RITE OF RETURN
+# ============================================================================
+revival:
+  enabled: true
+  # What a revived soul returns as: vampire | human | thrall | ghoul
+  outcome: vampire
+  # Max distance the target ghost (and the desecrated beacon) may be from the reviver.
+  range: 25.0
+  needs-night: true
+  books-in-chests: true
+  books-spawn-chance: 0.2
+  # In an ominous (cure) vault, chance the reward is a revival book instead.
+  ominous-vault-revival-chance: 0.5
+  ghoul:
+    # Reduced max health a ghoul revives with (20 = full; 14 = 7 hearts).
+    max-health: 14.0
+
+
+# ============================================================================
+# TOMES, TOME CHESTS & VAULTS
+# ============================================================================
+
+# How often tomes are distributed to chests (in minutes).
+tome-distribution-interval-minutes: 20
+
+tome-chest-items:
+  # How many tome books spawn per distribution cycle.
+  tome-count: 4
+
+  # Which tome abilities will spawn in tome chests (and tome vaults).
+  tomes-available:
+    - BanishUndead
+    - Blessing
+    - EnlightenedEye
+    - HolyWord
+    - LanternThrash
+    - PrayerOfFaith
+    - RallyingCry
+    - ShoulderBarge
+    #- StopTheBleeding
+    - TurnUndead
+    - UncannyDirection
+    - UnnaturalHaste
+    - WayOfTheLand
+    - WayOfTheLumberjack
+    - WayOfTheProspector
+    - ConsecrateGround
+    - BlessedBlade
+    - Daybreak
+    - Sanctuary
+    - CleansingSmoke
+    - HuntersMark
+    - LastVigil
+
+  # Which enchantments will spawn in tome chests.
+  enchantments-available:
+    - efficiency 1
+    - protection 1
+    - feather_falling 1
+    - knockback 1
+    - sweeping_edge 1
+
+  misc-items-count: 0
+  misc-items:
+    - SPLASH_POTION # Holy Water
+    - COBWEB 4
+
+# Tome chest locations. Use /pow admin addtomechest to add in-game.
+tome-chests:
+  locations:
+    - "202,61,-305"
+    - "416,45,-109"
+    - "504,139,398"
+    - "494,125,593"
+    - "153,99,128"
+    - "-19,104,100"
+    - "-125,71,421"
+    - "76,80,407"
+    - "-397, 82, 364"
+
+# Locations stored as "world,x,y,z" — edit via commands, not by hand.
+vaults:
+  tome: []
+  cure: []
+
+
+# ============================================================================
+# WORLD: SPAWNING & OAKHURST
+# ============================================================================
+passive-mob-spawning:
+  auto-spawn-enabled: true
+  minimum-animal-threshold: 40
+  spawn-count: 80
+  # Weighted spawn table — higher weight = more likely to be chosen.
+  mob-weights:
+    COW: 30
+    PIG: 30
+    SHEEP: 25
+    CHICKEN: 15
+
+oakhurst:
+  name: Oakhurst
+  town-center-x: 79
+  town-center-z: 440
+  teleport-radius: 400
+  border:
+    center-x: 50
+    center-z: 50
+    diameter: 1098
+
+
+# ============================================================================
+# BLOOD-DRAW SETTINGS
+# ============================================================================
+blood-draw:
+  animal:
+    enabled: false
+    allow-vampires: true
+    allow-humans: true
+    allow-thralls: true
+
+
+# ============================================================================
+# INTERNAL STATE TRACKING — DO NOT MODIFY
+# ============================================================================
+# These values are automatically updated by the plugin. Only change them if
+# you know exactly what you're doing. Reset with /pow admin init.
+first_beacon_converted: false
+humans_own_all_beacons: false
+vampires_own_all_beacons: false
+one_human_left: false
+fourth_book_has_spawned: false

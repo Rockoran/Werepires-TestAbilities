@@ -1,0 +1,165 @@
+﻿# ============================================================================
+#                         VAMPIRE CONFIGURATION
+# ============================================================================
+# Vampire respawn, indicator, thirst, skins, and all vampire ability
+# cooldowns and tuning parameters.
+# ============================================================================
+
+
+# ============================================================================
+# VAMPIRE SETTINGS
+# ============================================================================
+vampire:
+  # Respawn location for vampire players (x,y,z coordinates).
+  respawn-location: "40,101,-113"
+
+  # Controls whether all vampires will have their turning toggled off after a
+  # new vampire is created.
+  disable-turning-after-turn: true
+
+# ── New vampire indicator ──────────────────────────────────────────────────
+vampire-indicator:
+  enabled: true
+  # How long the indicator stays visible (seconds).
+  duration-seconds: 120
+  # Radius of the indicator broadcast. 0 = all vampires see it.
+  distance: 0
+  # Include distance and direction to the new vampire.
+  tracker: true
+  # Minimum vampire stage required to see the indicator. Valid: 1, 2, 3.
+  minimum-stage: 1
+
+# ── Thirst ─────────────────────────────────────────────────────────────────
+thirst:
+  # Time for vampire thirst to deplete from full to empty (minutes).
+  depletion-minutes: 120
+  # Maximum thirst points a vampire can gain from feeding per session.
+  max-feeding-per-session: 60
+
+# ── Skin Shuffle ───────────────────────────────────────────────────────────
+# The plugin changes a player's skin automatically when they tier up/down.
+# Set each stage to the Minecraft username whose skin should be applied.
+# Leave blank ("") to keep the player's own skin at that stage.
+vampire-skins:
+  enabled: true
+  stage1: ""
+  stage2: ""
+  stage3: ""
+
+
+# ============================================================================
+# VAMPIRE ABILITIES  (cooldowns in seconds; 20 ticks = 1 second)
+# ============================================================================
+abilities:
+  vampire:
+    # ── Bat Transformation ─────────────────────────────────────────────────
+    # Per-stage values override the base; omit a stage key to fall back to
+    # bat-cooldown.
+    bat-cooldown: 900
+    bat-cooldown-stage1: 900
+    bat-cooldown-stage2: 900
+    bat-cooldown-stage3: 900
+
+    # Bat form duration in seconds per stage.
+    bat-duration-seconds: 120
+    bat-duration-seconds-stage1: 120    # 2 minutes
+    bat-duration-seconds-stage2: 120    # 2 minutes
+    bat-duration-seconds-stage3: 180    # 3 minutes
+
+    # ── Lunge ──────────────────────────────────────────────────────────────
+    lunge-cooldown: 45
+    lunge-cooldown-stage2: 45
+    lunge-cooldown-stage3: 45
+    # Lunge launch power per stage (velocity multiplier).
+    lunge-strength-stage2: 2.0
+    lunge-strength-stage3: 2.5
+
+    # ── Vanish / Invisibility ───────────────────────────────────────────────
+    vanish-cooldown: 420
+    vanish-cooldown-stage2: 420
+    vanish-cooldown-stage3: 420
+    # Duration in seconds per stage.
+    vanish-duration-seconds-stage2: 120
+    vanish-duration-seconds-stage3: 240
+    # Number of attacks before invisibility breaks.
+    vanish-attack-limit-stage2: 3
+    vanish-attack-limit-stage3: 3
+
+    # ── Storm Call ─────────────────────────────────────────────────────────
+    storm-call-cooldown: 7200
+    storm-call-duration-seconds: 600
+
+    # ── Shadow Travel (Beacon Teleport) ────────────────────────────────────
+    # Channel time before teleport fires (ticks; 100 = 5 seconds).
+    beacon-teleport-channel-ticks: 100
+    beacon-teleport-cooldown: 300
+    beacon-teleport-cooldown-stage2: 300
+    beacon-teleport-cooldown-stage3: 300
+    beacon-teleport-require-full-health: true
+
+    # ── Vampire Vision ─────────────────────────────────────────────────────
+    vampire-vision-cooldown: 1
+
+    # ── New Vampire Abilities ───────────────────────────────────────────────
+    # Mist Form (s2): blink forward through walls, briefly untouchable.
+    mistform:
+      enabled: true
+      cooldown: 30          # seconds
+      distance: 8.0         # max blocks blinked
+      protect-ticks: 30     # ticks of resistance + invisibility after the blink
+
+    # Sanguine Bite (s2): bite the human in front, healing + slaking thirst.
+    sanguinebite:
+      enabled: true
+      cooldown: 20
+      range: 4.0
+      damage: 4.0           # damage dealt to the human (2 hearts)
+      heal: 6.0             # health restored to the vampire (3 hearts)
+      quench: 15            # thirst restored
+
+    # Hypnotic Gaze (s3): cloud a looked-at human's mind. Garlic blocks it.
+    hypnoticgaze:
+      enabled: true
+      cooldown: 45
+      range: 12
+      duration-ticks: 100
+      slowness-amplifier: 2
+      blindness-ticks: 60
+
+    # Bloodscent (s1): wounded humans glow with red motes only you see.
+    bloodscent:
+      enabled: true
+      cooldown: 30
+      radius: 40.0
+      health-threshold: 10.0  # humans at/below this HP are revealed
+      duration-ticks: 200
+      interval-ticks: 10
+
+    # Crimson Veil (s3): blood mist heals vampires, weakens humans.
+    crimsonveil:
+      enabled: true
+      cooldown: 120
+      radius: 8.0
+      duration-ticks: 200
+      interval-ticks: 20
+      vampire-regen-amplifier: 0
+      human-weakness-amplifier: 0
+
+    # Call the Swarm (s2): bats blind and harry nearby humans.
+    callswarm:
+      enabled: true
+      cooldown: 60
+      radius: 10.0
+      duration-ticks: 120
+      chip-damage: 1.0
+      blindness-ticks: 40
+      spawn-bats: true      # spawn real bats (cosmetic) vs particles only
+      bat-count: 6
+
+    # Sire's Command (s3): buff your bonded thralls.
+    sirescommand:
+      enabled: true
+      cooldown: 90
+      duration-ticks: 200
+      strength-amplifier: 0
+      speed-amplifier: 0

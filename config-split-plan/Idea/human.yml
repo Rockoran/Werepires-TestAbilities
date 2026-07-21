@@ -1,0 +1,116 @@
+      fire-inner-radius: 2           # inner exclusion radius (blocks)
+      fire-resistance-duration-ticks: 6000  # Fire Resistance given to caster
+    # Rallying Cry: group strength buff.
+    rallyingcry:
+      radius: 20.0                   # blocks — affects caster + nearby humans
+      strength-duration-ticks: 600   # 30 seconds
+      strength-amplifier: 0          # 0 = Strength I
+    # Shoulder Barge: charge and collision parameters.
+    shoulderbarge:
+      charge-velocity: 1.5
+      knockback-strength: 1.2
+      slowness-duration-ticks: 300   # 15 seconds
+      damage-to-players: 10.0
+      damage-to-mobs: 20.0
+    # Turn Undead: undead disguise + on-cast debuffs.
+    turnundead:
+      disguise-duration-ticks: 6000  # 5 minutes
+      darkness-ticks: 200
+      slowness-ticks: 100
+    # Unnatural Haste: haste duration and level.
+    unnaturalhaste:
+      haste-duration-ticks: 6000     # 5 minutes
+      haste-amplifier: 1             # 1 = Haste II
+    # Prayer of Faith: still-prayer for absorption.
+    prayeroffaith:
+      channel-seconds: 60
+      absorption-duration-ticks: 12000  # 10 minutes
+      absorption-amplifier: 2           # 2 = Absorption III
+    # Stop the Bleeding: channeled heal.
+    stopthebleeding:
+      channel-ticks: 1200            # 60 seconds
+      proximity-distance: 2.0        # max blocks between healer and target
+    # Enlightened Eye: night vision duration.
+    enlightenedeye:
+      night-vision-duration-ticks: 6000  # 5 minutes
+    # Way of the Land: double-crop-drop chance.
+    wayoftheland:
+      double-drop-chance: 0.75       # 75% chance of double drops
+    # Way of the Lumberjack: double-log-drop chance.
+    wayofthelumberjack:
+      double-drop-chance: 0.30       # 30% chance of double drops
+
+    # ── New tome abilities (each can be disabled and tuned) ───────────────────
+    # Consecrate Ground: heal humans / sear vampires in an area.
+    consecrateground:
+      enabled: true
+      cooldown: 120         # seconds
+      radius: 6.0
+      duration-ticks: 200
+      interval-ticks: 20
+      vampire-damage: 1.0
+    # Blessed Blade: your strikes against vampires deal bonus damage + weakness.
+    blessedblade:
+      enabled: true
+      cooldown: 90
+      duration-ticks: 200   # how long the blade stays blessed
+      bonus-multiplier: 1.5 # damage multiplier vs vampires
+      weaken-ticks: 100
+      weaken-amplifier: 0
+    # Daybreak: a pillar of daylight that burns vampires.
+    daybreak:
+      enabled: true
+      cooldown: 120
+      radius: 5.0
+      duration-ticks: 100
+      interval-ticks: 20
+      vampire-damage: 2.0
+      fire-ticks: 40
+    # Sanctuary: shield yourself + nearby humans with resistance.
+    sanctuary:
+      enabled: true
+      cooldown: 120
+      radius: 6.0
+      duration-ticks: 100
+      resistance-amplifier: 3
+    # Cleansing Smoke: garlic cloud — fling back/weaken vampires, shield humans.
+    cleansingsmoke:
+      enabled: true
+      cooldown: 90
+      radius: 6.0
+      shield-ticks: 120
+      vampire-weaken-ticks: 100
+      knockback: 1.2
+    # Hunter's Mark: make a looked-at vampire glow for everyone.
+    huntersmark:
+      enabled: true
+      cooldown: 90
+      range: 24
+      duration-ticks: 300
+    # Last Vigil: a desperate stand — resistance, regen and absorption.
+    lastvigil:
+      enabled: true
+      cooldown: 120
+      duration-ticks: 120
+      resistance-amplifier: 2
+      regeneration-amplifier: 1
+      absorption-amplifier: 1
+    # Fire Breath: exhale a cone of flame that ignites and damages enemies.
+    firebreath:
+      cooldown: 600             # seconds (default: 10 minutes)
+      range: 8.0                # length of the cone in blocks
+      cone-angle: 35.0          # half-angle of the cone in degrees
+      duration-ticks: 20        # how many ticks the breath stream lasts
+      particles-per-tick: 28    # particles sprayed per tick
+      damage: 4.0               # damage dealt every 4 ticks to targets in cone
+      fire-ticks: 100           # ticks targets are set on fire (100 = 5 seconds)
+    # Blue Fire Breath: soul flame variant, longer range and tighter cone.
+    bluefirebreath:
+      cooldown: 900             # seconds (default: 15 minutes)
+      range: 12.0               # length of the cone in blocks
+      cone-angle: 28.0          # half-angle of the cone in degrees
+      duration-ticks: 25        # how many ticks the breath stream lasts
+      particles-per-tick: 32    # particles sprayed per tick
+      damage: 6.0               # damage dealt every 4 ticks to targets in cone
+      fire-ticks: 160           # ticks targets are set on fire (160 = 8 seconds)
+
