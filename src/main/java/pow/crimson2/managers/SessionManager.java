@@ -209,30 +209,30 @@ public class SessionManager {
    }
 
    public boolean isFirstBeaconConvertedTriggered() {
-      return this.plugin.getConfig().getBoolean("first_beacon_converted", false);
+      return this.plugin.getStateConfig().getBoolean("first_beacon_converted", false);
    }
 
    public void setFirstBeaconConvertedTriggered(boolean triggered) {
-      this.plugin.getConfig().set("first_beacon_converted", triggered);
-      this.plugin.saveConfig();
+      this.plugin.getStateConfig().set("first_beacon_converted", triggered);
+      this.plugin.saveStateConfig();
    }
 
    public boolean areHumansOwningAllBeacons() {
-      return this.plugin.getConfig().getBoolean("humans_own_all_beacons", false);
+      return this.plugin.getStateConfig().getBoolean("humans_own_all_beacons", false);
    }
 
    public void setHumansOwningAllBeacons(boolean active) {
-      this.plugin.getConfig().set("humans_own_all_beacons", active);
-      this.plugin.saveConfig();
+      this.plugin.getStateConfig().set("humans_own_all_beacons", active);
+      this.plugin.saveStateConfig();
    }
 
    public boolean areVampiresOwningAllBeacons() {
-      return this.plugin.getConfig().getBoolean("vampires_own_all_beacons", false);
+      return this.plugin.getStateConfig().getBoolean("vampires_own_all_beacons", false);
    }
 
    public void setVampiresOwningAllBeacons(boolean active) {
-      this.plugin.getConfig().set("vampires_own_all_beacons", active);
-      this.plugin.saveConfig();
+      this.plugin.getStateConfig().set("vampires_own_all_beacons", active);
+      this.plugin.saveStateConfig();
    }
 
    public boolean isHumansFinalStandActive() {
@@ -244,12 +244,12 @@ public class SessionManager {
    }
 
    public boolean isOneHumanLeftActive() {
-      return this.plugin.getConfig().getBoolean("one_human_left", false);
+      return this.plugin.getStateConfig().getBoolean("one_human_left", false);
    }
 
    public void setOneHumanLeftActive(boolean active) {
-      this.plugin.getConfig().set("one_human_left", active);
-      this.plugin.saveConfig();
+      this.plugin.getStateConfig().set("one_human_left", active);
+      this.plugin.saveStateConfig();
    }
 
    public boolean isVampiresEternalNightActive() {
@@ -495,6 +495,13 @@ public class SessionManager {
    }
 
    public void resetPlayer(Player player) {
+      // Revive haunting ghosts (spectator) back to the living on a reset.
+      if (this.plugin.getGhostModeManager() != null && this.plugin.getGhostModeManager().isGhost(player)) {
+         this.plugin.getGhostModeManager().clearGhostState(player);
+         player.setGameMode(GameMode.SURVIVAL);
+         this.plugin.logInfo("Reset " + player.getName() + " from ghost/haunt to survival mode (new game/session)");
+      }
+
       if (player.getGameMode() == GameMode.SPECTATOR) {
          player.setGameMode(GameMode.SURVIVAL);
          this.plugin.logInfo("Reset " + player.getName() + " from spectator to survival mode (new game/session)");

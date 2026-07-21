@@ -10,6 +10,8 @@ import org.bukkit.potion.PotionEffectType;
 import pow.crimson2.VampireSMPPlugin;
 
 public class VampireTurningManager {
+   private static final String TURNING_DISABLED_TAG = "turning_disabled";
+
    private final VampireSMPPlugin plugin;
    private final Map<UUID, Boolean> turningEnabled = new HashMap<>();
 
@@ -18,19 +20,25 @@ public class VampireTurningManager {
    }
 
    public boolean isTurningEnabled(Player vampire) {
+      // Scoreboard tag is the source of truth (survives restarts); in-memory map is a cache.
+      if (vampire.getScoreboardTags().contains(TURNING_DISABLED_TAG)) return false;
       return this.turningEnabled.getOrDefault(vampire.getUniqueId(), true);
    }
 
    public boolean toggleTurning(Player vampire) {
       boolean currentState = this.isTurningEnabled(vampire);
       boolean newState = !currentState;
-      this.turningEnabled.put(vampire.getUniqueId(), newState);
-      this.updateLuckEffect(vampire, newState);
+      this.setTurningEnabled(vampire, newState);
       return newState;
    }
 
    public void setTurningEnabled(Player vampire, boolean enabled) {
       this.turningEnabled.put(vampire.getUniqueId(), enabled);
+      if (enabled) {
+         vampire.removeScoreboardTag(TURNING_DISABLED_TAG);
+      } else {
+         vampire.addScoreboardTag(TURNING_DISABLED_TAG);
+      }
       this.updateLuckEffect(vampire, enabled);
    }
 
@@ -40,8 +48,7 @@ public class VampireTurningManager {
       }
       for (Player player : Bukkit.getOnlinePlayers()) {
          if (this.plugin.getVampireManager().isVampire(player)) {
-            this.turningEnabled.put(player.getUniqueId(), false);
-            this.updateLuckEffect(player, false);
+            this.setTurningEnabled(player, false);
          }
       }
    }
@@ -50,6 +57,7 @@ public class VampireTurningManager {
       this.turningEnabled.clear();
 
       for (Player player : Bukkit.getOnlinePlayers()) {
+         player.removeScoreboardTag(TURNING_DISABLED_TAG);
          if (this.plugin.getVampireManager().isVampire(player)) {
             this.updateLuckEffect(player, true);
          }

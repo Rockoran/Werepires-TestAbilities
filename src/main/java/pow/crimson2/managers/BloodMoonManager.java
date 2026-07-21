@@ -26,12 +26,14 @@ public class BloodMoonManager {
    }
 
    private void checkTimeAndMoon() {
-      long time = this.plugin.getWorld().getTime();
-      long fullTime = this.plugin.getWorld().getFullTime();
+      World world = this.plugin.getWorld();
+      if (world == null) return; // world temporarily unloaded during world-swap
+      long time = world.getTime();
+      long fullTime = world.getFullTime();
       boolean isNight = time >= 12000L && time < 24000L;
       boolean isFullMoon = fullTime % 192000L < 24000L;
       if (isNight && isFullMoon && !this.isBloodMoonActive) {
-         this.startBloodMoon(this.plugin.getWorld());
+         this.startBloodMoon(world);
       }
 
       if (this.isBloodMoonActive && (!isNight || !isFullMoon)) {
@@ -62,7 +64,8 @@ public class BloodMoonManager {
          }
 
          String endMessage = "§7The blood moon fades away...";
-         this.plugin.getWorld().getPlayers().forEach(player -> player.sendMessage(endMessage));
+         World world = this.plugin.getWorld();
+         if (world != null) world.getPlayers().forEach(player -> player.sendMessage(endMessage));
       }
    }
 
@@ -104,8 +107,9 @@ public class BloodMoonManager {
    }
 
    public void forceStart() {
-      if (!this.isBloodMoonActive) {
-         this.startBloodMoon(this.plugin.getWorld());
+      World world = this.plugin.getWorld();
+      if (!this.isBloodMoonActive && world != null) {
+         this.startBloodMoon(world);
       }
    }
 
@@ -116,7 +120,9 @@ public class BloodMoonManager {
    }
 
    public String getCurrentMoonPhase() {
-      return this.getMoonPhaseName(this.plugin.getWorld().getFullTime());
+      World world = this.plugin.getWorld();
+      if (world == null) return "Unknown";
+      return this.getMoonPhaseName(world.getFullTime());
    }
 
    private String getMoonPhaseName(long fullTime) {

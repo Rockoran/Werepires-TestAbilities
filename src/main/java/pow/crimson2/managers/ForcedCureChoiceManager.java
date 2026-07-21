@@ -165,6 +165,9 @@ public class ForcedCureChoiceManager {
       this.plugin.getVampireManager().setPlayerAsHuman(target);
       target.getActivePotionEffects().forEach(effect -> target.removePotionEffect(effect.getType()));
       target.addScoreboardTag("CuredVampire");
+      if (this.plugin.getSkinShuffleManager() != null) {
+         this.plugin.getSkinShuffleManager().applyCuredSkin(target);
+      }
       Location targetLoc = target.getLocation();
       Location beaconLoc = holyBeacon.getLocation();
       target.getWorld().spawnParticle(Particle.SOUL, targetLoc, 100, 1.0, 2.0, 1.0, 0.1);

@@ -78,6 +78,11 @@ public class VampireFeedingManager implements Listener {
    }
 
    private void processPreparationPhase(VampireFeedingManager.FeedingSession session, Player vampire, Player target) {
+      if (target.getGameMode() != GameMode.SURVIVAL) {
+         vampire.sendMessage("§cYou cannot feed on players who are not in survival mode.");
+         this.cancelFeedingSession(session);
+         return;
+      }
       session.preparationSecondsRemaining--;
       String preparationMessage;
       if (this.vampireManager.isHuman(target)) {
@@ -105,6 +110,11 @@ public class VampireFeedingManager implements Listener {
    }
 
    private void processActiveFeedingPhase(VampireFeedingManager.FeedingSession session, Player vampire, Player target) {
+      if (target.getGameMode() != GameMode.SURVIVAL) {
+         vampire.sendMessage("§cYou cannot feed on players who are not in survival mode.");
+         this.cancelFeedingSession(session);
+         return;
+      }
       if (this.vampireManager.isHuman(target)) {
          UUID vampireId = vampire.getUniqueId();
          int currentSessionThirst = this.sessionFeedingThirst.getOrDefault(vampireId, 0);

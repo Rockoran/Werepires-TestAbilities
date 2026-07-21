@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -17,7 +18,11 @@ import org.bukkit.inventory.ItemStack;
 import pow.crimson2.VampireSMPPlugin;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
 import pow.crimson2.utils.OptionalTypeAdapter;
 
 public class ArmorStorageManager {
@@ -27,9 +32,33 @@ public class ArmorStorageManager {
    private final File backupFile;
    private final Map<UUID, ArmorStorageManager.StoredArmor> armorCache = new ConcurrentHashMap<>();
 
+   /** Serializes ItemStack as a Base64 string via Paper's serializeAsBytes / deserializeBytes. */
+   private static final TypeAdapter<ItemStack> ITEM_ADAPTER = new TypeAdapter<ItemStack>() {
+      @Override
+      public void write(JsonWriter out, ItemStack value) throws IOException {
+         if (value == null) {
+            out.nullValue();
+         } else {
+            out.value(Base64.getEncoder().encodeToString(value.serializeAsBytes()));
+         }
+      }
+      @Override
+      public ItemStack read(JsonReader in) throws IOException {
+         if (in.peek() == JsonToken.NULL) {
+            in.nextNull();
+            return null;
+         }
+         return ItemStack.deserializeBytes(Base64.getDecoder().decode(in.nextString()));
+      }
+   };
+
    public ArmorStorageManager(VampireSMPPlugin plugin) {
       this.plugin = plugin;
-      this.gson = new GsonBuilder().registerTypeAdapterFactory(new OptionalTypeAdapter()).setPrettyPrinting().create();
+      this.gson = new GsonBuilder()
+            .registerTypeHierarchyAdapter(ItemStack.class, ITEM_ADAPTER)
+            .registerTypeAdapterFactory(new OptionalTypeAdapter())
+            .setPrettyPrinting()
+            .create();
       this.storageFile = new File(plugin.getDataFolder(), "bat_armor_storage.json");
       this.backupFile = new File(plugin.getDataFolder(), "bat_armor_storage.backup.json");
       this.setupStorageFiles();

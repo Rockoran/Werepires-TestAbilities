@@ -2,6 +2,7 @@ package pow.crimson2.managers;
 
 import java.util.*;
 
+import org.bukkit.NamespacedKey;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -9,6 +10,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 import pow.crimson2.VampireSMPPlugin;
 import pow.crimson2.abilities.tome.BlessingTomeAbility;
@@ -131,6 +133,16 @@ public class TomeDistributionManager {
                cureBookAdded = true;
             }
 
+            // Revival (Rite of Return) books — spawn in a random tome chest like cure books.
+            if (this.plugin.getConfig().getBoolean("revival.books-in-chests", true)
+                  && this.random.nextDouble() < this.plugin.getConfig().getDouble("revival.books-spawn-chance", 0.2)) {
+               ItemStack revivalBook = this.createRandomRevivalBook();
+               if (revivalBook != null) {
+                  Location randomLocation = this.tomeLocations.get(this.random.nextInt(this.tomeLocations.size()));
+                  this.distributeItemToLocation(randomLocation, revivalBook);
+               }
+            }
+
             this.plugin
                .logInfo(
                   "TomeDistributionManager: Distributed "
@@ -143,6 +155,9 @@ public class TomeDistributionManager {
                      + (cureBookAdded ? ", and 1 cure book (replaced a chest)" : "")
                      + " to chest locations"
                );
+            if (this.plugin.getVaultManager() != null) {
+               this.plugin.getVaultManager().resetLoadedVaults();
+            }
          }
       }
    }
@@ -175,7 +190,7 @@ public class TomeDistributionManager {
       chestInventory.addItem(new ItemStack[]{item});
    }
 
-   private ItemStack createTomeItem(String tomeType) {
+   public ItemStack createTomeItem(String tomeType) {
       ItemStack tome = new ItemStack(Material.WRITTEN_BOOK);
       BookMeta bookMeta = (BookMeta)tome.getItemMeta();
       if (bookMeta != null) {
@@ -212,10 +227,52 @@ public class TomeDistributionManager {
          pageContent.append("\n§6Use this knowledge wisely, for it comes with great responsibility.");
          pages.add(pageContent.toString());
          bookMeta.setPages(pages);
+         NamespacedKey tomeKey = new NamespacedKey(this.plugin, "vampiresmp_tome_ability");
+         bookMeta.getPersistentDataContainer().set(tomeKey, PersistentDataType.STRING, tomeType.toLowerCase());
          tome.setItemMeta(bookMeta);
       }
 
       return tome;
+   }
+
+   /** Returns the tome ability name stored in this item's PDC, or null if it isn't a plugin-issued tome. */
+   public static String getTomeAbilityName(ItemStack item, VampireSMPPlugin plugin) {
+      if (item == null || item.getType() != Material.WRITTEN_BOOK || !item.hasItemMeta()) return null;
+      NamespacedKey key = new NamespacedKey(plugin, "vampiresmp_tome_ability");
+      return item.getItemMeta().getPersistentDataContainer().get(key, PersistentDataType.STRING);
+   }
+
+   /** A random ENABLED tome book — used for tome vault loot. Returns null if none available. */
+   public ItemStack createRandomTomeBook() {
+      List<String> pool = new ArrayList<>();
+      for (String t : this.tomeTypes) {
+         TomeAbility a = this.plugin.getTomeManager().getAbility(t);
+         if (a != null && a.isEnabled() && a.isInLootPool()) pool.add(t);
+      }
+      if (pool.isEmpty()) pool = new ArrayList<>(this.tomeTypes);
+      if (pool.isEmpty()) return null;
+      return this.createTomeItem(pool.get(this.random.nextInt(pool.size())));
+   }
+
+   /** A random cure book (1/3 – 3/3) — used for ominous cure vault loot. */
+   public ItemStack createCureBookForVault() {
+      return this.createRandomCureBook();
+   }
+
+   /** A random Rite of Return book (I–IV), or null if revival is unavailable. */
+   public ItemStack createRandomRevivalBook() {
+      if (this.plugin.getRevivalBookManager() == null) return null;
+      return this.plugin.getRevivalBookManager().createBook(1 + this.random.nextInt(4));
+   }
+
+   /** Ominous vault loot: a cure book or a revival book, weighted by config. */
+   public ItemStack createOminousVaultBook() {
+      double revivalChance = this.plugin.getConfig().getDouble("revival.ominous-vault-revival-chance", 0.5);
+      if (this.random.nextDouble() < revivalChance) {
+         ItemStack revival = this.createRandomRevivalBook();
+         if (revival != null) return revival;
+      }
+      return this.createRandomCureBook();
    }
 
    private ItemStack createRandomEnchantmentBook() {

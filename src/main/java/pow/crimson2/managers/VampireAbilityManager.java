@@ -89,6 +89,13 @@ public class VampireAbilityManager {
       this.registerAbility(new BeaconTeleportAbility());
       this.registerAbility(new BatAbility());
       this.registerAbility(new VampireVisionAbility());
+      this.registerAbility(new pow.crimson2.abilities.MistFormAbility());
+      this.registerAbility(new pow.crimson2.abilities.SanguineBiteAbility());
+      this.registerAbility(new pow.crimson2.abilities.HypnoticGazeAbility());
+      this.registerAbility(new pow.crimson2.abilities.BloodscentAbility());
+      this.registerAbility(new pow.crimson2.abilities.CrimsonVeilAbility());
+      this.registerAbility(new pow.crimson2.abilities.CallSwarmAbility());
+      this.registerAbility(new pow.crimson2.abilities.SiresCommandAbility());
       this.plugin.logInfo("Registered " + this.abilities.size() + " vampire abilities");
    }
 
@@ -210,6 +217,11 @@ public class VampireAbilityManager {
          return false;
       }
 
+      if (!ability.isEnabled(this.plugin)) {
+         player.sendMessage("§cThe " + ability.getDisplayName() + " ability is disabled on this server.");
+         return false;
+      }
+
       if (!ability.canUse(player, this.vampireManager)) {
          String requirement = ability.getRequirementMessage(player, this.vampireManager);
          player.sendMessage("§c" + requirement);
@@ -253,10 +265,10 @@ public class VampireAbilityManager {
       }
 
       if (ability instanceof StormCallAbility) {
-         this.setGlobalCooldown(abilityName, ability.getCooldownSeconds(this.plugin), player);
+         this.setGlobalCooldown(abilityName, ability.getCooldownSeconds(this.plugin, player), player);
          this.saveGlobalCooldowns();
       } else if (!abilityName.equalsIgnoreCase("vision") && (!abilityName.equalsIgnoreCase("vanish") || !wasInvisibleBeforeVanish)) {
-         this.setCooldown(player, abilityName, ability.getCooldownSeconds(this.plugin));
+         this.setCooldown(player, abilityName, ability.getCooldownSeconds(this.plugin, player));
          this.saveCooldowns();
       }
 
@@ -270,10 +282,10 @@ public class VampireAbilityManager {
       }
 
       if (ability instanceof StormCallAbility) {
-         this.setGlobalCooldown(abilityName, ability.getCooldownSeconds(this.plugin), player);
+         this.setGlobalCooldown(abilityName, ability.getCooldownSeconds(this.plugin, player), player);
          this.saveGlobalCooldowns();
       } else {
-         this.setCooldown(player, abilityName, ability.getCooldownSeconds(this.plugin));
+         this.setCooldown(player, abilityName, ability.getCooldownSeconds(this.plugin, player));
          this.saveCooldowns();
       }
 
@@ -531,10 +543,17 @@ public class VampireAbilityManager {
       return String.format("%d:%02d", minutes, remainingSeconds);
    }
 
+   public int getVanishAttackLimit(Player player) {
+      int stage = this.vampireManager.getVampireStage(player);
+      if (stage >= 3) return this.plugin.getConfigManager().getVanishAttackLimitStage3();
+      return this.plugin.getConfigManager().getVanishAttackLimitStage2();
+   }
+
    public boolean trackInvisibilityAttack(Player player) {
       UUID playerId = player.getUniqueId();
       int attackCount = this.invisibilityAttackCounts.getOrDefault(playerId, 0) + 1;
-      if (attackCount >= 3) {
+      int limit = this.getVanishAttackLimit(player);
+      if (attackCount >= limit) {
          this.invisibilityAttackCounts.remove(playerId);
          return true;
       } else {

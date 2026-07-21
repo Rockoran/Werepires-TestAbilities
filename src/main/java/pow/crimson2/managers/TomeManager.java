@@ -64,11 +64,24 @@ public class TomeManager {
       this.registerAbility(new WayOfTheLumberjackTomeAbility(this.plugin));
       this.registerAbility(new WayOfTheProspectorTomeAbility(this.plugin));
       this.registerAbility(new StopTheBleedingTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.ConsecrateGroundTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.BlessedBladeTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.DaybreakTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.SanctuaryTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.CleansingSmokeTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.HuntersMarkTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.LastVigilTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.FireBreathTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.BlueFireBreathTomeAbility(this.plugin));
       this.plugin.logInfo("TomeManager initialized - registered " + this.registeredAbilities.size() + " tome abilities");
    }
 
    public void registerAbility(TomeAbility ability) {
       this.registeredAbilities.put(ability.getName().toLowerCase(), ability);
+      // Some tomes need their own event hooks (e.g. on-hit effects) — register those.
+      if (ability instanceof org.bukkit.event.Listener) {
+         this.plugin.getServer().getPluginManager().registerEvents((org.bukkit.event.Listener) ability, this.plugin);
+      }
       this.plugin.logInfo("Registered tome ability: " + ability.getName());
    }
 
@@ -84,8 +97,18 @@ public class TomeManager {
       if (!this.vampireManager.isHuman(player)) {
          return false;
       }
+      if (this.plugin.getGhoulManager() != null && this.plugin.getGhoulManager().isGhoul(player)) {
+         player.sendMessage("§cYour hollow soul cannot grasp holy knowledge.");
+         return false;
+      }
 
       if (!this.isValidAbility(abilityName)) {
+         return false;
+      }
+
+      TomeAbility toLearn = this.getAbility(abilityName);
+      if (toLearn != null && !toLearn.isEnabled()) {
+         player.sendMessage("§cThis tome's magic lies dormant on this server.");
          return false;
       }
 
@@ -149,6 +172,9 @@ public class TomeManager {
       if (!this.vampireManager.isHuman(player)) {
          player.sendMessage("§cOnly humans can use tome abilities.");
          return false;
+      } else if (this.plugin.getGhoulManager() != null && this.plugin.getGhoulManager().isGhoul(player)) {
+         player.sendMessage("§cYour hollow ghoul soul cannot wield holy tomes.");
+         return false;
       } else if (!this.hasAbility(player, abilityName)) {
          player.sendMessage("§cYou don't have access to the '" + abilityName + "' ability.");
          return false;
@@ -156,6 +182,9 @@ public class TomeManager {
          TomeAbility ability = this.getAbility(abilityName);
          if (ability == null) {
             player.sendMessage("§cAbility '" + abilityName + "' is not implemented.");
+            return false;
+         } else if (!ability.isEnabled()) {
+            player.sendMessage("§cThat tome's magic lies dormant on this server.");
             return false;
          } else {
             return ability.use(player);
@@ -269,7 +298,14 @@ public class TomeManager {
                || remaining.startsWith("nails")
                || remaining.startsWith("stand")
                || remaining.startsWith("thrash")
-               || remaining.startsWith("faith")) {
+               || remaining.startsWith("ground")
+               || remaining.startsWith("blade")
+               || remaining.startsWith("smoke")
+               || remaining.startsWith("mark")
+               || remaining.startsWith("vigil")
+               || remaining.startsWith("faith")
+               || remaining.startsWith("breath")
+               || remaining.startsWith("fire")) {
                result.append(" ");
                capitalizeNext = true;
             }

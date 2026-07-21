@@ -17,8 +17,14 @@ public class VampireTexturePackManager {
    private static final String HUMAN_TEXTURE_PACK_URL = "https://download.mc-packs.net/pack/b1fbd00667c6ad35c11967a385184aa336d605e1.zip";
    private static final String HUMAN_TEXTURE_PACK_SHA1_STRING = "b1fbd00667c6ad35c11967a385184aa336d605e1";
    private static final String HUMAN_TEXTURE_PACK_PROMPT = "§aVampireSMP Human Pack\n§7This pack enhances your human experience!";
+   // Base server pack pushed to every player on join (before any vampire pack is layered on top).
+   // Hosted on mc-packs.net; the URL path is the file's SHA-1.
+   private static final String BASE_TEXTURE_PACK_URL = "https://download.mc-packs.net/pack/9f6987c60fc0f3d4ded0c03a1473b66f1488e979.zip";
+   private static final String BASE_TEXTURE_PACK_SHA1_STRING = "9f6987c60fc0f3d4ded0c03a1473b66f1488e979";
+   private static final String BASE_TEXTURE_PACK_PROMPT = "§6VampireSMP Server Pack\n§7Custom server textures!";
    private final Set<UUID> playersWithVampireTexturePack = new HashSet<>();
    private final Set<UUID> playersWithHumanTexturePack = new HashSet<>();
+   private final Set<UUID> playersWithBaseTexturePack = new HashSet<>();
 
    public VampireTexturePackManager(VampireSMPPlugin plugin) {
       this.plugin = plugin;
@@ -72,6 +78,45 @@ public class VampireTexturePackManager {
       this.applyVampireTexturePackDelayed(player, 100L, "vampire login");
    }
 
+   /**
+    * Push the base server texture pack. Called for every player on join so that anyone who
+    * hasn't loaded the server pack yet receives it. Vampires additionally get the vampire
+    * pack layered on top a moment later (see {@link #onVampireLogin(Player)}).
+    */
+   public void applyBaseTexturePack(Player player, String reason) {
+      try {
+         byte[] sha1Bytes = hexStringToByteArray(BASE_TEXTURE_PACK_SHA1_STRING);
+         UUID packId = UUID.randomUUID();
+         player.addResourcePack(
+            packId,
+            BASE_TEXTURE_PACK_URL,
+            sha1Bytes,
+            BASE_TEXTURE_PACK_PROMPT,
+            true
+         );
+         this.playersWithBaseTexturePack.add(player.getUniqueId());
+         player.sendMessage("§7Applying server texture pack...");
+         this.plugin.logInfo("Sent base server texture pack to " + player.getName() + " - " + reason);
+      } catch (Exception e) {
+         this.plugin.getLogger().severe("Failed to apply base texture pack to " + player.getName() + ": " + e.getMessage());
+         e.printStackTrace();
+      }
+   }
+
+   /** Push the base server pack shortly after join, once the connection has settled. */
+   public void onPlayerLogin(Player player) {
+      this.plugin.logInfo("Scheduled base server texture pack for " + player.getName() + " in 1.0 seconds - player join");
+      Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+         if (player.isOnline()) {
+            this.applyBaseTexturePack(player, "player join");
+         }
+      }, 20L);
+   }
+
+   public boolean hasBaseTexturePack(Player player) {
+      return this.playersWithBaseTexturePack.contains(player.getUniqueId());
+   }
+
    public void onPlayerBecomeHuman(Player player) {
       this.playersWithVampireTexturePack.remove(player.getUniqueId());
    }
@@ -113,6 +158,7 @@ public class VampireTexturePackManager {
    public void onPlayerQuit(Player player) {
       this.playersWithVampireTexturePack.remove(player.getUniqueId());
       this.playersWithHumanTexturePack.remove(player.getUniqueId());
+      this.playersWithBaseTexturePack.remove(player.getUniqueId());
    }
 
    public boolean hasVampireTexturePack(Player player) {
@@ -158,6 +204,7 @@ public class VampireTexturePackManager {
    public void shutdown() {
       this.playersWithVampireTexturePack.clear();
       this.playersWithHumanTexturePack.clear();
+      this.playersWithBaseTexturePack.clear();
       this.plugin.logInfo("VampireTexturePackManager shutdown complete");
    }
 }

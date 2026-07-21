@@ -34,11 +34,16 @@ public class VampireManager {
    private static final long LEVEL_CHANGE_COOLDOWN = 5000L;
    private static final long LEVEL_CHANGE_TIMEOUT = 10000L;
    private final Map<UUID, Integer> stageCaps = new HashMap<>();
+   private final Map<UUID, Integer> werewolfStageCaps = new HashMap<>();
    public static final String HUMAN_TAG = "human";
    public static final String VAMPIRE_STAGE1_TAG = "vampire_stage1";
    public static final String VAMPIRE_STAGE2_TAG = "vampire_stage2";
    public static final String VAMPIRE_STAGE3_TAG = "vampire_stage3";
    public static final String PROMOTION_BAN_TAG = "promotion_ban";
+   public static final String WEREWOLF_TAG = "werewolf";
+   public static final String WEREWOLF_STAGE1_TAG = "werewolf_stage1";
+   public static final String WEREWOLF_STAGE2_TAG = "werewolf_stage2";
+   public static final String WEREWOLF_STAGE3_TAG = "werewolf_stage3";
    private final Map<UUID, Double> lungingPlayers = new HashMap<>();
    private final Map<UUID, Long> lungeTimestamps = new HashMap<>();
    private static final long PROTECTION_DURATION = 10000L;
@@ -128,6 +133,11 @@ public class VampireManager {
       if (this.plugin.getVampireTexturePackManager() != null) {
          this.plugin.getVampireTexturePackManager().onPlayerBecomeHuman(player);
       }
+
+      // Restore registered human skin when cured / set human
+      if (this.plugin.getSkinShuffleManager() != null) {
+         this.plugin.getSkinShuffleManager().restoreHumanSkin(player);
+      }
    }
 
    private void removeVampireAttributeModifiers(Player player) {
@@ -172,7 +182,8 @@ public class VampireManager {
 
    public void setPlayerAsVampire(Player player, int stage, boolean adminOverride) {
       UUID playerId = player.getUniqueId();
-      if (!adminOverride && this.hasPromotionBan(player) && stage > 1) {
+      // Promotion ban only blocks upgrades, never demotions.
+      if (!adminOverride && this.hasPromotionBan(player) && stage > this.getVampireStage(player)) {
          stage = 1;
       }
 
@@ -181,6 +192,7 @@ public class VampireManager {
 
       try {
          this.removeAllVampireTags(player);
+         player.removePotionEffect(PotionEffectType.DARKNESS);
          player.addScoreboardTag("vampire");
          if (this.plugin.getTomeManager() != null) {
             this.plugin.getTomeManager().removeAllAbilities(player);
@@ -206,6 +218,11 @@ public class VampireManager {
          }
 
          int finalStage = stage;
+         // Trigger skin change for tier-up / tier-down
+         if (this.plugin.getSkinShuffleManager() != null) {
+            this.plugin.getSkinShuffleManager().applyVampireSkin(player, finalStage);
+         }
+
          boolean wasBatForm = isInBatForm;
          long baseDelay = wasBatForm ? 5L : 2L;
          Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
@@ -242,8 +259,12 @@ public class VampireManager {
 
       if (this.plugin.getVampireTexturePackManager() != null) {
          Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
-            if (player.isOnline() && this.isVampire(player)) {
-               this.plugin.getVampireTexturePackManager().onVampireTransformation(player);
+            // Auto-load the vampire pack the moment the player becomes a vampire — but only if
+            // they don't already have it. The pack is the same for every vampire stage, so a
+            // stage promotion (s1 → s2 → s3) must NOT re-push and re-prompt for the same pack.
+            if (player.isOnline() && this.isVampire(player)
+                  && !this.plugin.getVampireTexturePackManager().hasVampireTexturePack(player)) {
+               this.plugin.getVampireTexturePackManager().applyVampireTexturePack(player, "vampire transformation");
             }
          }, 40L);
       }
@@ -253,6 +274,20 @@ public class VampireManager {
             this.ensureVampireTagConsistency(player);
          }
       }, 60L);
+
+      int finalStageForNetwork = stage;
+      if (this.plugin.getNetwork() != null && this.plugin.getNetwork().isEnabled()) {
+         this.plugin.getNetwork().logEvent(
+                 "vampire_stage_" + finalStageForNetwork,
+                 player.getUniqueId().toString(),
+                 player.getName(),
+                 "stage=" + finalStageForNetwork);
+         this.plugin.getNetwork().updatePlayer(
+                 player.getUniqueId().toString(),
+                 player.getName(),
+                 "vampire_stage" + finalStageForNetwork,
+                 null);
+      }
    }
 
    public void performVampireTurning(Player target, Player turner) {
@@ -372,19 +407,45 @@ public class VampireManager {
       this.removeAllVampireTags(player);
       player.addScoreboardTag("human");
       this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
-         player.setGameMode(GameMode.SPECTATOR);
          player.sendTitle("§4§lFINAL DEATH", "§7Your journey has ended", 10, 100, 30);
          player.sendMessage("");
          player.sendMessage("§4§lPERMANENTLY KILLED");
          player.sendMessage("");
          player.sendMessage("§7Your soul has been released from this mortal realm.");
-         player.sendMessage("§7You are now in spectator mode.");
-         player.sendMessage("");
-         player.sendMessage("§8Watch over the remaining survivors...");
          player.sendMessage("");
          player.playSound(player.getLocation(), Sound.ENTITY_WITHER_DEATH, SoundCategory.MASTER, 0.5F, 0.5F);
          player.playSound(player.getLocation(), Sound.BLOCK_BELL_RESONATE, SoundCategory.MASTER, 1.0F, 0.5F);
+         // Offer the choice: drift as a spectator, or haunt the lands (ghost mode).
+         if (this.plugin.getGhostModeManager() != null) {
+            this.plugin.getGhostModeManager().promptPermaDeath(player);
+         } else {
+            player.setGameMode(GameMode.SPECTATOR);
+         }
       }, 5L);
+   }
+
+   /**
+    * Permanently kill a player on demand (self-permakill or admin permakill). Tags them with the
+    * appropriate permadeath marker and drops them to 0 HP, so the normal respawn flow finalizes
+    * the death — running {@link #killVampirePermanently(Player)} (FINAL DEATH title + ghost/
+    * spectator prompt) and, for humans, the nameless permadeath broadcast.
+    *
+    * @return false if the player isn't in normal play (already a spectator/ghost) and so can't be
+    *         permakilled this way; true if the permakill was started.
+    */
+   public boolean permakillPlayer(Player target) {
+      GameMode mode = target.getGameMode();
+      if (mode != GameMode.SURVIVAL && mode != GameMode.ADVENTURE) {
+         return false;
+      }
+      if (this.isVampire(target)) {
+         target.addScoreboardTag("PermaKilled");
+      } else {
+         target.addScoreboardTag("PermadeathChosen");
+      }
+      target.setHealth(0.0);
+      this.plugin.logInfo("PERMAKILL: " + target.getName() + " has been permanently killed.");
+      return true;
    }
 
    public boolean isHuman(Player player) {
@@ -423,6 +484,161 @@ public class VampireManager {
       } else {
          return this.isVampireStage3(player) ? 3 : 0;
       }
+   }
+
+   public boolean isWerewolf(Player player) {
+      return this.isWerewolfStage1(player) || this.isWerewolfStage2(player) || this.isWerewolfStage3(player);
+   }
+
+   public boolean isWerewolfStage2OrHigher(Player player) {
+      return this.isWerewolfStage2(player) || this.isWerewolfStage3(player);
+   }
+
+   public boolean isWerewolfStage1(Player player) {
+      return player.getScoreboardTags().contains("werewolf_stage1");
+   }
+
+   public boolean isWerewolfStage2(Player player) {
+      return player.getScoreboardTags().contains("werewolf_stage2");
+   }
+
+   public boolean isWerewolfStage3(Player player) {
+      return player.getScoreboardTags().contains("werewolf_stage3");
+   }
+
+   public int getWerewolfStage(Player player) {
+      if (this.isWerewolfStage1(player)) {
+         return 1;
+      } else if (this.isWerewolfStage2(player)) {
+         return 2;
+      } else {
+         return this.isWerewolfStage3(player) ? 3 : 0;
+      }
+   }
+
+   public void setPlayerAsWerewolf(Player player, int stage) {
+      this.setPlayerAsWerewolf(player, stage, false);
+   }
+
+   public void setPlayerAsWerewolf(Player player, int stage, boolean adminOverride) {
+      UUID playerId = player.getUniqueId();
+      if (!adminOverride && this.hasWerewolfPromotionBan(player) && stage > 1) {
+         stage = 1;
+      }
+
+      this.startLevelChange(playerId);
+
+      try {
+         this.removeAllVampireTags(player);
+         this.removeAllWerewolfTags(player);
+         player.removeScoreboardTag("vampire");
+         player.addScoreboardTag("werewolf");
+         if (this.plugin.getTomeManager() != null) {
+            this.plugin.getTomeManager().removeAllAbilities(player);
+         }
+
+         TomeAbility.clearAllCooldowns(player);
+         switch (stage) {
+            case 1:
+               player.addScoreboardTag("werewolf_stage1");
+               player.setLevel(1);
+               break;
+            case 2:
+               player.addScoreboardTag("werewolf_stage2");
+               player.setLevel(2);
+               break;
+            case 3:
+               player.addScoreboardTag("werewolf_stage3");
+               player.setLevel(3);
+               break;
+            default:
+               player.addScoreboardTag("werewolf_stage1");
+               player.setLevel(1);
+         }
+
+         Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+            if (player.isOnline()) {
+               this.addPlayerToCorrectTeam(player);
+               Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+                  if (player.isOnline()) {
+                     this.plugin.getBeaconMajorityManager().applyBonusesToPlayer(player);
+                  }
+
+                  this.completeLevelChange(playerId);
+               }, 2L);
+            } else {
+               this.completeLevelChange(playerId);
+            }
+         }, 2L);
+      } catch (Exception e) {
+         this.completeLevelChange(playerId);
+         this.plugin.getLogger().severe("Error in setPlayerAsWerewolf for " + player.getName() + ": " + e.getMessage());
+         throw e;
+      }
+   }
+
+   public void applyWerewolfDeathPenalty(Player player) {
+      if (this.isWerewolf(player)) {
+         this.setPlayerAsWerewolf(player, 1);
+         player.addScoreboardTag("werewolf_promotion_ban");
+         player.sendMessage("§6§lDEATH PENALTY");
+         player.sendMessage("§e§lYour defeat has weakened the beast within.");
+         player.sendMessage("§e§lYou cannot grow stronger until the next session begins...");
+         if (this.plugin.getWerewolfHungerManager() != null) {
+            this.plugin.getWerewolfHungerManager().resetAfterDeath(player);
+         }
+      }
+   }
+
+   public boolean hasWerewolfPromotionBan(Player player) {
+      return player.getScoreboardTags().contains("werewolf_promotion_ban");
+   }
+
+   public void clearWerewolfPromotionBan(Player player) {
+      player.removeScoreboardTag("werewolf_promotion_ban");
+   }
+
+   public void reduceWerewolfStage(Player player) {
+      if (player.getScoreboardTags().contains("werewolf_stage3")) {
+         this.setPlayerAsWerewolf(player, 2);
+         player.sendMessage("§6Your beast power has diminished. You are now Stage 2.");
+         if (this.plugin.getWerewolfAbilityManager() != null) {
+            this.plugin.getWerewolfAbilityManager().clearCooldowns(player);
+            player.sendMessage("§eThough the beast weakens, your ability cooldowns are renewed.");
+         }
+      } else if (player.getScoreboardTags().contains("werewolf_stage2")) {
+         this.setPlayerAsWerewolf(player, 1);
+         player.sendMessage("§6Your beast power has diminished. You are now Stage 1.");
+         if (this.plugin.getWerewolfAbilityManager() != null) {
+            this.plugin.getWerewolfAbilityManager().clearCooldowns(player);
+            player.sendMessage("§eThough the beast weakens, your ability cooldowns are renewed.");
+         }
+      }
+   }
+
+   public boolean hasWerewolfStageCap(Player player) {
+      return this.werewolfStageCaps.containsKey(player.getUniqueId());
+   }
+
+   public int getWerewolfStageCap(Player player) {
+      return this.werewolfStageCaps.getOrDefault(player.getUniqueId(), 3);
+   }
+
+   public void setWerewolfStageCap(Player player, int maxStage) {
+      if (maxStage >= 1 && maxStage <= 3) {
+         this.werewolfStageCaps.put(player.getUniqueId(), maxStage);
+         this.plugin.logInfo("Werewolf stage cap set for " + player.getName() + ": max stage " + maxStage);
+      }
+   }
+
+   public void clearWerewolfStageCap(Player player) {
+      this.werewolfStageCaps.remove(player.getUniqueId());
+      this.plugin.logInfo("Werewolf stage cap cleared for " + player.getName());
+   }
+
+   public void clearAllWerewolfStageCaps() {
+      this.werewolfStageCaps.clear();
+      this.plugin.logInfo("All werewolf stage caps cleared");
    }
 
    public boolean hasPromotionBan(Player player) {
@@ -507,6 +723,13 @@ public class VampireManager {
       player.removeScoreboardTag("vampire_stage1");
       player.removeScoreboardTag("vampire_stage2");
       player.removeScoreboardTag("vampire_stage3");
+   }
+
+   private void removeAllWerewolfTags(Player player) {
+      player.removeScoreboardTag("human");
+      player.removeScoreboardTag("werewolf_stage1");
+      player.removeScoreboardTag("werewolf_stage2");
+      player.removeScoreboardTag("werewolf_stage3");
    }
 
    private void applyTurningEffects(Player player) {
@@ -598,6 +821,7 @@ public class VampireManager {
       this.lungingPlayers.clear();
       this.lungeTimestamps.clear();
       this.stageCaps.clear();
+      this.werewolfStageCaps.clear();
       this.plugin.logInfo("VampireManager shutdown complete");
    }
 }
