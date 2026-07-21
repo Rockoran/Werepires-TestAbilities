@@ -30,6 +30,20 @@ public abstract class TomeAbility {
       return this.name;
    }
 
+   /**
+    * Whether this tome is enabled on the server. New tomes override this to read a config toggle;
+    * built-in ones are always enabled. Checked before learning and before use, so a tome can be
+    * disabled live via config.
+    */
+   public boolean isEnabled() {
+      return true;
+   }
+
+   /** Whether this tome can appear in chest/vault loot pools. Override to return false for admin-only tomes. */
+   public boolean isInLootPool() {
+      return true;
+   }
+
    public String[] getDescriptionLines() {
       return this.descriptionLines;
    }

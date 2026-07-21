@@ -9,6 +9,7 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import pow.crimson2.commands.BrigadierCommands;
+import pow.crimson2.world.WorldManager;
 import pow.crimson2.listeners.BatTransformationListener;
 import pow.crimson2.listeners.BeaconConversionListener;
 import pow.crimson2.listeners.BeaconTeleportListener;
@@ -37,6 +38,27 @@ import pow.crimson2.listeners.TomeVampireRestrictionListener;
 import pow.crimson2.listeners.VampireCraftBlocker;
 import pow.crimson2.listeners.VampireFallDamageListener;
 import pow.crimson2.listeners.WeaponDropRemover;
+import pow.crimson2.listeners.WerewolfBitingListener;
+import pow.crimson2.listeners.WerewolfDietListener;
+import pow.crimson2.thralls.BloodConsumeListener;
+import pow.crimson2.thralls.BloodDrawListener;
+import pow.crimson2.thralls.ThrallCommand;
+import pow.crimson2.thralls.ThrallHolyWaterListener;
+import pow.crimson2.thralls.ThrallInventoryListener;
+import pow.crimson2.thralls.ThrallJoinQuitListener;
+import pow.crimson2.thralls.ThrallManager;
+import pow.crimson2.thralls.ThrallStayListener;
+import pow.crimson2.roles.RoleCommand;
+import pow.crimson2.roles.RoleManager;
+import pow.crimson2.roles.TrackerListener;
+import pow.crimson2.kit.StarterKitCommand;
+import pow.crimson2.kit.StarterKitManager;
+import pow.crimson2.setup.PlayerSetupManager;
+import pow.crimson2.gamestart.GameStartCommand;
+import pow.crimson2.gamestart.GameStartManager;
+import pow.crimson2.managers.WerewolfAbilityManager;
+import pow.crimson2.managers.WerewolfHungerManager;
+import pow.crimson2.managers.WerewolfPackManager;
 import pow.crimson2.managers.BatTransformationManager;
 import pow.crimson2.managers.BeaconMajorityManager;
 import pow.crimson2.managers.BeaconManager;
@@ -55,6 +77,8 @@ import pow.crimson2.managers.SessionManager;
 import pow.crimson2.managers.ThirstManager;
 import pow.crimson2.managers.TomeDistributionManager;
 import pow.crimson2.managers.TomeManager;
+import pow.crimson2.commands.SkinCommand;
+import pow.crimson2.managers.SkinShuffleManager;
 import pow.crimson2.managers.VampireAbilityManager;
 import pow.crimson2.managers.VampireFeedingManager;
 import pow.crimson2.managers.VampireManager;
@@ -90,9 +114,13 @@ public class VampireSMPPlugin extends JavaPlugin {
    private BeaconMajorityManager beaconMajorityManager;
    private TomeVampireRestrictionListener tomeVampireRestrictionListener;
    private TomeDistributionManager tomeDistributionManager;
+   private pow.crimson2.managers.VaultManager vaultManager;
+   private pow.crimson2.managers.RevivalBookManager revivalBookManager;
+   private pow.crimson2.managers.GhoulManager ghoulManager;
    private VampireTexturePackManager vampireTexturePackManager;
    private EndermanRemovalListener endermanRemovalListener;
    private DamageSuppressionListener damageSuppressionListener;
+   private MovementBoundaryListener movementBoundaryListener;
    private VampireTrackingManager vampireTrackingManager;
    private PermadeathManager permadeathManager;
    private PassiveMobSpawningManager passiveMobSpawningManager;
@@ -101,15 +129,38 @@ public class VampireSMPPlugin extends JavaPlugin {
    private ForcedCureChoiceManager forcedCureChoiceManager;
    private InitGameManager initGameManager;
    private CureBookReadingListener cureBookReadingListener;
-   private World world;
+   private WerewolfAbilityManager werewolfAbilityManager;
+   private WerewolfHungerManager werewolfHungerManager;
+   private WerewolfPackManager werewolfPackManager;
+   private WerewolfBitingListener werewolfBitingListener;
+   private WerewolfDietListener werewolfDietListener;
+   private ThrallManager thrallManager;
+   private RoleManager roleManager;
+   private RoleCommand roleCommand;
+   private StarterKitManager starterKitManager;
+   private StarterKitCommand starterKitCommand;
+   private PlayerSetupManager playerSetupManager;
+   private GameStartManager gameStartManager;
+   private GameStartCommand gameStartCommand;
+   private WorldManager worldManager;
+   private SkinShuffleManager skinShuffleManager;
+   private pow.crimson2.items.SilverArrowManager silverArrowManager;
+   private pow.crimson2.ghost.GhostModeManager ghostModeManager;
+   private pow.crimson2.ghost.ModGateManager modGateManager;
+   private pow.crimson2.network.WerePiresNetwork werePiresNetwork;
+   private pow.crimson2.world.WorldPackManager worldPackManager;
+   private org.bukkit.configuration.file.YamlConfiguration stateConfig;
+   private java.io.File stateConfigFile;
    private Team castTeam;
    private Team vampireCastTeam;
    private Location vampireRespawnLocation;
 
    public void onEnable() {
       this.saveDefaultConfig();
+      this.loadStateConfig();
       this.configManager = new ConfigManager(this);
-      this.world = Bukkit.getWorld("world");
+      this.worldManager = new WorldManager(this);
+      // world reference is now resolved dynamically via worldManager.getActiveWorld()
       this.initializeCastTeam();
       this.initializeVampireCastTeam();
       this.sessionManager = new SessionManager(this);
@@ -137,6 +188,7 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.vampireFeedingManager = new VampireFeedingManager(this);
       this.beaconMajorityManager = new BeaconMajorityManager(this);
       this.tomeDistributionManager = new TomeDistributionManager(this, this.configManager);
+      this.vaultManager = new pow.crimson2.managers.VaultManager(this);
       this.vampireTexturePackManager = new VampireTexturePackManager(this);
       this.endermanRemovalListener = new EndermanRemovalListener(this);
       this.damageSuppressionListener = new DamageSuppressionListener(this);
@@ -147,6 +199,12 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.sireManager = new VampireSireManager(this);
       this.forcedCureChoiceManager = new ForcedCureChoiceManager(this);
       this.initGameManager = new InitGameManager(this);
+      this.werewolfAbilityManager = new WerewolfAbilityManager(this);
+      this.werewolfHungerManager = new WerewolfHungerManager(this, this.configManager);
+      this.werewolfPackManager = new WerewolfPackManager(this);
+      this.werewolfBitingListener = new WerewolfBitingListener(this);
+      this.werewolfDietListener = new WerewolfDietListener(this);
+      this.thrallManager = new ThrallManager(this);
       this.getServer().getPluginManager().registerEvents(this.damageSuppressionListener, this);
       this.getServer().getPluginManager().registerEvents(this.deathHandler, this);
       this.getServer().getPluginManager().registerEvents(new CombatListener(this, this.vampireManager), this);
@@ -173,19 +231,141 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.tomeVampireRestrictionListener = new TomeVampireRestrictionListener(this);
       this.getServer().getPluginManager().registerEvents(this.tomeVampireRestrictionListener, this);
       this.getServer().getPluginManager().registerEvents(this.endermanRemovalListener, this);
-      this.getServer().getPluginManager().registerEvents(new MovementBoundaryListener(this), this);
+      this.movementBoundaryListener = new MovementBoundaryListener(this);
+      this.getServer().getPluginManager().registerEvents(this.movementBoundaryListener, this);
       this.getServer().getPluginManager().registerEvents(new FourthBookRevealListener(this, this.configManager), this);
       this.getServer().getPluginManager().registerEvents(new ForcedCureChoiceListener(this), this);
       this.getServer().getPluginManager().registerEvents(new InitGameListener(this), this);
       this.bloodMoonAttributeListener = new BloodMoonAttributeListener(this);
       this.getServer().getPluginManager().registerEvents(this.bloodMoonAttributeListener, this);
+      this.getServer().getPluginManager().registerEvents(new pow.crimson2.listeners.VampireStrengthImmunityListener(this), this);
+      this.silverArrowManager = new pow.crimson2.items.SilverArrowManager(this);
+      this.getServer().getPluginManager().registerEvents(this.silverArrowManager, this);
+      this.getServer().getPluginManager().registerEvents(new pow.crimson2.listeners.VaultLootListener(this), this);
+      this.getServer().getPluginManager().registerEvents(new pow.crimson2.listeners.VaultChunkListener(this), this);
+      // Revival rite: books + ghoul state.
+      this.revivalBookManager = new pow.crimson2.managers.RevivalBookManager(this);
+      this.ghoulManager = new pow.crimson2.managers.GhoulManager(this);
+      this.getServer().getPluginManager().registerEvents(this.revivalBookManager, this);
+      this.getServer().getPluginManager().registerEvents(this.ghoulManager, this);
+      // Re-apply vault block config for any vaults already in loaded chunks.
+      this.getServer().getScheduler().runTaskLater(this, () -> {
+         if (this.vaultManager != null) {
+            this.vaultManager.cleanupLegacyDisplays();
+            this.vaultManager.configureLoadedVaults();
+         }
+      }, 60L);
+      this.ghostModeManager = new pow.crimson2.ghost.GhostModeManager(this);
+      this.getServer().getPluginManager().registerEvents(this.ghostModeManager, this);
+      this.getServer().getMessenger().registerOutgoingPluginChannel(
+              this, pow.crimson2.ghost.GhostModeManager.GHOST_CHANNEL);
+      // Register the ghost voice-haunt add-on with Simple Voice Chat, ONLY if it's installed.
+      // The presence check must happen before any voicechat type is referenced — all such
+      // references live in VoicechatHook so this method never forces loading the SVC API.
+      if (this.getServer().getPluginManager().getPlugin("voicechat") != null) {
+         try {
+            if (pow.crimson2.ghost.VoicechatHook.register(this)) {
+               this.logInfo("Registered ghost voice-haunt with Simple Voice Chat.");
+            } else {
+               this.logInfo("Simple Voice Chat service unavailable — ghost voice haunt disabled.");
+            }
+         } catch (Throwable t) {
+            this.getLogger().warning("Failed to register ghost voice-haunt SVC plugin: " + t.getMessage());
+         }
+      } else {
+         this.logInfo("Simple Voice Chat not detected — ghost voice haunt disabled.");
+      }
+      // Compatibility-mod gate: require the client mod (handshake key) or kick.
+      this.modGateManager = new pow.crimson2.ghost.ModGateManager(this);
+      this.getServer().getMessenger().registerIncomingPluginChannel(
+              this, pow.crimson2.ghost.ModGateManager.CHANNEL, this.modGateManager);
+      this.getServer().getMessenger().registerOutgoingPluginChannel(
+              this, pow.crimson2.ghost.ModGateManager.CHANNEL);
+      pow.crimson2.ghost.GhostCommand ghostCommand = new pow.crimson2.ghost.GhostCommand(this);
+      this.getCommand("ghost").setExecutor(ghostCommand);
+      this.getCommand("ghost").setTabCompleter(ghostCommand);
       BrigadierCommands brigadierCommands = new BrigadierCommands(this);
       brigadierCommands.registerAll();
+      this.getServer().getPluginManager().registerEvents(this.werewolfBitingListener, this);
+      this.getServer().getPluginManager().registerEvents(this.werewolfDietListener, this);
+      this.getServer().getPluginManager().registerEvents(new BloodDrawListener(this), this);
+      this.getServer().getPluginManager().registerEvents(new BloodConsumeListener(this), this);
+      this.getServer().getPluginManager().registerEvents(new ThrallHolyWaterListener(this), this);
+      this.getServer().getPluginManager().registerEvents(new ThrallStayListener(this), this);
+      this.getServer().getPluginManager().registerEvents(new ThrallInventoryListener(this), this);
+      this.getServer().getPluginManager().registerEvents(new ThrallJoinQuitListener(this), this);
+      ThrallCommand thrallCommand = new ThrallCommand(this);
+      this.getCommand("thrall").setExecutor(thrallCommand);
+      this.getCommand("thrall").setTabCompleter(thrallCommand);
+
+      // ── Roles ──────────────────────────────────────────────────────────────
+      this.roleManager = new RoleManager(this);
+      this.roleCommand = new RoleCommand(this);
+      this.getServer().getPluginManager().registerEvents(new TrackerListener(this), this);
+      this.getCommand("role").setExecutor(this.roleCommand);
+      this.getCommand("role").setTabCompleter(this.roleCommand);
+      this.getCommand("rolecfg").setExecutor(this.roleCommand);
+      this.getCommand("rolecfg").setTabCompleter(this.roleCommand);
+      this.getCommand("rolestart").setExecutor(this.roleCommand);
+      this.getCommand("vampire").setExecutor(this.roleCommand);
+      this.getCommand("gameadmin").setExecutor(this.roleCommand);
+      this.getCommand("findvampires").setExecutor(this.roleCommand);
+
+      // ── Starter Kit ────────────────────────────────────────────────────────
+      this.starterKitManager = new StarterKitManager(this);
+      this.starterKitCommand = new StarterKitCommand(this);
+      this.getServer().getPluginManager().registerEvents(this.starterKitCommand, this);
+      this.getCommand("kitstart").setExecutor(this.starterKitCommand);
+      this.getCommand("kitstop").setExecutor(this.starterKitCommand);
+      this.getCommand("kitall").setExecutor(this.starterKitCommand);
+      this.getCommand("starterkit").setExecutor(this.starterKitCommand);
+      this.getCommand("starterkit").setTabCompleter(this.starterKitCommand);
+      this.getCommand("starterkitgive").setExecutor(this.starterKitCommand);
+      this.getCommand("foodkitadd").setExecutor(this.starterKitCommand);
+      this.getCommand("foodkitremove").setExecutor(this.starterKitCommand);
+      this.getCommand("foodkitgive").setExecutor(this.starterKitCommand);
+
+      // ── Player Setup ───────────────────────────────────────────────────────
+      this.playerSetupManager = new PlayerSetupManager(this);
+      this.getServer().getPluginManager().registerEvents(this.playerSetupManager, this);
+      this.getCommand("playersetup").setExecutor(this.playerSetupManager);
+
+      // ── Game Start ─────────────────────────────────────────────────────────
+      this.gameStartManager = new GameStartManager(this);
+      this.gameStartCommand = new GameStartCommand(this);
+      this.getServer().getPluginManager().registerEvents(this.gameStartCommand, this);
+      this.getCommand("gamestart").setExecutor(this.gameStartCommand);
+      this.getCommand("gamestart").setTabCompleter(this.gameStartCommand);
+
+      this.skinShuffleManager = new SkinShuffleManager(this);
+      // Bridge the SkinShuffle Fabric mod → server skin changes (C2S)
+      this.getServer().getMessenger().registerIncomingPluginChannel(
+              this, SkinShuffleManager.CHANNEL, this.skinShuffleManager);
+      // Outgoing channels: handshake (suppresses the mod's reconnect prompt) and
+      // force_skin (pushes server-decided skins to the client without a reconnect).
+      this.getServer().getMessenger().registerOutgoingPluginChannel(
+              this, SkinShuffleManager.HANDSHAKE_CHANNEL);
+      this.getServer().getMessenger().registerOutgoingPluginChannel(
+              this, SkinShuffleManager.FORCE_SKIN_CHANNEL);
+      SkinCommand skinCommand = new SkinCommand(this);
+      this.getCommand("skin").setExecutor(skinCommand);
+      this.getCommand("skin").setTabCompleter(skinCommand);
+      this.werewolfPackManager.start();
       this.initializeDeathScoreboard();
       this.effectManager.startEffectTask();
       this.beaconManager.validateBeacons();
       this.initVampireRespawnLocation();
       this.sessionManager.executeServerCommand("tick freeze");
+      this.werePiresNetwork = new pow.crimson2.network.WerePiresNetwork(this);
+      this.werePiresNetwork.start();
+      String networkKey = getConfig().getString("werepires-network.server-key", "");
+      if (!networkKey.isEmpty()) {
+         String ip = org.bukkit.Bukkit.getServer().getIp();
+         int port = org.bukkit.Bukkit.getServer().getPort();
+         String srvName = (ip.isEmpty() ? "0.0.0.0" : ip) + ":" + port;
+         this.worldPackManager = new pow.crimson2.world.WorldPackManager(this, networkKey, srvName);
+         this.worldPackManager.start();
+      }
       this.logInfo("VampireSMP Plugin has been enabled!");
    }
 
@@ -293,6 +473,63 @@ public class VampireSMPPlugin extends JavaPlugin {
          this.forcedCureChoiceManager.shutdown();
       }
 
+      if (this.werewolfAbilityManager != null) {
+         this.werewolfAbilityManager.shutdown();
+      }
+
+      if (this.werewolfHungerManager != null) {
+         this.werewolfHungerManager.shutdown();
+      }
+
+      if (this.werewolfBitingListener != null) {
+         this.werewolfBitingListener.shutdown();
+      }
+
+      if (this.werewolfPackManager != null) {
+         this.werewolfPackManager.shutdown();
+      }
+
+      if (this.thrallManager != null) {
+         this.thrallManager.shutdown();
+      }
+
+      if (this.roleManager != null) {
+         this.roleManager.shutdown();
+      }
+
+      if (this.gameStartManager != null) {
+         this.gameStartManager.shutdown();
+      }
+
+      if (this.skinShuffleManager != null) {
+         this.getServer().getMessenger().unregisterIncomingPluginChannel(
+                 this, SkinShuffleManager.CHANNEL);
+         this.getServer().getMessenger().unregisterOutgoingPluginChannel(
+                 this, SkinShuffleManager.HANDSHAKE_CHANNEL);
+         this.getServer().getMessenger().unregisterOutgoingPluginChannel(
+                 this, SkinShuffleManager.FORCE_SKIN_CHANNEL);
+         this.skinShuffleManager.shutdown();
+      }
+
+      if (this.silverArrowManager != null) {
+         this.silverArrowManager.shutdown();
+      }
+
+      this.getServer().getMessenger().unregisterOutgoingPluginChannel(
+              this, pow.crimson2.ghost.GhostModeManager.GHOST_CHANNEL);
+      this.getServer().getMessenger().unregisterIncomingPluginChannel(
+              this, pow.crimson2.ghost.ModGateManager.CHANNEL);
+      this.getServer().getMessenger().unregisterOutgoingPluginChannel(
+              this, pow.crimson2.ghost.ModGateManager.CHANNEL);
+
+      if (this.worldPackManager != null) {
+         this.worldPackManager.stop();
+      }
+
+      if (this.werePiresNetwork != null) {
+         this.werePiresNetwork.stop();
+      }
+
       this.logInfo("VampireSMP Plugin has been disabled!");
    }
 
@@ -366,7 +603,12 @@ public class VampireSMPPlugin extends JavaPlugin {
    }
 
    private void initVampireRespawnLocation() {
-      this.vampireRespawnLocation = this.configManager.getVampireRespawnLocation(this.getWorld());
+      World w = this.getWorld();
+      if (w == null) {
+         this.getLogger().warning("initVampireRespawnLocation: active world not loaded yet — skipping");
+         return;
+      }
+      this.vampireRespawnLocation = this.configManager.getVampireRespawnLocation(w);
       this.logInfo(
          "Vampire respawn location set to: "
             + this.vampireRespawnLocation.getBlockX()
@@ -394,7 +636,8 @@ public class VampireSMPPlugin extends JavaPlugin {
    }
 
    public World getWorld() {
-      return this.world;
+      if (this.worldManager != null) return this.worldManager.getActiveWorld();
+      return Bukkit.getWorld("world");
    }
 
    public BeetrootManager getBeetrootManager() {
@@ -415,6 +658,22 @@ public class VampireSMPPlugin extends JavaPlugin {
 
    public ConfigManager getConfigManager() {
       return this.configManager;
+   }
+
+   public pow.crimson2.items.SilverArrowManager getSilverArrowManager() {
+      return this.silverArrowManager;
+   }
+
+   public pow.crimson2.ghost.GhostModeManager getGhostModeManager() {
+      return this.ghostModeManager;
+   }
+
+   public pow.crimson2.ghost.ModGateManager getModGateManager() {
+      return this.modGateManager;
+   }
+
+   public SkinShuffleManager getSkinShuffleManager() {
+      return this.skinShuffleManager;
    }
 
    public SessionManager getSessionManager() {
@@ -465,6 +724,10 @@ public class VampireSMPPlugin extends JavaPlugin {
       return this.bloodMoonAttributeListener;
    }
 
+   public MovementBoundaryListener getMovementBoundaryListener() {
+      return this.movementBoundaryListener;
+   }
+
    public BloodMoonManager getBloodMoonManager() {
       return this.bloodMoonManager;
    }
@@ -475,6 +738,18 @@ public class VampireSMPPlugin extends JavaPlugin {
 
    public TomeVampireRestrictionListener getTomeVampireRestrictionListener() {
       return this.tomeVampireRestrictionListener;
+   }
+
+   public pow.crimson2.managers.RevivalBookManager getRevivalBookManager() {
+      return this.revivalBookManager;
+   }
+
+   public pow.crimson2.managers.GhoulManager getGhoulManager() {
+      return this.ghoulManager;
+   }
+
+   public pow.crimson2.managers.VaultManager getVaultManager() {
+      return this.vaultManager;
    }
 
    public TomeDistributionManager getTomeDistributionManager() {
@@ -517,8 +792,95 @@ public class VampireSMPPlugin extends JavaPlugin {
       return this.initGameManager;
    }
 
+   public WorldManager getWorldManager() {
+      return this.worldManager;
+   }
+
    public CureBookReadingListener getCureBookReadingListener() {
       return this.cureBookReadingListener;
+   }
+
+   public WerewolfAbilityManager getWerewolfAbilityManager() {
+      return this.werewolfAbilityManager;
+   }
+
+   public WerewolfPackManager getWerewolfPackManager() {
+      return this.werewolfPackManager;
+   }
+
+   public WerewolfBitingListener getWerewolfBitingListener() {
+      return this.werewolfBitingListener;
+   }
+
+   public WerewolfDietListener getWerewolfDietListener() {
+      return this.werewolfDietListener;
+   }
+
+   public WerewolfHungerManager getWerewolfHungerManager() {
+      return this.werewolfHungerManager;
+   }
+
+   public ThrallManager getThrallManager() {
+      return this.thrallManager;
+   }
+
+   public pow.crimson2.network.WerePiresNetwork getNetwork() {
+      return this.werePiresNetwork;
+   }
+
+   public RoleManager getRoleManager() {
+      return this.roleManager;
+   }
+
+   public StarterKitManager getStarterKitManager() {
+      return this.starterKitManager;
+   }
+
+   public StarterKitCommand getStarterKitCommand() {
+      return this.starterKitCommand;
+   }
+
+   public PlayerSetupManager getPlayerSetupManager() {
+      return this.playerSetupManager;
+   }
+
+   public GameStartManager getGameStartManager() {
+      return this.gameStartManager;
+   }
+
+   private void loadStateConfig() {
+      this.stateConfigFile = new java.io.File(getDataFolder(), "state.yml");
+      this.stateConfig = new org.bukkit.configuration.file.YamlConfiguration();
+      if (this.stateConfigFile.exists()) {
+         this.stateConfig = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(this.stateConfigFile);
+      } else {
+         // Migrate old state keys out of config.yml on first run
+         String[] stateKeys = {"first_beacon_converted","humans_own_all_beacons","vampires_own_all_beacons",
+                               "one_human_left","fourth_book_has_spawned","fourth_book_spawn_enabled"};
+         boolean migrated = false;
+         for (String key : stateKeys) {
+            if (getConfig().contains(key)) {
+               this.stateConfig.set(key, getConfig().get(key));
+               getConfig().set(key, null);
+               migrated = true;
+            }
+         }
+         if (migrated) saveConfig();
+         saveStateConfig();
+         getLogger().info("[WerePires] Migrated game-state keys from config.yml → state.yml");
+      }
+   }
+
+   public org.bukkit.configuration.file.YamlConfiguration getStateConfig() {
+      return this.stateConfig;
+   }
+
+   public void saveStateConfig() {
+      try {
+         this.stateConfig.save(this.stateConfigFile);
+      } catch (java.io.IOException e) {
+         getLogger().severe("[WerePires] Failed to save state.yml: " + e.getMessage());
+      }
    }
 
    public void logInfo(String message) {

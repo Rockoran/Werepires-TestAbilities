@@ -1,9 +1,95 @@
-name: VampireSMP
-version: 1.0.0
+name: WerePires
+version: 1.5
 main: pow.crimson2.VampireSMPPlugin
-api-version: 1.21
+api-version: 1.21.5
 author: PowCreations
 description: The official Vampire SMP plugin
+softdepend: [Multiverse-Core, voicechat]
+
+commands:
+  thrall:
+    description: Thrall blood-bond system
+    usage: /thrall <subcommand>
+    permission: vampiresmp.player
+
+  # ── Roles ──────────────────────────────────────────────────────────────────
+  role:
+    description: View or manage your human role
+    usage: /role [info|list]
+    permission: vampiresmp.player
+  rolecfg:
+    description: Configure role settings
+    usage: /rolecfg [enable|disable <role>]
+    permission: vampiresmp.admin
+  rolestart:
+    description: Randomly assign a role to one eligible player
+    usage: /rolestart <role>
+    permission: vampiresmp.admin
+  vampire:
+    description: Vampire role info
+    usage: /vampire
+    permission: vampiresmp.player
+  gameadmin:
+    description: Game admin utilities
+    usage: /gameadmin <sub>
+    permission: vampiresmp.admin
+  findvampires:
+    description: Scan for nearby vampires (Vampire Hunter role)
+    usage: /findvampires
+    permission: vampiresmp.player
+
+  # ── Starter Kit ────────────────────────────────────────────────────────────
+  kitstart:
+    description: Enable the starter kit for newly joined players
+    usage: /kitstart
+    permission: starterkit.admin
+  kitstop:
+    description: Disable the starter kit
+    usage: /kitstop
+    permission: starterkit.admin
+  kitall:
+    description: Give the starter kit to all online players
+    usage: /kitall
+    permission: starterkit.admin
+  starterkit:
+    description: Open the starter kit settings GUI
+    usage: /starterkit [player]
+    permission: starterkit.admin
+  starterkitgive:
+    description: Give the starter kit to a specific player
+    usage: /starterkitgive <player>
+    permission: starterkit.admin
+  foodkitadd:
+    description: Mark a player as having received the food kit
+    usage: /foodkitadd <player>
+    permission: starterkit.admin
+  foodkitremove:
+    description: Remove a player from the food kit received list
+    usage: /foodkitremove <player>
+    permission: starterkit.admin
+  foodkitgive:
+    description: Give the food kit to a specific player
+    usage: /foodkitgive <player>
+    permission: starterkit.admin
+
+  # ── Player Setup ───────────────────────────────────────────────────────────
+  playersetup:
+    description: Open the player setup wizard
+    usage: /playersetup
+    permission: vampiresmp.player
+
+  # ── Game Start ─────────────────────────────────────────────────────────────
+  gamestart:
+    description: Session setup wizard
+    usage: /gamestart [timer|cancel|sessionend|resumesession]
+    permission: vampiresmp.admin
+
+  skin:
+    description: Register and manage per-stage vampire skins
+    usage: /skin <register|apply|clear|list> [stage]
+  ghost:
+    description: Reveal/conceal yourself, voice-haunt a player, or stop haunting
+    usage: /ghost <show|hide|showall|hideall|list|haunt|unhaunt|setfree> [player]
 
 permissions:
   vampiresmp.admin:
@@ -12,4 +98,20 @@ permissions:
 
   vampiresmp.player:
     description: Allows access to basic vampire SMP player features
+    default: true
+
+  vampiresmp.modgate.bypass:
+    description: Exempts the player from the compatibility-mod requirement
+    default: op
+
+  thralls.admin:
+    description: Allows access to thrall admin subcommands
+    default: op
+
+  starterkit.admin:
+    description: Allows access to starter kit admin commands
+    default: op
+
+  starterkit.use:
+    description: Allows a player to use /starterkit to view their own settings
     default: true

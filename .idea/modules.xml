@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/src/main/resources/META-INF/maven/pow.crimson2/VampireSMP/VampireSMP.iml" filepath="$PROJECT_DIR$/src/main/resources/META-INF/maven/pow.crimson2/VampireSMP/VampireSMP.iml" />
+      <module fileurl="file://$PROJECT_DIR$/VampireSMP.iml" filepath="$PROJECT_DIR$/VampireSMP.iml" />
     </modules>
   </component>
 </project>
