@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scoreboard.Team;
 import pow.crimson2.VampireSMPPlugin;
@@ -27,8 +28,36 @@ public class PlayerJoinListener implements Listener {
    }
 
    @EventHandler
+   public void onPreLogin(AsyncPlayerPreLoginEvent event) {
+      if (this.plugin.getNetwork() != null && this.plugin.getNetwork().isSuspended()) {
+         event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER,
+                 "§4§l[WerePires] §cThis server's WerePires license is currently suspended.\n§7Please try again later.");
+      }
+   }
+
+   @EventHandler
    public void onPlayerJoin(PlayerJoinEvent event) {
       Player player = event.getPlayer();
+
+      // If the player spawned in the wrong world (e.g. vanilla overworld while a
+      // loaded world pack is active as a named dimension), teleport them to the
+      // active world's spawn before any other logic runs.
+      org.bukkit.World activeWorld = this.plugin.getWorldManager() != null
+            ? this.plugin.getWorldManager().getActiveWorld() : null;
+      if (activeWorld != null && !player.getWorld().equals(activeWorld)) {
+         player.teleport(activeWorld.getSpawnLocation());
+      }
+
+      // Verify the player is running the compatibility mod (kick a few seconds in if not).
+      if (this.plugin.getModGateManager() != null) {
+         this.plugin.getModGateManager().scheduleCheck(player);
+      }
+
+      // Load this player's registered stage skins from disk
+      if (this.plugin.getSkinShuffleManager() != null) {
+         this.plugin.getSkinShuffleManager().loadSkins(player);
+      }
+
       this.addPlayerToCastTeam(player);
       TurnUndeadTomeAbility.cleanupHumanOnVampireCastTeam(this.plugin, player);
       this.vampireManager.initializeNewPlayer(player);
@@ -36,12 +65,48 @@ public class PlayerJoinListener implements Listener {
       this.effectManager.applyJoinEffects(player);
       this.beetrootManager.restorePlayerState(player);
       this.plugin.getBeaconMajorityManager().applyBonusesToPlayer(player);
-      if (this.plugin.getVampireTexturePackManager() != null && (this.vampireManager.isVampire(player) || player.getScoreboardTags().contains("CuredVampire"))) {
-         this.plugin.getVampireTexturePackManager().onVampireLogin(player);
+      if (this.vampireManager.isWerewolf(player) && this.plugin.getWerewolfHungerManager() != null) {
+         this.plugin.getWerewolfHungerManager().restoreXpBar(player);
+      }
+
+      if (this.plugin.getVampireTexturePackManager() != null) {
+         // Push the base server pack to everyone on join (covers players who haven't loaded it yet).
+         this.plugin.getVampireTexturePackManager().onPlayerLogin(player);
+         // Vampires get the vampire pack layered on top a moment later.
+         if (this.vampireManager.isVampire(player) || player.getScoreboardTags().contains("CuredVampire")) {
+            this.plugin.getVampireTexturePackManager().onVampireLogin(player);
+         }
+      }
+
+      // Re-apply the correct vampire-stage skin for returning vampires
+      if (this.plugin.getSkinShuffleManager() != null && this.vampireManager.isVampire(player)) {
+         this.plugin.getSkinShuffleManager().applyExistingVampireSkin(player);
+      }
+
+      // Send the SkinShuffle handshake (suppresses the mod's reconnect prompt) and re-assert
+      // the stage skin a little later, once the client's plugin-channel registration has
+      // arrived — messages sent at join time can be dropped before the channel is ready.
+      if (this.plugin.getSkinShuffleManager() != null) {
+         org.bukkit.Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+            if (!player.isOnline()) return;
+            this.plugin.getSkinShuffleManager().sendHandshake(player);
+            if (this.vampireManager.isVampire(player)) {
+               this.plugin.getSkinShuffleManager().applyExistingVampireSkin(player);
+            }
+         }, 40L);
       }
 
       if (this.plugin.getBloodMoonAttributeListener() != null) {
          this.plugin.getBloodMoonAttributeListener().forceCleanupOnJoin(player);
+      }
+
+      // Apply blood moon UNLUCK immediately on join so mid-moon joiners don't miss the buff.
+      if (this.plugin.getBloodMoonManager() != null && this.plugin.getBloodMoonManager().isActive()) {
+         boolean eligible = this.vampireManager.isVampireStage2(player) || this.vampireManager.isVampireStage3(player);
+         if (eligible) {
+            player.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                    org.bukkit.potion.PotionEffectType.UNLUCK, 240, 0, false, false), false);
+         }
       }
 
       String sessionStatus = this.getSessionStatusMessage();
@@ -101,6 +166,17 @@ public class PlayerJoinListener implements Listener {
       }
 
       event.setJoinMessage(null);
+
+      // Network sync — report player join + current role
+      if (this.plugin.getNetwork() != null && this.plugin.getNetwork().isEnabled()) {
+         String role = this.vampireManager.isVampire(player) ? "vampire"
+                     : this.vampireManager.isWerewolf(player) ? "werewolf"
+                     : "human";
+         boolean isOp = player.isOp();
+         this.plugin.getNetwork().logEvent("player_join", player.getUniqueId().toString(), player.getName(),
+                 "role=" + role + ",op=" + isOp);
+         this.plugin.getNetwork().updatePlayer(player.getUniqueId().toString(), player.getName(), role, "op=" + isOp);
+      }
    }
 
    @EventHandler
@@ -123,6 +199,14 @@ public class PlayerJoinListener implements Listener {
       this.plugin.getBeaconMajorityManager().removeBonusesFromPlayer(player);
       if (this.plugin.getVampireTexturePackManager() != null) {
          this.plugin.getVampireTexturePackManager().onPlayerQuit(player);
+      }
+
+      if (this.plugin.getSkinShuffleManager() != null) {
+         this.plugin.getSkinShuffleManager().clearCache(player);
+      }
+
+      if (this.plugin.getModGateManager() != null) {
+         this.plugin.getModGateManager().clear(player);
       }
 
       event.setQuitMessage(null);

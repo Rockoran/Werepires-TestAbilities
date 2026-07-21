@@ -19,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import pow.crimson2.VampireSMPPlugin;
+import pow.crimson2.managers.TomeDistributionManager;
 import pow.crimson2.managers.TomeManager;
 import pow.crimson2.managers.VampireManager;
 
@@ -70,11 +71,10 @@ public class TomeListener implements Listener {
          }
 
          if (item != null && item.getType() == Material.WRITTEN_BOOK) {
-            BookMeta bookMeta = (BookMeta)item.getItemMeta();
-            if (bookMeta != null && bookMeta.hasTitle()) {
-               String tomeTitle = bookMeta.getTitle();
+            int cureBookNumber = CureBookReadingListener.getAuthenticCureBookNumber(item, this.plugin);
+            String tomeTitle = TomeDistributionManager.getTomeAbilityName(item, this.plugin);
+            if (cureBookNumber > 0 || tomeTitle != null) {
                this.plugin.logInfo("Player " + player.getName() + " using tome with title: '" + tomeTitle + "'");
-               int cureBookNumber = CureBookReadingListener.getAuthenticCureBookNumber(item, this.plugin);
                if (cureBookNumber > 0) {
                   if (cureBookNumber == 4 && !CureBookReadingListener.hasReadAllCureBooks(player)) {
                      event.setCancelled(true);

@@ -8,7 +8,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.inventory.ItemStack;
 import pow.crimson2.VampireSMPPlugin;
+import pow.crimson2.managers.TomeDistributionManager;
 
 public class VampireCraftBlocker implements Listener {
    VampireSMPPlugin plugin;
@@ -53,6 +56,16 @@ public class VampireCraftBlocker implements Listener {
                   player.sendMessage("§cYou find yourself unable to put your mind to the task of crafting this... Such trinkets are beneath you.");
                }
             }
+         }
+      }
+   }
+
+   @EventHandler
+   public void onPrepareCraft(PrepareItemCraftEvent event) {
+      for (ItemStack ingredient : event.getInventory().getMatrix()) {
+         if (TomeDistributionManager.getTomeAbilityName(ingredient, this.plugin) != null) {
+            event.getInventory().setResult(null);
+            return;
          }
       }
    }

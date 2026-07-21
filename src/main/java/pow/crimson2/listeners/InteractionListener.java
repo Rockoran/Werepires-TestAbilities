@@ -23,6 +23,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import pow.crimson2.VampireSMPPlugin;
 import pow.crimson2.managers.SessionManager;
@@ -67,13 +68,11 @@ public class InteractionListener implements Listener {
             event.setCancelled(true);
             player.sendMessage("§cYou cannot interact with anything while you are in your bat form.");
          } else {
-            boolean mainHandHasFood = mainHand != null && FEEDING_ITEMS.contains(mainHand.getType());
-            boolean offHandHasFood = offHand != null && FEEDING_ITEMS.contains(offHand.getType());
-            if (mainHandHasFood || offHandHasFood) {
+            ItemStack usedItem = event.getHand() == EquipmentSlot.HAND ? mainHand : offHand;
+            if (usedItem != null && FEEDING_ITEMS.contains(usedItem.getType())) {
                if (!(targetEntity instanceof Player)) {
                   if (this.isFeedableMob(targetEntity)) {
-                     ItemStack foodItem = mainHandHasFood ? mainHand : offHand;
-                     this.handleVampireFeedingAttempt(player, targetEntity, foodItem, event);
+                     this.handleVampireFeedingAttempt(player, targetEntity, usedItem, event);
                   }
                }
             }

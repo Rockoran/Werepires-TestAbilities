@@ -1,6 +1,7 @@
 package pow.crimson2.listeners;
 
 import org.bukkit.Material;
+import org.bukkit.entity.Animals;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -14,6 +15,8 @@ import org.bukkit.inventory.PlayerInventory;
 import pow.crimson2.VampireSMPPlugin;
 import pow.crimson2.managers.ThirstManager;
 import pow.crimson2.managers.VampireManager;
+import pow.crimson2.thralls.ThrallConfig;
+import pow.crimson2.thralls.ThrallManager;
 
 public class FeedingListener implements Listener {
    private final VampireSMPPlugin plugin;
@@ -26,28 +29,54 @@ public class FeedingListener implements Listener {
       this.thirstManager = plugin.getThirstManager();
    }
 
+   private ThrallManager thrallManager() {
+      return plugin.getThrallManager();
+   }
+
    @EventHandler(priority = EventPriority.HIGH)
    public void onEntityDeath(EntityDeathEvent event) {
-      if (this.plugin.getSessionManager().isSessionActive()) {
-         Entity deadEntity = event.getEntity();
-         if (!(deadEntity instanceof Player)) {
-            Player killer = ((LivingEntity)deadEntity).getKiller();
-            if (killer != null && this.vampireManager.isVampire(killer)) {
-               int experienceDropped = event.getDroppedExp();
-               event.setDroppedExp(0);
-               if (this.thirstManager.isThirstQuencher(deadEntity.getType())) {
-                  boolean bottleFilled = this.tryFillBottleWithBlood(killer);
-                  if (!bottleFilled) {
-                     this.thirstManager.handleEntityKill(killer, deadEntity.getType(), experienceDropped);
-                     if (experienceDropped > 0 && !killer.getScoreboardTags().contains("informed_successful_feeding")) {
-                        killer.addScoreboardTag("informed_successful_feeding");
-                        killer.sendMessage("§cYou taste the metallic essence of life...");
-                     }
-                  }
+      if (!this.plugin.getSessionManager().isSessionActive()) return;
+      Entity deadEntity = event.getEntity();
+      if (deadEntity instanceof Player) return;
+
+      Player killer = ((LivingEntity) deadEntity).getKiller();
+      if (killer == null) return;
+
+      // ── Vampire feeding ───────────────────────────────────────────────────────
+      if (this.vampireManager.isVampire(killer)) {
+         int experienceDropped = event.getDroppedExp();
+         event.setDroppedExp(0);
+         if (this.thirstManager.isThirstQuencher(deadEntity.getType())) {
+            ThrallManager tm = thrallManager();
+            ThrallConfig cfg = tm != null ? tm.getThrallConfig() : null;
+            if (cfg != null && cfg.isAnimalBloodDrawEnabled() && !cfg.isAnimalBloodDrawAllowVampires()) return;
+            boolean bottleFilled = this.tryFillBottleWithBlood(killer);
+            if (!bottleFilled) {
+               this.thirstManager.handleEntityKill(killer, deadEntity.getType(), experienceDropped);
+               if (experienceDropped > 0 && !killer.getScoreboardTags().contains("informed_successful_feeding")) {
+                  killer.addScoreboardTag("informed_successful_feeding");
+                  killer.sendMessage("§cYou taste the metallic essence of life...");
                }
             }
          }
+         return;
       }
+
+      // ── Human / thrall animal blood collection ────────────────────────────────
+      if (!(deadEntity instanceof Animals)) return;
+      ThrallManager tm = thrallManager();
+      if (tm == null) return;
+      ThrallConfig cfg = tm.getThrallConfig();
+      if (!cfg.isAnimalBloodDrawEnabled()) return;
+
+      boolean isHuman  = this.vampireManager.isHuman(killer);
+      boolean isThrall = tm.isThrall(killer);
+
+      boolean allowed = (isHuman  && cfg.isAnimalBloodDrawAllowHumans())
+                     || (isThrall && cfg.isAnimalBloodDrawAllowThralls());
+      if (!allowed) return;
+
+      this.tryFillBottleWithBlood(killer);
    }
 
    private boolean tryFillBottleWithBlood(Player killer) {

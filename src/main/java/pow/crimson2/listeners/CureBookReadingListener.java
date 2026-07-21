@@ -105,9 +105,9 @@ public class CureBookReadingListener implements Listener {
                );
                player.sendMessage("");
                this.plugin.logInfo("CURE UNLOCKED: " + player.getName() + " has unlocked the /vol cure command");
-               if (!this.plugin.getConfig().getBoolean("fourth_book_spawn_enabled", false)) {
-                  this.plugin.getConfig().set("fourth_book_spawn_enabled", true);
-                  this.plugin.saveConfig();
+               if (!this.plugin.getStateConfig().getBoolean("fourth_book_spawn_enabled", false)) {
+                  this.plugin.getStateConfig().set("fourth_book_spawn_enabled", true);
+                  this.plugin.saveStateConfig();
                   this.plugin.logInfo("FOURTH BOOK ENABLED: " + player.getName() + " completed the Trinity, fourth book can now spawn");
                }
             }
@@ -149,5 +149,26 @@ public class CureBookReadingListener implements Listener {
    public static void markAsAuthenticCureBook(BookMeta meta, int bookNumber, VampireSMPPlugin plugin) {
       NamespacedKey key = new NamespacedKey(plugin, "vampiresmp_cure_book");
       meta.getPersistentDataContainer().set(key, PersistentDataType.INTEGER, bookNumber);
+   }
+
+   public static ItemStack createFourthCureBook(VampireSMPPlugin plugin) {
+      ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
+      BookMeta bookMeta = (BookMeta)book.getItemMeta();
+      if (bookMeta != null) {
+         bookMeta.setTitle("The Retribution 4/3");
+         bookMeta.setAuthor("§4A vengeful hand...");
+         bookMeta.setPages(
+            new String[]{
+               "§8§o[The writing in this book is unlike the previous three, it's is hurried and panic'd, the ink is smeared and the smell of blood rests faintly on the pages]§r\n\n§4The spirits are too lenient... Too soft...",
+               "§0These disgusting, vial, works of evil could never be convinced to come back to the light...\n\n§0They must be dragged back to humanity, even if it's by, kicking and screaming.",
+               "§0Give them a choice. Accept the light, or face eternal darkness.\n\n§0I will give them this choice, with these holy words:",
+               "§7/§4hoc-vinculum-tibi-dirumpo-mala-creatura §7<§4Players-Name§7>"
+            }
+         );
+         markAsAuthenticCureBook(bookMeta, 4, plugin);
+         book.setItemMeta(bookMeta);
+      }
+
+      return book;
    }
 }

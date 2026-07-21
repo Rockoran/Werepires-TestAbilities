@@ -12,6 +12,7 @@ import org.bukkit.Particle.DustOptions;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -64,7 +65,8 @@ public class CombatListener implements Listener {
          event.setDamage(reducedDamage);
       }
 
-      if (event.getDamager() instanceof Player attacker) {
+      Player attacker = this.resolveAttacker(event.getDamager());
+      if (attacker != null) {
          if (!this.plugin.getSessionManager().isSessionActive()) {
             event.setCancelled(true);
          } else if (this.plugin.getBatTransformationManager().isInBatForm(attacker)) {
@@ -78,7 +80,7 @@ public class CombatListener implements Listener {
                   attacker.sendMessage("§cYour invisibility fades after making too many attacks.");
                } else {
                   int attackCount = this.vampireAbilityManager.getInvisibilityAttackCount(attacker);
-                  int remaining = 3 - attackCount;
+                  int remaining = this.vampireAbilityManager.getVanishAttackLimit(attacker) - attackCount;
                   attacker.sendMessage("§6Warning: " + remaining + " attack(s) remaining before invisibility ends.");
                }
             }
@@ -94,7 +96,7 @@ public class CombatListener implements Listener {
                      victim.sendMessage("§cYour invisibility fades after being hit too many times.");
                   } else {
                      int attackCount = this.vampireAbilityManager.getInvisibilityAttackCount(victim);
-                     int remaining = 3 - attackCount;
+                     int remaining = this.vampireAbilityManager.getVanishAttackLimit(victim) - attackCount;
                      victim.sendMessage("§6Warning: " + remaining + " hit(s) remaining before invisibility ends.");
                   }
                }
@@ -142,6 +144,56 @@ public class CombatListener implements Listener {
                   if (attacker.hasPotionEffect(PotionEffectType.TRIAL_OMEN)) {
                      double reducedDamage = event.getDamage() * 0.5;
                      event.setDamage(reducedDamage);
+                  }
+               }
+
+               if (this.vampireManager.isWerewolf(attacker)) {
+                  ItemStack werewolfWeapon = attacker.getInventory().getItemInMainHand();
+                  if (this.isBareFist(werewolfWeapon)) {
+                     int werewolfStage = this.vampireManager.getWerewolfStage(attacker);
+                     double multiplier = this.getWerewolfFistMultiplier(werewolfStage);
+                     if (multiplier > 1.0) {
+                        event.setDamage(event.getDamage() * multiplier);
+                        if (werewolfStage >= 2) {
+                           this.createSweepAttackEffect(event.getEntity());
+                           attacker.getWorld().playSound(attacker.getLocation(), Sound.ENTITY_WOLF_GROWL, SoundCategory.PLAYERS, 0.6F, 0.9F);
+                        }
+                     }
+
+                     if (event.getEntity() instanceof Player wvictim && !this.vampireManager.isWerewolf(wvictim)) {
+                        double finalDamage = event.getFinalDamage();
+                        if (wvictim.getHealth() - finalDamage <= 0.0) {
+                           event.setCancelled(true);
+                           wvictim.setHealth(2.0);
+                           this.vampireManager.setPlayerAsWerewolf(wvictim, 1);
+                           wvictim.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 200, 1, false, false));
+                           Player clawVictim = wvictim;
+                           this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
+                              if (this.plugin.getBeaconMajorityManager() != null) {
+                                 this.plugin.getBeaconMajorityManager().removeBonusesFromPlayer(clawVictim);
+                                 this.plugin.getBeaconMajorityManager().updateBeaconMajorityBonuses();
+                              }
+                              double maxHealth = clawVictim.getAttribute(Attribute.MAX_HEALTH).getValue();
+                              clawVictim.setHealth(maxHealth);
+                           }, 5L);
+                           attacker.sendMessage("§6Your primal fury has infected " + wvictim.getName() + "!");
+                           wvictim.sendMessage("§6§lYou feel a primal rage consuming you...");
+                           wvictim.sendMessage("§6§lYou have been turned into a werewolf!");
+                           attacker.getWorld().playSound(attacker.getLocation(), Sound.ENTITY_WOLF_AMBIENT, SoundCategory.MASTER, 1.0F, 0.8F);
+                           return;
+                        }
+                     }
+                  }
+               }
+
+               // Silver weakness: iron weapons deal extra damage to werewolves
+               if (event.getEntity() instanceof Player silverVictim && this.vampireManager.isWerewolf(silverVictim)) {
+                  if (this.isIronWeapon(attackerWeapon)) {
+                     event.setDamage(event.getDamage() * this.plugin.getConfigManager().getWerewolfSilverWeaknessMultiplier());
+                     if (!attacker.getScoreboardTags().contains("informed_silver_weakness")) {
+                        attacker.sendMessage("§6Your iron blade cuts deep into the beast!");
+                        attacker.addScoreboardTag("informed_silver_weakness");
+                     }
                   }
                }
 
@@ -396,6 +448,12 @@ public class CombatListener implements Listener {
       }
    }
 
+   private Player resolveAttacker(Entity damager) {
+      if (damager instanceof Player player) return player;
+      if (damager instanceof Projectile proj && proj.getShooter() instanceof Player player) return player;
+      return null;
+   }
+
    private boolean isWoodenWeapon(ItemStack item) {
       if (item == null) {
          return false;
@@ -465,6 +523,14 @@ public class CombatListener implements Listener {
          case 1 -> 1.0;
          case 2 -> 2.0;
          case 3 -> 3.0;
+         default -> 1.0;
+      };
+   }
+
+   private double getWerewolfFistMultiplier(int stage) {
+      return switch (stage) {
+         case 2 -> this.plugin.getConfigManager().getWerewolfFistMultiplierStage2();
+         case 3 -> this.plugin.getConfigManager().getWerewolfFistMultiplierStage3();
          default -> 1.0;
       };
    }
