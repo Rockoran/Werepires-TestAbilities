@@ -177,6 +177,9 @@ public class VampireCureCommand implements CommandExecutor {
       this.vampireManager.setPlayerAsHuman(player);
       player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
       player.addScoreboardTag("CuredVampire");
+      if (this.plugin.getSkinShuffleManager() != null) {
+         this.plugin.getSkinShuffleManager().applyCuredSkin(player);
+      }
       holyBeacon.setState(BeaconSite.BeaconState.PERMANENTLY_DESECRATED);
       this.beaconManager.updateBeaconDisplay(holyBeacon);
       this.beaconManager.saveBeacons();

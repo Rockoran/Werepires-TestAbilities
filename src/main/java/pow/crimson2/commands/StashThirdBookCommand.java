@@ -1,6 +1,5 @@
 package pow.crimson2.commands;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -22,9 +21,9 @@ public class StashThirdBookCommand implements CommandExecutor {
    }
 
    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-      World world = Bukkit.getWorld("world");
+      World world = this.plugin.getWorld();
       if (world == null) {
-         sender.sendMessage("§cWorld 'world' not found.");
+         sender.sendMessage("§cWorld not found.");
          return true;
       } else {
          Location chestLocation = new Location(world, 76.0, 80.0, 407.0);

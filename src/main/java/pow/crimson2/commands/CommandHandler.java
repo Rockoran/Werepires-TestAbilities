@@ -40,6 +40,8 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
    private final ThirstManager thirstManager;
    private final BeaconManager beaconManager;
    private final TomeManager tomeManager;
+   private final pow.crimson2.config.ConfigEditor configEditor;
+   private final PermakillCommand permakillCommand;
 
    public CommandHandler(VampireSMPPlugin plugin, SessionManager sessionManager, VampireManager vampireManager) {
       this.plugin = plugin;
@@ -48,6 +50,12 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       this.thirstManager = plugin.getThirstManager();
       this.beaconManager = plugin.getBeaconManager();
       this.tomeManager = plugin.getTomeManager();
+      this.configEditor = new pow.crimson2.config.ConfigEditor(plugin);
+      this.permakillCommand = new PermakillCommand(plugin);
+   }
+
+   public pow.crimson2.config.ConfigEditor getConfigEditor() {
+      return this.configEditor;
    }
 
    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -60,6 +68,8 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          return this.handleSessionCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("vampire")) {
          return this.handleVampireCommand(sender, args);
+      } else if (command.getName().equalsIgnoreCase("werewolf")) {
+         return this.handleWerewolfCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("beacon")) {
          return this.handleBeaconCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("vampirecooldowns")) {
@@ -78,8 +88,12 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          return this.handleSelectTomesCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("give_cure_book")) {
          return this.handleGiveCureBookCommand(sender, args);
+      } else if (command.getName().equalsIgnoreCase("give_revival_book")) {
+         return this.handleGiveRevivalBookCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("distributetomes")) {
          return this.handleDistributeTomesCommand(sender, args);
+      } else if (command.getName().equalsIgnoreCase("bloodmoon")) {
+         return this.handleBloodMoonCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("clearbloodmoonbuffs")) {
          return this.handleClearBloodMoonBuffsCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("fixattributes")) {
@@ -98,14 +112,37 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          return this.handleRemoveTomeChestCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("listtomechests")) {
          return this.handleListTomeChestsCommand(sender, args);
+      } else if (command.getName().equalsIgnoreCase("addtomevault")) {
+         return this.handleAddVaultCommand(sender, false);
+      } else if (command.getName().equalsIgnoreCase("removetomevault")) {
+         return this.handleRemoveVaultCommand(sender, false);
+      } else if (command.getName().equalsIgnoreCase("listtomevault") || command.getName().equalsIgnoreCase("listtomevaults")) {
+         return this.handleListVaultsCommand(sender, false);
+      } else if (command.getName().equalsIgnoreCase("addominouscurevault")) {
+         return this.handleAddVaultCommand(sender, true);
+      } else if (command.getName().equalsIgnoreCase("removeominouscurevault")) {
+         return this.handleRemoveVaultCommand(sender, true);
+      } else if (command.getName().equalsIgnoreCase("listominouscurevaults") || command.getName().equalsIgnoreCase("listominouscurevault")) {
+         return this.handleListVaultsCommand(sender, true);
       } else if (command.getName().equalsIgnoreCase("resetplayer")) {
          return this.handleResetPlayerCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("set_vampire_spawn")) {
          return this.handleSetVampireSpawnCommand(sender, args);
+      } else if (command.getName().equalsIgnoreCase("barrier")) {
+         return this.handleBarrierCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("reloadconfig")) {
          return this.handleReloadConfig(sender, args);
+      } else if (command.getName().equalsIgnoreCase("config")) {
+         return this.configEditor.handle(sender, args);
+      } else if (command.getName().equalsIgnoreCase("permakill")) {
+         this.permakillCommand.adminPermakill(sender, args.length > 0 ? args[0] : null);
+         return true;
       } else if (command.getName().equalsIgnoreCase("sire")) {
          return this.handleSire(sender, args);
+      } else if (command.getName().equalsIgnoreCase("loadworld")) {
+         return this.handleLoadWorldCommand(sender, args);
+      } else if (command.getName().equalsIgnoreCase("listworlds")) {
+         return this.handleListWorldsCommand(sender, args);
       } else {
          return false;
       }
@@ -152,10 +189,106 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       }
    }
 
+   private boolean handleBarrierCommand(CommandSender sender, String[] args) {
+      pow.crimson2.listeners.MovementBoundaryListener boundary = this.plugin.getMovementBoundaryListener();
+      String action = args.length > 0 ? args[0].toLowerCase() : "status";
+      switch (action) {
+         case "lower" -> {
+            boundary.setBarrierLowered(true);
+            sender.sendMessage("§6The Oakhurst barrier has been §clowered§6.");
+            for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+               p.sendTitle("§6§lTHE BARRIER FALLS", "§eThe boundary that binds you... weakens", 20, 80, 30);
+               p.sendMessage("§8The invisible walls of " + this.plugin.getConfigManager().getOakhurstName() + " tremble and fade...");
+               p.playSound(p.getLocation(), org.bukkit.Sound.BLOCK_BEACON_DEACTIVATE, org.bukkit.SoundCategory.MASTER, 1.0F, 0.5F);
+            }
+         }
+         case "raise" -> {
+            boundary.setBarrierLowered(false);
+            sender.sendMessage("§6The Oakhurst barrier has been §araised§6.");
+            for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+               p.sendTitle("§c§lTHE BARRIER RISES", "§7The boundary closes in once more", 20, 80, 30);
+               p.sendMessage("§8The walls of " + this.plugin.getConfigManager().getOakhurstName() + " solidify... The ancient bounds are restored.");
+               p.playSound(p.getLocation(), org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, org.bukkit.SoundCategory.MASTER, 1.0F, 0.8F);
+            }
+         }
+         case "status" -> {
+            boolean lowered = boundary.isBarrierLowered();
+            sender.sendMessage("§6Barrier: " + (lowered ? "§cLOWERED §7(normal players move freely)" : "§aRAISED §7(restrictions active)"));
+            sender.sendMessage("§6Exempt §7(always out): §e" + uuidSetNames(boundary.getExemptPlayers()));
+            sender.sendMessage("§6Confined §7(always in): §c" + uuidSetNames(boundary.getConfinedPlayers()));
+         }
+         case "exempt" -> {
+            if (args.length < 2) { sender.sendMessage("§cUsage: /pow admin barrier exempt <player>"); return true; }
+            org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayerExact(args[1]);
+            if (target == null) { sender.sendMessage("§cPlayer not found or offline: §e" + args[1]); return true; }
+            boundary.setExempt(target.getUniqueId());
+            sender.sendMessage("§a" + target.getName() + " §7is now §aexempt§7 — they can always leave the barrier.");
+            target.sendMessage("§7You have been granted free passage through the " + this.plugin.getConfigManager().getOakhurstName() + " barrier.");
+         }
+         case "normal" -> {
+            if (args.length < 2) { sender.sendMessage("§cUsage: /pow admin barrier normal <player>"); return true; }
+            org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayerExact(args[1]);
+            if (target == null) { sender.sendMessage("§cPlayer not found or offline: §e" + args[1]); return true; }
+            boundary.setNormal(target.getUniqueId());
+            sender.sendMessage("§e" + target.getName() + " §7is now §enormal§7 — they follow standard barrier rules.");
+            target.sendMessage("§7Your barrier status has been reset to normal.");
+         }
+         case "unexempt" -> {
+            if (args.length < 2) { sender.sendMessage("§cUsage: /pow admin barrier unexempt <player>"); return true; }
+            org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayerExact(args[1]);
+            if (target == null) { sender.sendMessage("§cPlayer not found or offline: §e" + args[1]); return true; }
+            boundary.setConfined(target.getUniqueId());
+            sender.sendMessage("§c" + target.getName() + " §7is now §cconfined§7 — they cannot leave even if the barrier is lowered.");
+            target.sendMessage("§cYou have been bound to " + this.plugin.getConfigManager().getOakhurstName() + ". You may not leave.");
+         }
+         default -> {
+            sender.sendMessage("§cUsage: /pow admin barrier <lower|raise|status|exempt <player>|normal <player>|unexempt <player>>");
+         }
+      }
+      return true;
+   }
+
    private boolean handleReloadConfig(CommandSender sender, String[] args) {
       this.plugin.getConfigManager().loadConfig();
       this.plugin.getTomeDistributionManager().reloadConfig();
+      if (this.plugin.getVaultManager() != null) {
+         this.plugin.getVaultManager().reload();
+         this.plugin.getVaultManager().configureLoadedVaults();
+      }
       sender.sendMessage("§aSuccessfully reloaded config file!");
+      return true;
+   }
+
+   private boolean handleLoadWorldCommand(CommandSender sender, String[] args) {
+      if (!(sender instanceof Player player)) {
+         sender.sendMessage("§cOnly players can use this command.");
+         return true;
+      }
+      if (args.length == 0) {
+         sender.sendMessage("§cUsage: /pow admin loadworld <name>");
+         List<String> available = this.plugin.getWorldManager().getAvailableWorlds();
+         if (!available.isEmpty()) sender.sendMessage("§7Available: §e" + String.join(", ", available));
+         return true;
+      }
+      this.plugin.getWorldManager().loadWorld(player, args[0]);
+      return true;
+   }
+
+   private boolean handleListWorldsCommand(CommandSender sender, String[] args) {
+      List<String> available = this.plugin.getWorldManager().getAvailableWorlds();
+      String active = this.plugin.getWorldManager().getActiveWorldName();
+      sender.sendMessage("§6§l=== World Templates ===");
+      sender.sendMessage("§7Stored in: §eplugins/VampireSMP/worlds/");
+      if (available.isEmpty()) {
+         sender.sendMessage("§8No world templates found.");
+      } else {
+         for (String name : available) {
+            boolean isActive = name.equals(active);
+            sender.sendMessage((isActive ? "§a▶ " : "§7  ") + name
+                  + (isActive ? " §8(active)" : ""));
+         }
+      }
+      sender.sendMessage("§7Active world: §e" + active);
       return true;
    }
 
@@ -610,6 +743,102 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       return true;
    }
 
+   private boolean handleWerewolfCommand(CommandSender sender, String[] args) {
+      if (args.length < 2) {
+         sender.sendMessage("§cUsage: /pow admin werewolf <player> <human|1|2|3|clearcap|clearban>");
+         sender.sendMessage("§7  clearcap - Remove stage cap");
+         sender.sendMessage("§7  clearban - Remove promotion ban");
+         return true;
+      }
+
+      Player target = Bukkit.getPlayer(args[0]);
+      if (target == null) {
+         sender.sendMessage("§cPlayer not found.");
+         return true;
+      }
+
+      String type = args[1].toLowerCase();
+      switch (type) {
+         case "human":
+            this.vampireManager.setPlayerAsHuman(target);
+            target.getActivePotionEffects().forEach(effect -> target.removePotionEffect(effect.getType()));
+            if (this.plugin.getBeaconMajorityManager() != null) {
+               this.plugin.getBeaconMajorityManager().updateBeaconMajorityBonuses();
+            }
+
+            double humanMaxHealth = target.getAttribute(Attribute.MAX_HEALTH).getValue();
+            target.setHealth(humanMaxHealth);
+            sender.sendMessage("§a" + target.getName() + " is now human.");
+            target.sendMessage("§aYou have been set as human.");
+            break;
+         case "1":
+            this.vampireManager.setPlayerAsWerewolf(target, 1, true);
+            if (this.plugin.getBeaconMajorityManager() != null) {
+               this.plugin.getBeaconMajorityManager().removeBonusesFromPlayer(target);
+               this.plugin.getBeaconMajorityManager().applyBonusesToPlayer(target);
+            }
+
+            double w1MaxHealth = target.getAttribute(Attribute.MAX_HEALTH).getValue();
+            target.setHealth(w1MaxHealth);
+            target.setExp(0.5F);
+            sender.sendMessage("§6" + target.getName() + " is now a Stage 1 werewolf.");
+            target.sendMessage("§6You have been set as a Stage 1 werewolf.");
+            break;
+         case "2":
+            this.vampireManager.setPlayerAsWerewolf(target, 2, true);
+            if (this.plugin.getBeaconMajorityManager() != null) {
+               this.plugin.getBeaconMajorityManager().removeBonusesFromPlayer(target);
+               this.plugin.getBeaconMajorityManager().applyBonusesToPlayer(target);
+            }
+
+            double w2MaxHealth = target.getAttribute(Attribute.MAX_HEALTH).getValue();
+            target.setHealth(w2MaxHealth);
+            target.setExp(0.5F);
+            sender.sendMessage("§6" + target.getName() + " is now a Stage 2 werewolf.");
+            target.sendMessage("§6You have been set as a Stage 2 werewolf.");
+            break;
+         case "3":
+            this.vampireManager.setPlayerAsWerewolf(target, 3, true);
+            if (this.plugin.getBeaconMajorityManager() != null) {
+               this.plugin.getBeaconMajorityManager().removeBonusesFromPlayer(target);
+               this.plugin.getBeaconMajorityManager().applyBonusesToPlayer(target);
+            }
+
+            double w3MaxHealth = target.getAttribute(Attribute.MAX_HEALTH).getValue();
+            target.setHealth(w3MaxHealth);
+            target.setExp(0.5F);
+            sender.sendMessage("§6" + target.getName() + " is now a Stage 3 werewolf.");
+            target.sendMessage("§6You have been set as a Stage 3 werewolf.");
+            break;
+         case "clearcap":
+         case "clear_stage_cap":
+            if (this.vampireManager.hasStageCap(target)) {
+               int cap = this.vampireManager.getStageCap(target);
+               this.vampireManager.clearStageCap(target);
+               sender.sendMessage("§aCleared stage cap for " + target.getName() + " (was capped at stage " + cap + ")");
+               target.sendMessage("§aYour stage cap has been removed by an administrator. You can now level up freely.");
+            } else {
+               sender.sendMessage("§c" + target.getName() + " does not have a stage cap.");
+            }
+            break;
+         case "clearban":
+         case "clear_promotion_ban":
+            if (this.vampireManager.hasPromotionBan(target)) {
+               this.vampireManager.clearPromotionBan(target);
+               sender.sendMessage("§aCleared promotion ban for " + target.getName());
+               target.sendMessage("§aYour promotion ban has been removed by an administrator. You can now level up.");
+            } else {
+               sender.sendMessage("§c" + target.getName() + " does not have a promotion ban.");
+            }
+            break;
+         default:
+            sender.sendMessage("§cInvalid type. Use: human, 1, 2, 3, clearcap, or clearban.");
+            return true;
+      }
+
+      return true;
+   }
+
    private boolean handleBeaconCommand(CommandSender sender, String[] args) {
       if (args.length == 0) {
          this.sendBeaconHelp(sender);
@@ -1011,45 +1240,8 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          }
       }
 
-      TomeAbility ability = this.tomeManager.getAbility(abilityName);
-      ItemStack tome = new ItemStack(Material.WRITTEN_BOOK, amount);
-      BookMeta bookMeta = (BookMeta)tome.getItemMeta();
-      if (bookMeta != null) {
-         String canonicalName = ability != null ? ability.getName() : abilityName;
-         bookMeta.setTitle(canonicalName);
-         bookMeta.setAuthor("§6A source unknown...");
-         if (ability != null) {
-            List<String> lore = new ArrayList<>();
-            String[] descriptionLines = ability.getDescriptionLines();
-
-            for (String line : descriptionLines) {
-               lore.add("§7" + line);
-            }
-
-            lore.add("");
-            lore.add("§eRight-click with this tome in hand to learn its secrets");
-            bookMeta.setLore(lore);
-         }
-
-         List<String> pages = new ArrayList<>();
-         StringBuilder pageContent = new StringBuilder();
-         pageContent.append("§5§lANCIENT KNOWLEDGE§r\n\n");
-         pageContent.append("§8The secrets of ").append(abilityName).append(" are contained within these pages.\n\n");
-         if (ability != null) {
-            String[] descriptionLines = ability.getDescriptionLines();
-
-            for (String line : descriptionLines) {
-               pageContent.append("§7").append(line).append("\n");
-            }
-         } else {
-            pageContent.append("§7No description available\n");
-         }
-
-         pageContent.append("\n§6Use this knowledge wisely, for it comes with great responsibility.");
-         pages.add(pageContent.toString());
-         bookMeta.setPages(pages);
-         tome.setItemMeta(bookMeta);
-      }
+      ItemStack tome = this.plugin.getTomeDistributionManager().createTomeItem(abilityName);
+      tome.setAmount(amount);
 
       if (target.getInventory().firstEmpty() == -1) {
          target.getWorld().dropItemNaturally(target.getLocation(), tome);
@@ -1138,10 +1330,13 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             case 2:
                meta.setTitle("The Cure 2/3");
                meta.setAuthor("§5An ancient scholar");
+               String book2Page2 = this.plugin.getConfigManager().getCureAllowCuredSire()
+                  ? "§7...yet within this perversion lies the key to its undoing.\n\n§7Holy water, blessed by the righteous, weakens the bond.\n\n§8Continue your search, truth-seeker..."
+                  : "§7...yet within this perversion lies the key to its undoing.\n\n§7Holy water, blessed by the righteous, weakens the bond. Yet the bloodline binds; your sire must lie dead for the cure to hold.\n\n§8Continue your search, truth-seeker...";
                meta.setPages(
                   new String[]{
                      "§5§lTHE CURE§r\n§8Part II of III\n\n§7The second fragment reveals the nature of the curse itself.\n\n§7Born of darkness, sustained by blood, the vampire's existence is a perversion of nature's order...",
-                     "§7...yet within this perversion lies the key to its undoing.\n\n§7Holy water, blessed by the righteous, weakens the bond.\n\n§8Continue your search, truth-seeker..."
+                     book2Page2
                   }
                );
                break;
@@ -1294,6 +1489,138 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          sender.sendMessage("§7Click a location to teleport, or use §e/pow admin removetomechest §7nearby to remove.");
       }
 
+      return true;
+   }
+
+   // ── Tome / Ominous Cure vaults ────────────────────────────────────────────
+
+   private boolean handleAddVaultCommand(CommandSender sender, boolean cure) {
+      if (!(sender instanceof Player player)) {
+         sender.sendMessage("§cThis command can only be used by players.");
+         return true;
+      }
+      org.bukkit.block.Block target = player.getTargetBlockExact(6);
+      if (target == null) {
+         player.sendMessage("§cLook at the block where you want the vault (within 6 blocks).");
+         return true;
+      }
+      Location loc = target.getLocation();
+      boolean ok = cure ? this.plugin.getVaultManager().addCureVault(loc)
+                        : this.plugin.getVaultManager().addTomeVault(loc);
+      if (!ok) {
+         player.sendMessage("§c✖ That block is already a registered vault.");
+         return true;
+      }
+      this.plugin.getVaultManager().configureVault(loc, cure);
+      String type = cure ? "ominous cure" : "tome";
+      String key = cure ? "§5Ominous Trial Key" : "§eTrial Key";
+      String loot = cure ? "a cure book" : "a random tome";
+      player.sendMessage("§a✔ Added " + type + " vault at §e" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
+      player.sendMessage("§7It's a real vault — unlock it with " + key + " §7to receive " + loot + ".");
+      return true;
+   }
+
+   private boolean handleRemoveVaultCommand(CommandSender sender, boolean cure) {
+      if (!(sender instanceof Player player)) {
+         sender.sendMessage("§cThis command can only be used by players.");
+         return true;
+      }
+      Location removed = cure ? this.plugin.getVaultManager().removeNearestCureVault(player.getLocation(), 10.0)
+                             : this.plugin.getVaultManager().removeNearestTomeVault(player.getLocation(), 10.0);
+      if (removed == null) {
+         player.sendMessage("§c✖ No " + (cure ? "ominous cure" : "tome") + " vault within 10 blocks.");
+         return true;
+      }
+      if (removed.getBlock().getType() == Material.VAULT) {
+         removed.getBlock().setType(Material.AIR);
+         player.sendMessage("§7Removed the vault block.");
+      }
+      player.sendMessage("§a✔ Removed " + (cure ? "ominous cure" : "tome") + " vault at §e"
+            + removed.getBlockX() + ", " + removed.getBlockY() + ", " + removed.getBlockZ());
+      return true;
+   }
+
+   private boolean handleListVaultsCommand(CommandSender sender, boolean cure) {
+      List<Location> list = cure ? this.plugin.getVaultManager().getCureVaults()
+                                 : this.plugin.getVaultManager().getTomeVaults();
+      sender.sendMessage("§6§l=== " + (cure ? "OMINOUS CURE" : "TOME") + " VAULTS ===");
+      sender.sendMessage("§7Total: §e" + list.size());
+      if (list.isEmpty()) {
+         sender.sendMessage("§7None set. Use §e/pow admin " + (cure ? "addominouscurevault" : "addtomevault") + " §7while looking at a block.");
+         return true;
+      }
+      int i = 1;
+      for (Location loc : list) {
+         String world = loc.getWorld() != null ? loc.getWorld().getName() : "?";
+         boolean present = loc.getWorld() != null && loc.getBlock().getType() == Material.VAULT;
+         sender.sendMessage("§7" + (i++) + ". §e" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ()
+               + " §8(" + world + ") " + (present ? "§a✔" : "§c✖ no vault block"));
+      }
+      return true;
+   }
+
+   private boolean handleGiveRevivalBookCommand(CommandSender sender, String[] args) {
+      if (args.length < 2) {
+         sender.sendMessage("§cUsage: /pow admin give_revival_book <player> <1|2|3|4>");
+         return true;
+      }
+      Player target = Bukkit.getPlayerExact(args[0]);
+      if (target == null) {
+         sender.sendMessage("§cPlayer not found or offline: §e" + args[0]);
+         return true;
+      }
+      int n;
+      try {
+         n = Integer.parseInt(args[1]);
+      } catch (NumberFormatException e) {
+         sender.sendMessage("§cBook number must be 1, 2, 3 or 4.");
+         return true;
+      }
+      if (n < 1 || n > 4 || this.plugin.getRevivalBookManager() == null) {
+         sender.sendMessage("§cBook number must be 1, 2, 3 or 4.");
+         return true;
+      }
+      target.getInventory().addItem(this.plugin.getRevivalBookManager().createBook(n));
+      sender.sendMessage("§aGave Rite of Return book §e" + n + " §ato §e" + target.getName() + "§a.");
+      return true;
+   }
+
+   private boolean handleBloodMoonCommand(CommandSender sender, String[] args) {
+      pow.crimson2.managers.BloodMoonManager bm = this.plugin.getBloodMoonManager();
+      if (bm == null) {
+         sender.sendMessage("§cBloodMoonManager is not available.");
+         return true;
+      }
+      if (args.length == 0) {
+         String phase = bm.getCurrentMoonPhase();
+         String state = bm.isActive() ? "§cACTIVE" : "§7inactive";
+         sender.sendMessage("§6Blood Moon: " + state + " §7| Phase: §e" + phase);
+         sender.sendMessage("§7Usage: §e/pow admin bloodmoon <start|stop|status>");
+         return true;
+      }
+      switch (args[0].toLowerCase()) {
+         case "start":
+            if (bm.isActive()) {
+               sender.sendMessage("§eBlood moon is already active.");
+            } else {
+               bm.forceStart();
+               sender.sendMessage("§c§lBlood moon force-started.");
+            }
+            break;
+         case "stop":
+            if (!bm.isActive()) {
+               sender.sendMessage("§7No blood moon is currently active.");
+            } else {
+               bm.forceStop();
+               sender.sendMessage("§aBlood moon ended.");
+            }
+            break;
+         case "status":
+         default:
+            String phase = bm.getCurrentMoonPhase();
+            String state = bm.isActive() ? "§cACTIVE" : "§7inactive";
+            sender.sendMessage("§6Blood Moon: " + state + " §7| Phase: §e" + phase);
+      }
       return true;
    }
 
@@ -1591,6 +1918,8 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          }
       } else if (command.getName().equalsIgnoreCase("distributetomes")) {
          completions.clear();
+      } else if (command.getName().equalsIgnoreCase("bloodmoon")) {
+         if (args.length == 1) completions.addAll(java.util.Arrays.asList("start", "stop", "status"));
       } else if (command.getName().equalsIgnoreCase("clearbloodmoonbuffs")) {
          if (args.length == 1) {
             completions.add("all");
@@ -1643,5 +1972,15 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       );
       textureMessage.addExtra(clickableText);
       player.spigot().sendMessage(textureMessage);
+   }
+
+   private String uuidSetNames(java.util.Set<java.util.UUID> ids) {
+      if (ids.isEmpty()) return "§7none";
+      java.util.StringJoiner names = new java.util.StringJoiner("§7, ");
+      for (java.util.UUID id : ids) {
+         org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(id);
+         names.add(op.getName() != null ? op.getName() : id.toString());
+      }
+      return names.toString();
    }
 }
