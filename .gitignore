@@ -1,2 +1,9 @@
 out
-target
+target/
+
+# Live server world data (3 GB+ binary — back up separately, GitHub rejects files >100 MB)
+test-server/
+worlds/
+
+# Compiled plugin builds (use GitHub Releases for jars)
+testbuilds/
