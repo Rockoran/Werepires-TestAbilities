@@ -1,0 +1,205 @@
+package pow.crimson2.managers;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import pow.crimson2.VampireSMPPlugin;
+
+public class VampireTrackingManager {
+   private final VampireSMPPlugin plugin;
+   private final VampireManager vampireManager;
+   private final Map<UUID, BukkitTask> activeTrackingSessions = new ConcurrentHashMap<>();
+   /** Per-viewer directional-arrow indicators (thrall locate / findmaster). */
+   private final Map<UUID, BukkitTask> activeIndicators = new ConcurrentHashMap<>();
+   private UUID mostRecentVampireId = null;
+//   private static final int TRACKING_DURATION_SECONDS = 120;
+//   private static final int UPDATE_INTERVAL_TICKS = 4;
+
+   public VampireTrackingManager(VampireSMPPlugin plugin) {
+      this.plugin = plugin;
+      this.vampireManager = plugin.getVampireManager();
+   }
+
+   public void startTrackingNewVampire(Player newVampire) {
+      if (plugin.getConfigManager().getTrackingEnabled() && newVampire != null && newVampire.isOnline()) {
+         final UUID newVampireId = newVampire.getUniqueId();
+         this.stopTracking(newVampireId);
+         this.mostRecentVampireId = newVampireId;
+         int tracking_duration_seconds = plugin.getConfigManager().getTrackingDurationSeconds();
+         BukkitTask trackingTask = (new BukkitRunnable() {
+            int ticksRemaining = tracking_duration_seconds * 20;
+
+            public void run() {
+               if (this.ticksRemaining <= 0) {
+                  VampireTrackingManager.this.stopTracking(newVampireId);
+               } else {
+                  Player trackedPlayer = Bukkit.getPlayer(newVampireId);
+                  if (trackedPlayer != null && trackedPlayer.isOnline() && plugin.getVampireManager().isVampire(trackedPlayer)) {
+                     VampireTrackingManager.this.updateTrackingForAllVampires(trackedPlayer);
+                     this.ticksRemaining -= 4;
+                  } else {
+                     VampireTrackingManager.this.stopTracking(newVampireId);
+                  }
+               }
+            }
+         }).runTaskTimer(this.plugin, 0L, 4L);
+         this.activeTrackingSessions.put(newVampireId, trackingTask);
+         this.plugin.logInfo("Started vampire tracking for " + newVampire.getName() + " (" + tracking_duration_seconds + "s)");
+      }
+   }
+
+   private void updateTrackingForAllVampires(Player trackedVampire) {
+      if (this.mostRecentVampireId == null || trackedVampire.getUniqueId().equals(this.mostRecentVampireId)) {
+         Location trackedLocation = trackedVampire.getLocation();
+
+         for (Player vampire : Bukkit.getOnlinePlayers()) {
+            if (this.vampireManager.isVampire(vampire)
+               && !vampire.getUniqueId().equals(trackedVampire.getUniqueId())
+               && this.vampireManager.getVampireStage(vampire) >= this.plugin.getConfigManager().getTrackingMinimumStage()
+               && vampire.getWorld().equals(trackedVampire.getWorld())
+               && (this.plugin.getVampireFeedingManager() == null || !this.plugin.getVampireFeedingManager().isFeeding(vampire))) {
+               Location vampireLocation = vampire.getLocation();
+               double deltaX = trackedLocation.getX() - vampireLocation.getX();
+               double deltaZ = trackedLocation.getZ() - vampireLocation.getZ();
+               double distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+               double maxDistance = this.plugin.getConfigManager().getTrackingDistance();
+               if (maxDistance == 0.0 || distance <= maxDistance) {
+                  String direction = getRelativeDirection(deltaX, deltaZ, vampireLocation.getYaw());
+                  String message = "§4New Vampire";
+                  if (this.plugin.getConfigManager().getTrackingArrowEnabled()) {
+                     message += String.format(": §f%s §7(§f%.0f blocks§7)", direction, distance);
+                  }
+                  this.plugin.getSessionManager().sendActionBar(vampire, message);
+               }
+            }
+         }
+      }
+   }
+
+   /**
+    * Returns the directional arrow glyph (custom font {@code }–{@code }) pointing
+    * from a player toward a target, relative to the way the player is currently facing.
+    * Shared by the new-vampire tracker and the thrall locate commands.
+    */
+   public static String getRelativeDirection(double deltaX, double deltaZ, float playerYaw) {
+      double targetAngle = Math.atan2(deltaX, -deltaZ);
+      double targetDegrees = Math.toDegrees(targetAngle);
+      if (targetDegrees < 0.0) {
+         targetDegrees += 360.0;
+      }
+
+      double playerFacing = (playerYaw + 180.0F) % 360.0F;
+      if (playerFacing < 0.0) {
+         playerFacing += 360.0;
+      }
+
+      double relativeAngle = (targetDegrees - playerFacing + 360.0) % 360.0;
+      if (relativeAngle >= 337.5 || relativeAngle < 22.5) {
+         return "\ue00a";
+      } else if (relativeAngle >= 22.5 && relativeAngle < 67.5) {
+         return "\ue00b";
+      } else if (relativeAngle >= 67.5 && relativeAngle < 112.5) {
+         return "\ue00c";
+      } else if (relativeAngle >= 112.5 && relativeAngle < 157.5) {
+         return "\ue00d";
+      } else if (relativeAngle >= 157.5 && relativeAngle < 202.5) {
+         return "\ue00e";
+      } else if (relativeAngle >= 202.5 && relativeAngle < 247.5) {
+         return "\ue00f";
+      } else if (relativeAngle >= 247.5 && relativeAngle < 292.5) {
+         return "\ue010";
+      } else {
+         return relativeAngle >= 292.5 && relativeAngle < 337.5 ? "\ue011" : "\ue00a";
+      }
+   }
+
+   /**
+    * Show a live directional-arrow indicator on {@code viewer}'s action bar pointing toward
+    * {@code target}, using the same arrow glyphs as the new-vampire tracker. The arrow and
+    * distance update as the viewer moves/turns for {@code durationSeconds}, and stop early if
+    * either player goes offline or they end up in different worlds.
+    *
+    * @param label action-bar prefix shown before the arrow (e.g. "§8[Bond] §7Steve")
+    */
+   public void showDirectionalArrow(Player viewer, Player target, String label, int durationSeconds) {
+      if (viewer == null || target == null) return;
+      final UUID viewerId = viewer.getUniqueId();
+      final UUID targetId = target.getUniqueId();
+
+      // Replace any indicator already running for this viewer.
+      BukkitTask previous = this.activeIndicators.remove(viewerId);
+      if (previous != null) previous.cancel();
+
+      BukkitTask task = (new BukkitRunnable() {
+         int ticksRemaining = Math.max(20, durationSeconds * 20);
+
+         public void run() {
+            Player v = Bukkit.getPlayer(viewerId);
+            Player t = Bukkit.getPlayer(targetId);
+            if (this.ticksRemaining <= 0
+               || v == null || !v.isOnline()
+               || t == null || !t.isOnline()
+               || !v.getWorld().equals(t.getWorld())) {
+               VampireTrackingManager.this.stopIndicator(viewerId);
+               return;
+            }
+
+            Location vl = v.getLocation();
+            Location tl = t.getLocation();
+            double deltaX = tl.getX() - vl.getX();
+            double deltaZ = tl.getZ() - vl.getZ();
+            double distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+            String arrow = getRelativeDirection(deltaX, deltaZ, vl.getYaw());
+            VampireTrackingManager.this.plugin.getSessionManager().sendActionBar(
+               v, label + " §f" + arrow + " §7(§f" + (int) distance + " blocks§7)");
+            this.ticksRemaining -= 4;
+         }
+      }).runTaskTimer(this.plugin, 0L, 4L);
+
+      this.activeIndicators.put(viewerId, task);
+   }
+
+   private void stopIndicator(UUID viewerId) {
+      BukkitTask task = this.activeIndicators.remove(viewerId);
+      if (task != null) task.cancel();
+   }
+
+   public void stopTracking(UUID vampireId) {
+      BukkitTask task = this.activeTrackingSessions.remove(vampireId);
+      if (task != null) {
+         task.cancel();
+         this.plugin.logInfo("Stopped vampire tracking for " + vampireId);
+      }
+   }
+
+   public void stopAllTracking() {
+      for (BukkitTask task : this.activeTrackingSessions.values()) {
+         task.cancel();
+      }
+
+      this.activeTrackingSessions.clear();
+      this.plugin.logInfo("Stopped all vampire tracking sessions");
+   }
+
+   public int getActiveTrackingCount() {
+      return this.activeTrackingSessions.size();
+   }
+
+   public boolean isBeingTracked(UUID vampireId) {
+      return this.activeTrackingSessions.containsKey(vampireId);
+   }
+
+   public void shutdown() {
+      this.stopAllTracking();
+      for (BukkitTask task : this.activeIndicators.values()) {
+         task.cancel();
+      }
+      this.activeIndicators.clear();
+      this.plugin.logInfo("VampireTrackingManager shutdown complete");
+   }
+}
