@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -34,6 +35,7 @@ public final class PhoneManager implements Listener {
     private final PhoneDataStore store;
     private final NamespacedKey phoneKey;
     private final NamespacedKey colorKey;
+    private PhoneCallService callService = PhoneCallService.UNAVAILABLE;
 
     public PhoneManager(VampireSMPPlugin plugin) {
         this.plugin = plugin;
@@ -43,6 +45,8 @@ public final class PhoneManager implements Listener {
     }
 
     public PhoneDataStore store() { return store; }
+    public PhoneCallService calls() { return callService; }
+    public void setCallService(PhoneCallService callService) { this.callService = callService == null ? PhoneCallService.UNAVAILABLE : callService; }
 
     public ItemStack createPhone(Player owner) {
         String color = store.player(owner.getUniqueId().toString()).color;
@@ -134,10 +138,13 @@ public final class PhoneManager implements Listener {
         return first.compareTo(second) < 0 ? first + ":" + second : second + ":" + first;
     }
 
-    public void shutdown() { store.save(); }
+    public void shutdown() { callService.shutdown(); store.save(); }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) { updateIdentity(event.getPlayer()); }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) { callService.disconnect(event.getPlayer()); }
 
     @EventHandler(ignoreCancelled = true)
     public void onUse(PlayerInteractEvent event) {

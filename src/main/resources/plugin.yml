@@ -108,6 +108,24 @@ commands:
     description: Reset session phone data while preserving social handles
     usage: /phonereset confirm
     permission: vampiresmp.phone.admin
+  answer:
+    description: Answer an incoming phone call
+    usage: /answer
+  decline:
+    description: Decline an incoming phone call
+    usage: /decline
+  hangup:
+    description: Leave or cancel a phone call
+    usage: /hangup
+  cpacceptcall:
+    description: Internal phone call accept alias
+    usage: /cpacceptcall [call]
+  cpdeclinecall:
+    description: Internal phone call decline alias
+    usage: /cpdeclinecall [call]
+  cphanghup:
+    description: Legacy misspelled phone hangup alias
+    usage: /cphanghup
 
 permissions:
   vampiresmp.admin:

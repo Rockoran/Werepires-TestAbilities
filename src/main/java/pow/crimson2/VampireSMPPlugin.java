@@ -222,6 +222,10 @@ public class VampireSMPPlugin extends JavaPlugin {
          this.getCommand(commandName).setExecutor(phoneCommand);
          this.getCommand(commandName).setTabCompleter(phoneCommand);
       }
+      pow.crimson2.phone.PhoneCallCommand phoneCallCommand = new pow.crimson2.phone.PhoneCallCommand(this.phoneManager);
+      for (String commandName : java.util.List.of("answer", "decline", "hangup", "cpacceptcall", "cpdeclinecall", "cphanghup")) {
+         this.getCommand(commandName).setExecutor(phoneCallCommand);
+      }
       this.getServer().getPluginManager().registerEvents(this.damageSuppressionListener, this);
       this.getServer().getPluginManager().registerEvents(this.deathHandler, this);
       this.getServer().getPluginManager().registerEvents(new CombatListener(this, this.vampireManager), this);
@@ -285,6 +289,9 @@ public class VampireSMPPlugin extends JavaPlugin {
                this.logInfo("Registered ghost voice-haunt with Simple Voice Chat.");
             } else {
                this.logInfo("Simple Voice Chat service unavailable — ghost voice haunt disabled.");
+            }
+            if (pow.crimson2.phone.PhoneVoicechatHook.register(this, this.phoneManager)) {
+               this.logInfo("Registered native phone calls with Simple Voice Chat.");
             }
          } catch (Throwable t) {
             this.getLogger().warning("Failed to register ghost voice-haunt SVC plugin: " + t.getMessage());

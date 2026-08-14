@@ -232,7 +232,17 @@ final class PhoneUi {
                 }, () -> openNotes(manager, player));
     }
 
-    static void openCalls(PhoneManager manager, Player player) { comingSoon(manager, player, "Calls", "Simple Voice Chat call sessions are being wired next."); }
+    static void openCalls(PhoneManager manager, Player player) {
+        List<ActionButton> buttons = new ArrayList<>();
+        manager.store().player(player.getUniqueId().toString()).contacts.forEach((uuid, contact) -> {
+            if (!contact.blocked) buttons.add(manager.button("Call " + manager.displayName(uuid), "Start a private voice call", () -> manager.calls().call(player, uuid)));
+        });
+        buttons.add(manager.button("Answer", "Answer an incoming call", () -> manager.calls().answer(player)));
+        buttons.add(manager.button("Decline", "Decline an incoming call", () -> manager.calls().decline(player)));
+        buttons.add(manager.button("Hang Up", "Leave or cancel a call", () -> manager.calls().hangup(player)));
+        buttons.add(manager.button("Back", "Return to the phone", () -> manager.openMain(player)));
+        showActions(player, "Calls", manager.calls().available() ? "Simple Voice Chat connected" : "Voice calls unavailable", buttons, 2);
+    }
     static void openSocial(PhoneManager manager, Player player) {
         String self = player.getUniqueId().toString();
         String handle = manager.store().database().handles.get(self);
@@ -334,6 +344,7 @@ final class PhoneUi {
         manager.store().save();
         List<ActionButton> buttons = new ArrayList<>();
         buttons.add(manager.button("Send Message", "Write to the group", () -> openGroupReply(manager, player, id)));
+        buttons.add(manager.button("Call Group", "Ring available online group members", () -> manager.calls().callGroup(player, id)));
         buttons.add(manager.button("Members", "Add, remove, or leave", () -> openGroupMembers(manager, player, id)));
         buttons.add(manager.button("Back", "Return to groups", () -> openGroups(manager, player)));
         showActions(player, group.name, body.length() == 0 ? group.members.size() + " member(s)" : body.toString(), buttons, 2);
