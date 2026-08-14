@@ -372,31 +372,43 @@ public class ConfigManager {
    }
 
    public int getTomeBlueFireBreathCooldown() {
-      return this.config.getInt("abilities.tome.bluefirebreath.cooldown", 900);
+      return this.magicFireInt("cooldown", 900);
    }
 
    public double getTomeBlueFireBreathRange() {
-      return this.config.getDouble("abilities.tome.bluefirebreath.range", 12.0);
+      return this.magicFireDouble("range", 12.0);
    }
 
    public double getTomeBlueFireBreathConeAngle() {
-      return this.config.getDouble("abilities.tome.bluefirebreath.cone-angle", 28.0);
+      return this.magicFireDouble("cone-angle", 28.0);
    }
 
    public int getTomeBlueFireBreathDurationTicks() {
-      return this.config.getInt("abilities.tome.bluefirebreath.duration-ticks", 25);
+      return this.magicFireInt("duration-ticks", 25);
    }
 
    public int getTomeBlueFireBreathParticlesPerTick() {
-      return this.config.getInt("abilities.tome.bluefirebreath.particles-per-tick", 32);
+      return this.magicFireInt("particles-per-tick", 32);
    }
 
    public double getTomeBlueFireBreathDamage() {
-      return this.config.getDouble("abilities.tome.bluefirebreath.damage", 6.0);
+      return this.magicFireDouble("damage", 6.0);
    }
 
    public int getTomeBlueFireBreathFireTicks() {
-      return this.config.getInt("abilities.tome.bluefirebreath.fire-ticks", 160);
+      return this.magicFireInt("fire-ticks", 160);
+   }
+
+   private int magicFireInt(String key, int fallback) {
+      String current = "abilities.tome.magicfirebreath." + key;
+      String legacy = "abilities.tome.bluefirebreath." + key;
+      return this.config.contains(current) ? this.config.getInt(current) : this.config.getInt(legacy, fallback);
+   }
+
+   private double magicFireDouble(String key, double fallback) {
+      String current = "abilities.tome.magicfirebreath." + key;
+      String legacy = "abilities.tome.bluefirebreath." + key;
+      return this.config.contains(current) ? this.config.getDouble(current) : this.config.getDouble(legacy, fallback);
    }
 
    public int getThirstDepletionMinutes() {
@@ -697,6 +709,117 @@ public class ConfigManager {
 
    public double getHumanDeathHpPenalty() {
       return this.config.getDouble("combat.human-death-hp-penalty", 2.0);
+   }
+
+   /** Death count at or above which a vampire kill is permanent. */
+   public int getVampireKillPermadeathThreshold() {
+      return this.config.getInt("combat.vampire-kill-permadeath-threshold", 5);
+   }
+
+   /**
+    * When true the threshold applies to every vampire kill. When false it only applies if the
+    * killing vampire had turning switched off — the pre-existing behaviour.
+    */
+   public boolean isVampireKillPermadeathAlways() {
+      return this.config.getBoolean("combat.vampire-kill-permadeath-always", true);
+   }
+
+   // ============================================================================
+   // ABILITIES — SURVIVING THE TURN  (allow.use.after.turned)
+   // ============================================================================
+
+   public boolean isAllowUseAfterTurned() {
+      return this.config.getBoolean("allow.use.after.turned.enabled", false);
+   }
+
+   /** Whether allow-listed abilities keep their tags when the player is turned. */
+   public boolean isKeepAbilitiesOnTurn() {
+      return this.config.getBoolean("allow.use.after.turned.keep-on-turn", true);
+   }
+
+   /** Whether a turned player may also hold the physical tome books. */
+   public boolean isAllowTomeItemsAfterTurned() {
+      return this.config.getBoolean("allow.use.after.turned.allow-tome-items", false);
+   }
+
+   public java.util.List<String> getAbilitiesAllowedAfterTurned() {
+      return this.config.getStringList("allow.use.after.turned.abilities");
+   }
+
+   /** True if this specific ability survives turning. "*" in the list means everything does. */
+   public boolean isAbilityAllowedAfterTurned(String abilityName) {
+      if (!this.isAllowUseAfterTurned() || abilityName == null) {
+         return false;
+      }
+      for (String entry : this.getAbilitiesAllowedAfterTurned()) {
+         if ("*".equals(entry) || entry.equalsIgnoreCase(abilityName)) {
+            return true;
+         }
+      }
+      return false;
+   }
+
+   public boolean isEveryAbilityAllowedAfterTurned() {
+      return this.isAllowUseAfterTurned() && this.getAbilitiesAllowedAfterTurned().contains("*");
+   }
+
+   /** Add or remove an ability from the allow-list and persist it to config.yml. */
+   public void setAbilityAllowedAfterTurned(String abilityName, boolean allowed) {
+      java.util.List<String> current = new java.util.ArrayList<>(this.getAbilitiesAllowedAfterTurned());
+      current.removeIf(entry -> entry.equalsIgnoreCase(abilityName));
+      if (allowed) {
+         current.add(abilityName);
+      }
+      this.config.set("allow.use.after.turned.abilities", current);
+      this.saveConfig();
+   }
+
+   public void setAllowUseAfterTurned(boolean enabled) {
+      this.config.set("allow.use.after.turned.enabled", enabled);
+      this.saveConfig();
+   }
+
+   // ============================================================================
+   // FAE — BARGAINS
+   // ============================================================================
+
+   public boolean isFaeEnabled() {
+      return this.config.getBoolean("fae.enabled", true);
+   }
+
+   /** PERMADEATH (only a permanent death breaks bargains) or ANY_DEATH. */
+   public String getFaeBreakDealsOn() {
+      return this.config.getString("fae.break-deals-on", "PERMADEATH");
+   }
+
+   public boolean isFaeRevertToHumanOnBreak() {
+      return this.config.getBoolean("fae.revert-to-human-on-break", true);
+   }
+
+   public boolean isFaeMarkCuredOnBreak() {
+      return this.config.getBoolean("fae.mark-as-cured-on-break", false);
+   }
+
+   public boolean isFaeTurnedCannotTurn() {
+      return this.config.getBoolean("fae.turned-cannot-turn", true);
+   }
+
+   public boolean isFaeStakingIgnoresMinimumStage() {
+      return this.config.getBoolean("fae.staking-ignores-minimum-stage", true);
+   }
+
+   public boolean isFaeBroadcastOnBreak() {
+      return this.config.getBoolean("fae.broadcast-on-break", true);
+   }
+
+   /** Whether a fae may aim the deaths/hearts/turn-lock subcommands at anyone, or only at their own deal targets. */
+   public boolean isFaeAdminSubcommandsAnyPlayer() {
+      return this.config.getBoolean("fae.subcommands-target-any-player", true);
+   }
+
+   public java.util.List<Integer> getFaeAllowedStages() {
+      java.util.List<Integer> stages = this.config.getIntegerList("fae.allowed-stages");
+      return stages == null || stages.isEmpty() ? java.util.Arrays.asList(1, 2, 3) : stages;
    }
 
    // ============================================================================

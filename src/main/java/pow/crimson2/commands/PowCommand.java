@@ -27,6 +27,11 @@ public class PowCommand implements CommandExecutor, TabCompleter {
    private final ToggleTurningCommand turningCommand;
    private final PendingMessageCommand sendMessageCommand;
    private final PermakillCommand permakillCommand;
+   private final TurnLockCommand turnLockCommand;
+   private final DeathCounterCommand deathCounterCommand;
+   private final FaeDealCommand faeDealCommand;
+   private final FaeCommand faeCommand;
+   private final AbilityCommand abilityRulesCommand;
 
    public PowCommand(VampireSMPPlugin plugin) {
       this.plugin = plugin;
@@ -42,6 +47,11 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       this.permadeathCommand = new PermadeathCommand(plugin);
       this.turningCommand = new ToggleTurningCommand(plugin);
       this.sendMessageCommand = new PendingMessageCommand(plugin);
+      this.turnLockCommand = new TurnLockCommand(plugin);
+      this.deathCounterCommand = new DeathCounterCommand(plugin);
+      this.faeDealCommand = new FaeDealCommand(plugin);
+      this.faeCommand = new FaeCommand(plugin);
+      this.abilityRulesCommand = new AbilityCommand(plugin);
    }
 
    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -82,6 +92,12 @@ public class PowCommand implements CommandExecutor, TabCompleter {
             this.permakillCommand.requestSelf(player);
             return true;
          }
+         case "ability":
+         case "abilities":
+            return this.abilityRulesCommand.onCommand(sender, command, label, subArgs);
+         case "faedeal":
+         case "fae":
+            return this.faeDealCommand.onCommand(sender, command, label, subArgs);
          case "toggle-turning":
          case "turning":
             return this.turningCommand.onCommand(sender, command, label, subArgs);
@@ -126,6 +142,7 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage("§e/pow vability <name> §7- Use vampire abilities");
       sender.sendMessage("§e/pow wability <name> §7- Use werewolf abilities");
       sender.sendMessage("§e/pow tome <name> §7- Use tome abilities (humans)");
+      sender.sendMessage("§e/pow ability §7- Which abilities survive being turned");
       sender.sendMessage("§e/voluntate-mea-hoc-nefandum-vinculum-abicio §7- Cure yourself from vampirism");
       sender.sendMessage("§e/hoc-vinculum-tibi-dirumpo-mala-creatura <player> §7- Force cure a vampire");
       sender.sendMessage("§e/pow beaconstatus §7- Check beacon spiritual influence");
@@ -134,6 +151,9 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage("§e/pow permakill §7- Permanently kill yourself (asks to confirm)");
       sender.sendMessage("§e/pow toggle-turning §7- Toggle vampire turning ability");
       sender.sendMessage("§e/pow sendmessage §7- Send pending chat message");
+      if (sender instanceof Player p && this.plugin.getFaeManager() != null && this.plugin.getFaeManager().isFae(p)) {
+         sender.sendMessage("§d/pow faedeal §7- Fae bargains (you are fae)");
+      }
    }
 
    private void sendAdminHelp(CommandSender sender) {
@@ -179,18 +199,40 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage("§e/pow admin sire <player> <player> §7- Set a player's sire.");
       sender.sendMessage("§e/pow admin loadworld <name> §7- Load a named world template.");
       sender.sendMessage("§e/pow admin listworlds §7- List available world templates.");
+      sender.sendMessage("§e/pow admin canturn <player> <vampire|werewolf> <allow|deny|status> §7- Control whether they can turn others.");
+      sender.sendMessage("§e/pow admin canbeturned <player> <vampire|werewolf> <allow|deny|status> §7- Control whether they can be turned.");
+      sender.sendMessage("§e/pow admin turnlocks <player> §7- Show all four turn locks for a player.");
+      sender.sendMessage("§e/pow admin deaths <player> <get|set|add|remove> [n] §7- Adjust the death counter (hearts follow).");
+      sender.sendMessage("§e/pow admin hearts <player> <get|give|take> [n] §7- Same counter, expressed as hearts.");
+      sender.sendMessage("§e/pow admin fae <player> [add|remove|status] §7- Grant or revoke the fae tag.");
+      sender.sendMessage("§e/pow admin fae list §7- List all fae and how many bargains they hold.");
    }
 
    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
       List<String> completions = new ArrayList<>();
       if (args.length == 1) {
-         List<String> subCommands = new ArrayList<>(Arrays.asList("vability", "wability", "tome", "beaconstatus", "permadeath", "toggle-turning", "help"));
+         List<String> subCommands = new ArrayList<>(Arrays.asList("vability", "wability", "tome", "ability", "beaconstatus", "permadeath", "toggle-turning", "help"));
+         if (sender instanceof Player p && this.plugin.getFaeManager() != null && this.plugin.getFaeManager().isFae(p)) {
+            subCommands.add(0, "faedeal");
+         }
          if (sender.hasPermission("vampiresmp.admin")) {
             subCommands.add(0, "admin");
          }
 
          return subCommands.stream().filter(s -> s.startsWith(args[0].toLowerCase())).collect(Collectors.toList());
       } else {
+         if (args[0].equalsIgnoreCase("ability") || args[0].equalsIgnoreCase("abilities")) {
+            return this.abilityRulesCommand.tabComplete(Arrays.copyOfRange(args, 1, args.length));
+         }
+
+         if (args[0].equalsIgnoreCase("faedeal") || args[0].equalsIgnoreCase("fae")) {
+            if (!(sender instanceof Player p) || this.plugin.getFaeManager() == null
+                  || (!this.plugin.getFaeManager().isFae(p) && !sender.hasPermission("vampiresmp.admin"))) {
+               return new ArrayList<>();
+            }
+            return this.faeDealCommand.tabComplete(Arrays.copyOfRange(args, 1, args.length));
+         }
+
          if (args.length == 2 && args[0].equalsIgnoreCase("permadeath")) {
             List<String> permadeathOptions = Arrays.asList("on", "off", "absolute");
             return permadeathOptions.stream().filter(s -> s.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
@@ -239,9 +281,39 @@ public class PowCommand implements CommandExecutor, TabCompleter {
                   "listtomevault",
                   "addominouscurevault",
                   "removeominouscurevault",
-                  "listominouscurevaults"
+                  "listominouscurevaults",
+                  "canturn",
+                  "canbeturned",
+                  "turnlocks",
+                  "deaths",
+                  "hearts",
+                  "fae",
+                  "fadestatus"
                );
                return adminCommands.stream().filter(s -> s.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
+            }
+
+            if (args[1].equalsIgnoreCase("fae")) {
+               String[] sub = Arrays.copyOfRange(args, 2, args.length);
+               return this.faeCommand.tabComplete(sub);
+            }
+
+            if (args[1].equalsIgnoreCase("canturn") || args[1].equalsIgnoreCase("canbeturned")) {
+               String[] sub = Arrays.copyOfRange(args, 2, args.length);
+               return this.turnLockCommand.tabComplete(sub);
+            }
+
+            if (args.length == 3 && args[1].equalsIgnoreCase("turnlocks")) {
+               return Bukkit.getOnlinePlayers()
+                  .stream()
+                  .<String>map(Player::getName)
+                  .filter(s -> s.toLowerCase().startsWith(args[2].toLowerCase()))
+                  .collect(Collectors.toList());
+            }
+
+            if (args[1].equalsIgnoreCase("deaths") || args[1].equalsIgnoreCase("hearts")) {
+               String[] sub = Arrays.copyOfRange(args, 2, args.length);
+               return this.deathCounterCommand.tabComplete(sub, args[1].equalsIgnoreCase("hearts"));
             }
 
             if (args.length == 3 && args[1].equalsIgnoreCase("session")) {

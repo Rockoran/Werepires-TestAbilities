@@ -85,6 +85,9 @@ import pow.crimson2.managers.VampireManager;
 import pow.crimson2.managers.VampireSireManager;
 import pow.crimson2.managers.VampireTexturePackManager;
 import pow.crimson2.managers.VampireTrackingManager;
+import pow.crimson2.managers.FadeManager;
+import pow.crimson2.managers.FaeManager;
+import pow.crimson2.managers.TurnLockManager;
 import pow.crimson2.managers.VampireTurningManager;
 
 public class VampireSMPPlugin extends JavaPlugin {
@@ -125,6 +128,9 @@ public class VampireSMPPlugin extends JavaPlugin {
    private PermadeathManager permadeathManager;
    private PassiveMobSpawningManager passiveMobSpawningManager;
    private VampireTurningManager vampireTurningManager;
+   private TurnLockManager turnLockManager;
+   private FaeManager faeManager;
+   private FadeManager fadeManager;
    private VampireSireManager sireManager;
    private ForcedCureChoiceManager forcedCureChoiceManager;
    private InitGameManager initGameManager;
@@ -196,6 +202,9 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.permadeathManager = new PermadeathManager(this);
       this.passiveMobSpawningManager = new PassiveMobSpawningManager(this, this.configManager);
       this.vampireTurningManager = new VampireTurningManager(this);
+      this.turnLockManager = new TurnLockManager(this);
+      this.faeManager = new FaeManager(this);
+      this.fadeManager = new FadeManager(this);
       this.sireManager = new VampireSireManager(this);
       this.forcedCureChoiceManager = new ForcedCureChoiceManager(this);
       this.initGameManager = new InitGameManager(this);
@@ -347,6 +356,9 @@ public class VampireSMPPlugin extends JavaPlugin {
               this, SkinShuffleManager.HANDSHAKE_CHANNEL);
       this.getServer().getMessenger().registerOutgoingPluginChannel(
               this, SkinShuffleManager.FORCE_SKIN_CHANNEL);
+      // Per-player opacity for the Fading tome (see FadeManager).
+      this.getServer().getMessenger().registerOutgoingPluginChannel(
+              this, FadeManager.FADE_CHANNEL);
       SkinCommand skinCommand = new SkinCommand(this);
       this.getCommand("skin").setExecutor(skinCommand);
       this.getCommand("skin").setTabCompleter(skinCommand);
@@ -463,6 +475,15 @@ public class VampireSMPPlugin extends JavaPlugin {
 
       if (this.vampireTurningManager != null) {
          this.vampireTurningManager.shutdown();
+      }
+
+      if (this.faeManager != null) {
+         this.faeManager.shutdown();
+      }
+
+      if (this.fadeManager != null) {
+         this.fadeManager.shutdown();
+         this.getServer().getMessenger().unregisterOutgoingPluginChannel(this, FadeManager.FADE_CHANNEL);
       }
 
       if (this.sireManager != null) {
@@ -778,6 +799,18 @@ public class VampireSMPPlugin extends JavaPlugin {
 
    public VampireTurningManager getVampireTurningManager() {
       return this.vampireTurningManager;
+   }
+
+   public TurnLockManager getTurnLockManager() {
+      return this.turnLockManager;
+   }
+
+   public FaeManager getFaeManager() {
+      return this.faeManager;
+   }
+
+   public FadeManager getFadeManager() {
+      return this.fadeManager;
    }
 
    public VampireSireManager getSireManager() {

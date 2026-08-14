@@ -46,11 +46,11 @@ public class ExperienceBottleListener implements Listener {
       Action action = event.getAction();
       if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-      event.setCancelled(true);
-
       // Vampire blood (vbowner lore) is now drinkable via FOOD/CONSUMABLE components
       // and handled entirely by BloodConsumeListener — skip it here so it isn't thrown.
       if (bloodBottleManager.isBloodBottle(item)) return;
+
+      event.setCancelled(true);
 
       // ── Thrall bonding blood (has vthrall lore) ───────────────────────────────
       if (bloodBottleManager.isThrallBloodBottle(item)) {

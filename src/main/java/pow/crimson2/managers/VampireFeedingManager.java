@@ -181,13 +181,24 @@ public class VampireFeedingManager implements Listener {
          target.sendMessage("§aYou will respawn as a human, not as a cursed creature.");
          target.setHealth(0.0);
          this.cancelFeedingSession(session);
-      } else if (!this.plugin.getVampireTurningManager().isTurningEnabled(vampire)) {
+      } else if (this.plugin.getConfigManager().isVampireKillPermadeathAlways() && this.isAtPermadeathThreshold(target)) {
+         // At or above the death threshold a vampire kill is permanent, whether or not this
+         // vampire has turning enabled. See combat.vampire-kill-permadeath-always.
+         vampire.sendMessage("§4You watch the light of " + target.getName() + "'s eyes fade, and extinguish. Lost forever.");
+         target.sendMessage(
+            "§7The world grows dim, blurry, you feel a darkness reach out, offering you one last chance to live, as a creature of the night... But you refuse... And slip under the veil of the afterlife."
+         );
+         target.addScoreboardTag("PermadeathChosen");
+         target.setHealth(0.0);
+         this.cancelFeedingSession(session);
+      } else if (!this.plugin.getVampireTurningManager().isTurningEnabled(vampire)
+            || this.plugin.getTurnLockManager().isTurnBlocked(vampire, target, TurnLockManager.Species.VAMPIRE)) {
          try {
             Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
             Objective deathObjective = mainScoreboard.getObjective("vsmp_death");
             if (deathObjective != null) {
                int currentDeaths = deathObjective.getScore(target.getName()).getScore();
-               if (currentDeaths >= 5) {
+               if (currentDeaths >= this.plugin.getConfigManager().getVampireKillPermadeathThreshold()) {
                   vampire.sendMessage("§4You watch the light of " + target.getName() + "'s eyes fade, and extinguish. Lost forever.");
                   target.sendMessage(
                      "§7The world grows dim, blurry, you feel a darkness reach out, offering you one last chance to live, as a creature of the night... But you refuse... And slip under the veil of the afterlife."
@@ -285,6 +296,22 @@ public class VampireFeedingManager implements Listener {
             }
          }
       }
+   }
+
+   /** True if the player's recorded deaths have reached the vampire-kill permadeath threshold. */
+   private boolean isAtPermadeathThreshold(Player player) {
+      try {
+         Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+         Objective deathObjective = mainScoreboard.getObjective("vsmp_death");
+         if (deathObjective != null) {
+            int deaths = deathObjective.getScore(player.getName()).getScore();
+            return deaths >= this.plugin.getConfigManager().getVampireKillPermadeathThreshold();
+         }
+      } catch (Exception e) {
+         this.plugin.getLogger().warning("Failed to check death count for " + player.getName() + ": " + e.getMessage());
+      }
+
+      return false;
    }
 
    private void cancelFeedingSession(VampireFeedingManager.FeedingSession session) {

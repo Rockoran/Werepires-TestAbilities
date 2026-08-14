@@ -155,6 +155,10 @@ public class ThirstManager {
       if (!vampire.getScoreboardTags().contains("ImmuneToThirst")) {
          float currentThirst = vampire.getExp();
          float newThirst = currentThirst - this.THIRST_PER_SECOND;
+         if (this.plugin.getFaeManager() != null && this.plugin.getFaeManager().hasDeal(vampire)) {
+            vampire.setExp(Math.max(0.001F, newThirst));
+            return;
+         }
          if (newThirst <= 0.0F) {
             vampire.setExp(0.0F);
             this.handleThirstStarvation(vampire);
@@ -191,6 +195,10 @@ public class ThirstManager {
       float currentThirst = vampire.getExp();
       float newThirst = currentThirst + thirstGained;
       float maxThirst = this.getMaxThirstForVampire(vampire, fromPlayerKill);
+      if (this.plugin.getFaeManager() != null && this.plugin.getFaeManager().hasDeal(vampire)) {
+         vampire.setExp(Math.max(0.001F, Math.min(0.99F, newThirst)));
+         return;
+      }
       if (newThirst >= 1.0F && this.vampireManager.getVampireStage(vampire) < 3) {
          this.promoteVampire(vampire);
       } else {
@@ -250,6 +258,10 @@ public class ThirstManager {
    }
 
    private void demoteVampire(Player vampire, boolean fromStarvation) {
+      if (this.plugin.getFaeManager() != null && this.plugin.getFaeManager().hasDeal(vampire)) {
+         vampire.setExp(Math.max(0.001F, vampire.getExp()));
+         return;
+      }
       int currentStage = this.vampireManager.getVampireStage(vampire);
       if (currentStage > 1) {
          if (fromStarvation) {
@@ -326,7 +338,8 @@ public class ThirstManager {
                   this.demoteVampire(vampire, true);
                }
             } else {
-               vampire.setExp(Math.max(0.0F, currentThirst - thirstCost));
+               float minimum = this.plugin.getFaeManager() != null && this.plugin.getFaeManager().hasDeal(vampire) ? 0.001F : 0.0F;
+               vampire.setExp(Math.max(minimum, currentThirst - thirstCost));
                vampire.setFoodLevel(Math.min(20, currentFoodLevel + foodToRegen));
                vampire.setSaturation(Math.min(vampire.getFoodLevel(), vampire.getSaturation() + 1.0F));
             }

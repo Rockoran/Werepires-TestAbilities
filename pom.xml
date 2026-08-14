@@ -16,6 +16,11 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Output jar name. The -TESTBUILD suffix marks a build with the WerePiresNetwork
+             kill switch (PROTOCOL_ENABLED) flipped to false — dev only, never ship it.
+             Revert to WerePires-1.14 together with that constant for a release build. -->
+        <jar.name>WerePires-1.14-TESTBUILD</jar.name>
     </properties>
 
     <repositories>
@@ -96,7 +101,7 @@
                                     <shadedPattern>com.google.gson</shadedPattern>
                                 </relocation>
                             </relocations>
-                            <finalName>WerePires-1.14</finalName>
+                            <finalName>${jar.name}</finalName>
                         </configuration>
                     </execution>
                 </executions>
@@ -111,7 +116,7 @@
                         <goals><goal>run</goal></goals>
                         <configuration>
                             <target>
-                                <copy file="${project.build.directory}/WerePires-1.14.jar"
+                                <copy file="${project.build.directory}/${jar.name}.jar"
                                       todir="${project.basedir}/testbuilds"
                                       overwrite="true"/>
                             </target>

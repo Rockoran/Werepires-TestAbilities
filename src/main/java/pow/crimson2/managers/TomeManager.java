@@ -73,6 +73,8 @@ public class TomeManager {
       this.registerAbility(new pow.crimson2.abilities.tome.LastVigilTomeAbility(this.plugin));
       this.registerAbility(new pow.crimson2.abilities.tome.FireBreathTomeAbility(this.plugin));
       this.registerAbility(new pow.crimson2.abilities.tome.BlueFireBreathTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.ScryingTomeAbility(this.plugin));
+      this.registerAbility(new pow.crimson2.abilities.tome.FadingTomeAbility(this.plugin));
       this.plugin.logInfo("TomeManager initialized - registered " + this.registeredAbilities.size() + " tome abilities");
    }
 
@@ -86,11 +88,12 @@ public class TomeManager {
    }
 
    public TomeAbility getAbility(String abilityName) {
+      if ("bluefirebreath".equalsIgnoreCase(abilityName)) abilityName = "MagicFireBreath";
       return this.registeredAbilities.get(abilityName.toLowerCase());
    }
 
    public boolean isValidAbility(String abilityName) {
-      return this.registeredAbilities.containsKey(abilityName.toLowerCase());
+      return this.getAbility(abilityName) != null;
    }
 
    public boolean grantAbility(Player player, String abilityName) {
@@ -133,6 +136,10 @@ public class TomeManager {
    }
 
    public boolean hasAbility(Player player, String abilityName) {
+      if ("MagicFireBreath".equalsIgnoreCase(abilityName)) {
+         return player.getScoreboardTags().contains("tome_ability_magicfirebreath")
+            || player.getScoreboardTags().contains("tome_ability_bluefirebreath");
+      }
       String tag = "tome_ability_" + abilityName.toLowerCase();
       return player.getScoreboardTags().contains(tag);
    }
@@ -152,9 +159,16 @@ public class TomeManager {
 
    public void removeAllAbilities(Player player) {
       Set<String> tagsToRemove = new HashSet<>();
+      boolean keepAllowed = this.plugin.getConfigManager().isAllowUseAfterTurned()
+         && this.plugin.getConfigManager().isKeepAbilitiesOnTurn();
 
       for (String tag : player.getScoreboardTags()) {
          if (tag.startsWith("tome_ability_")) {
+            // Allow-listed abilities keep their tag through the turn, otherwise "usable after
+            // turning" would be meaningless — the tag is the only record that they know it.
+            if (keepAllowed && this.plugin.getConfigManager().isAbilityAllowedAfterTurned(tag.substring("tome_ability_".length()))) {
+               continue;
+            }
             tagsToRemove.add(tag);
          }
       }
@@ -169,7 +183,11 @@ public class TomeManager {
    }
 
    public boolean useAbility(Player player, String abilityName) {
-      if (!this.vampireManager.isHuman(player)) {
+      return this.useAbility(player, abilityName, new String[0]);
+   }
+
+   public boolean useAbility(Player player, String abilityName, String[] args) {
+      if (!this.vampireManager.isHuman(player) && !this.plugin.getConfigManager().isAbilityAllowedAfterTurned(abilityName)) {
          player.sendMessage("§cOnly humans can use tome abilities.");
          return false;
       } else if (this.plugin.getGhoulManager() != null && this.plugin.getGhoulManager().isGhoul(player)) {
@@ -187,7 +205,7 @@ public class TomeManager {
             player.sendMessage("§cThat tome's magic lies dormant on this server.");
             return false;
          } else {
-            return ability.use(player);
+            return ability.use(player, args);
          }
       }
    }

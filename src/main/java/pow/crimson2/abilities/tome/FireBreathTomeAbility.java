@@ -14,6 +14,8 @@ import pow.crimson2.VampireSMPPlugin;
 
 public class FireBreathTomeAbility extends TomeAbility {
 
+   private static final String BREATH_COOLDOWN_KEY = "FireBreathFamily";
+
    public FireBreathTomeAbility(VampireSMPPlugin plugin) {
       super(
          plugin,
@@ -29,6 +31,11 @@ public class FireBreathTomeAbility extends TomeAbility {
    @Override
    public boolean isInLootPool() {
       return false;
+   }
+
+   @Override
+   protected String getCooldownKey() {
+      return BREATH_COOLDOWN_KEY;
    }
 
    @Override
