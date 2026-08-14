@@ -44,6 +44,8 @@ public final class PhoneCommand implements CommandExecutor, TabCompleter {
                 }
                 manager.store().resetSessionData();
                 sender.sendMessage(Component.text("Phone session data reset.", NamedTextColor.GREEN));
+                Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(Component.text(
+                        "Phone reset for a new session — settings and social handle kept.", NamedTextColor.GRAY)));
                 return true;
             }
             case "cellphone" -> { return cellphone(sender, args); }

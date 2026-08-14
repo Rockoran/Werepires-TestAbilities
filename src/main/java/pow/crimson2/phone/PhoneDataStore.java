@@ -50,6 +50,10 @@ public final class PhoneDataStore {
             }
             if (database == null) database = new PhoneDatabase();
             database.normalize();
+            if (!database.legacyMigrationComplete && LegacyPhoneImporter.importIfPresent(plugin, database)) {
+                database.legacyMigrationComplete = true;
+                save();
+            }
         } catch (Exception ex) {
             plugin.getLogger().severe("Could not load phone-data.json: " + ex.getMessage());
             database = new PhoneDatabase();
@@ -74,14 +78,26 @@ public final class PhoneDataStore {
     }
 
     public synchronized void resetSessionData() {
-        Map<String, String> handles = new HashMap<>(database.handles);
-        database = new PhoneDatabase();
-        database.handles.putAll(handles);
+        database.conversations.clear();
+        database.groups.clear();
+        database.posts.clear();
+        database.games.clear();
+        database.matches.clear();
+        database.nextGroupId = 1;
+        database.nextPostId = 1;
+        database.nextMatchId = 1;
+        for (PlayerRecord player : database.players.values()) {
+            player.contacts.clear();
+            player.gps.clear();
+            player.notes.clear();
+            player.following.clear();
+        }
         save();
     }
 
     public static final class PhoneDatabase {
         public int schemaVersion = 1;
+        public boolean legacyMigrationComplete;
         public Map<String, PlayerRecord> players = new HashMap<>();
         public Map<String, Conversation> conversations = new HashMap<>();
         public Map<Integer, GroupChat> groups = new LinkedHashMap<>();

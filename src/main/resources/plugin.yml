@@ -108,6 +108,7 @@ commands:
     description: Reset session phone data while preserving social handles
     usage: /phonereset confirm
     permission: vampiresmp.phone.admin
+    aliases: [cpreset]
   answer:
     description: Answer an incoming phone call
     usage: /answer
