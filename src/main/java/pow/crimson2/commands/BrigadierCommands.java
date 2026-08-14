@@ -56,6 +56,8 @@ public class BrigadierCommands {
           "cleansingsmoke",
           "huntersmark",
           "lastvigil",
+          "firebreath",
+          "magicfirebreath",
           "scrying",
           "fading"
   );
@@ -826,7 +828,12 @@ public class BrigadierCommands {
                             .then(Commands.argument("stage", IntegerArgumentType.integer(1, 3))
                                     .executes(ctx -> this.executePowCommand(ctx, "faedeal", "vampire",
                                             StringArgumentType.getString(ctx, "player"),
-                                            String.valueOf(IntegerArgumentType.getInteger(ctx, "stage")))))))
+                                            String.valueOf(IntegerArgumentType.getInteger(ctx, "stage"))))
+                                    .then(Commands.argument("breakOnFaePermadeath", BoolArgumentType.bool())
+                                            .executes(ctx -> this.executePowCommand(ctx, "faedeal", "vampire",
+                                                    StringArgumentType.getString(ctx, "player"),
+                                                    String.valueOf(IntegerArgumentType.getInteger(ctx, "stage")),
+                                                    String.valueOf(BoolArgumentType.getBool(ctx, "breakOnFaePermadeath"))))))))
             .then(Commands.literal("release")
                     .then(Commands.argument("player", StringArgumentType.word())
                             .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
