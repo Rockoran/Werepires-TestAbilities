@@ -233,8 +233,158 @@ final class PhoneUi {
     }
 
     static void openCalls(PhoneManager manager, Player player) { comingSoon(manager, player, "Calls", "Simple Voice Chat call sessions are being wired next."); }
-    static void openSocial(PhoneManager manager, Player player) { comingSoon(manager, player, "Social", "Handles, feed, follows, and reactions are stored in the new schema."); }
-    static void openGroups(PhoneManager manager, Player player) { comingSoon(manager, player, "Group Chats", "Persistent group records and messages are ready for the group UI."); }
+    static void openSocial(PhoneManager manager, Player player) {
+        String self = player.getUniqueId().toString();
+        String handle = manager.store().database().handles.get(self);
+        List<ActionButton> buttons = new ArrayList<>();
+        manager.store().database().posts.entrySet().stream()
+                .sorted(Map.Entry.<Integer, PhoneDataStore.SocialPost>comparingByKey().reversed()).limit(12)
+                .forEach(entry -> buttons.add(manager.button("@" + entry.getValue().handle,
+                        entry.getValue().text, () -> openPost(manager, player, entry.getKey()))));
+        buttons.add(manager.button(handle == null ? "Create Handle" : "New Post",
+                handle == null ? "Choose your permanent social handle" : "Post as @" + handle,
+                () -> { if (handle == null) openHandleSetup(manager, player); else openCreatePost(manager, player); }));
+        if (handle != null) buttons.add(manager.button("Discover", "Follow or unfollow phone accounts", () -> openDiscover(manager, player)));
+        buttons.add(manager.button("Back", "Return to the phone", () -> manager.openMain(player)));
+        showActions(player, "Social", handle == null ? "No handle configured" : "Signed in as @" + handle, buttons, 2);
+    }
+
+    private static void openDiscover(PhoneManager manager, Player player) {
+        String self = player.getUniqueId().toString();
+        PhoneDataStore.PlayerRecord record = manager.store().player(self);
+        List<ActionButton> buttons = new ArrayList<>();
+        manager.store().database().handles.entrySet().stream().filter(e -> !e.getKey().equals(self))
+                .sorted(Map.Entry.comparingByValue()).forEach(entry -> buttons.add(manager.button(
+                        (record.following.contains(entry.getKey()) ? "✓ " : "") + "@" + entry.getValue(),
+                        record.following.contains(entry.getKey()) ? "Click to unfollow" : "Click to follow", () -> {
+                            if (!record.following.remove(entry.getKey())) record.following.add(entry.getKey());
+                            manager.store().save(); openDiscover(manager, player);
+                        })));
+        buttons.add(manager.button("Back", "Return to social", () -> openSocial(manager, player)));
+        showActions(player, "Discover", "Following " + record.following.size() + " account(s)", buttons, 2);
+    }
+
+    private static void openHandleSetup(PhoneManager manager, Player player) {
+        showForm(player, "Create Handle", "Handles survive /phonereset and cannot be duplicated.",
+                List.of(DialogInput.text("handle", Component.text("Handle (without @)")).maxLength(20).build()), "Create", view -> {
+                    String raw = view.getText("handle");
+                    String handle = raw == null ? "" : raw.strip().toLowerCase().replaceAll("[^a-z0-9_]", "");
+                    if (handle.length() < 3 || manager.store().database().handles.values().stream().anyMatch(handle::equalsIgnoreCase)) {
+                        player.sendMessage(Component.text("Handle must be unique and contain 3-20 letters, numbers, or underscores.", NamedTextColor.RED)); return;
+                    }
+                    manager.store().database().handles.put(player.getUniqueId().toString(), handle);
+                    manager.store().save(); openSocial(manager, player);
+                }, () -> openSocial(manager, player));
+    }
+
+    private static void openCreatePost(PhoneManager manager, Player player) {
+        showForm(player, "New Post", "Share with the phone social feed.",
+                List.of(DialogInput.text("post", Component.text("Post")).maxLength(240).build()), "Post", view -> {
+                    String text = view.getText("post"); if (text == null || text.isBlank()) return;
+                    PhoneDataStore.SocialPost post = new PhoneDataStore.SocialPost();
+                    post.author = player.getUniqueId().toString(); post.handle = manager.store().database().handles.get(post.author);
+                    post.text = text.strip(); post.sentAt = System.currentTimeMillis();
+                    manager.store().database().posts.put(manager.store().database().nextPostId++, post);
+                    manager.store().save(); openSocial(manager, player);
+                }, () -> openSocial(manager, player));
+    }
+
+    private static void openPost(PhoneManager manager, Player player, int id) {
+        PhoneDataStore.SocialPost post = manager.store().database().posts.get(id); if (post == null) { openSocial(manager, player); return; }
+        String self = player.getUniqueId().toString();
+        showActions(player, "@" + post.handle, post.text + "\n\n♥ " + post.hearts.size() + "   👎 " + post.dislikes.size(), List.of(
+                manager.button(post.hearts.contains(self) ? "Remove Heart" : "Heart", "React to this post", () -> {
+                    post.dislikes.remove(self); if (!post.hearts.remove(self)) post.hearts.add(self); manager.store().save(); openPost(manager, player, id);
+                }),
+                manager.button(post.dislikes.contains(self) ? "Remove Dislike" : "Dislike", "React to this post", () -> {
+                    post.hearts.remove(self); if (!post.dislikes.remove(self)) post.dislikes.add(self); manager.store().save(); openPost(manager, player, id);
+                }),
+                manager.button("Back", "Return to social", () -> openSocial(manager, player))
+        ), 2);
+    }
+
+    static void openGroups(PhoneManager manager, Player player) {
+        String self = player.getUniqueId().toString();
+        List<ActionButton> buttons = new ArrayList<>();
+        manager.store().database().groups.entrySet().stream().filter(e -> e.getValue().members.contains(self))
+                .forEach(e -> buttons.add(manager.button(e.getValue().name, e.getValue().members.size() + " members", () -> openGroup(manager, player, e.getKey()))));
+        buttons.add(manager.button("Create Group", "Start a group chat", () -> openCreateGroup(manager, player)));
+        buttons.add(manager.button("Back", "Return to the phone", () -> manager.openMain(player)));
+        showActions(player, "Group Chats", "Your persistent group conversations", buttons, 2);
+    }
+
+    private static void openCreateGroup(PhoneManager manager, Player player) {
+        showForm(player, "Create Group", "Create a new group chat.",
+                List.of(DialogInput.text("name", Component.text("Group name")).maxLength(40).build()), "Create", view -> {
+                    String name = view.getText("name"); if (name == null || name.isBlank()) return;
+                    PhoneDataStore.GroupChat group = new PhoneDataStore.GroupChat();
+                    group.name = name.strip(); group.owner = player.getUniqueId().toString(); group.members.add(group.owner);
+                    int id = manager.store().database().nextGroupId++; manager.store().database().groups.put(id, group);
+                    manager.store().save(); openGroup(manager, player, id);
+                }, () -> openGroups(manager, player));
+    }
+
+    private static void openGroup(PhoneManager manager, Player player, int id) {
+        PhoneDataStore.GroupChat group = manager.store().database().groups.get(id); if (group == null) { openGroups(manager, player); return; }
+        String self = player.getUniqueId().toString();
+        if (!group.members.contains(self)) { openGroups(manager, player); return; }
+        group.lastRead.put(self, group.messages.size());
+        StringBuilder body = new StringBuilder();
+        group.messages.stream().skip(Math.max(0, group.messages.size() - 8)).forEach(m -> body.append(manager.displayName(m.from)).append(": ").append(m.text).append('\n'));
+        manager.store().save();
+        List<ActionButton> buttons = new ArrayList<>();
+        buttons.add(manager.button("Send Message", "Write to the group", () -> openGroupReply(manager, player, id)));
+        buttons.add(manager.button("Members", "Add, remove, or leave", () -> openGroupMembers(manager, player, id)));
+        buttons.add(manager.button("Back", "Return to groups", () -> openGroups(manager, player)));
+        showActions(player, group.name, body.length() == 0 ? group.members.size() + " member(s)" : body.toString(), buttons, 2);
+    }
+
+    private static void openGroupReply(PhoneManager manager, Player player, int id) {
+        PhoneDataStore.GroupChat group = manager.store().database().groups.get(id); if (group == null) return;
+        showForm(player, "Send to " + group.name, group.members.size() + " member(s) will see this.",
+                List.of(DialogInput.text("message", Component.text("Message")).maxLength(256).build()), "Send", view -> {
+                    String text = view.getText("message"); if (text == null || text.isBlank()) return;
+                    PhoneDataStore.Message message = new PhoneDataStore.Message(); message.from = player.getUniqueId().toString();
+                    message.text = text.strip(); message.sentAt = System.currentTimeMillis(); group.messages.add(message);
+                    group.lastRead.put(message.from, group.messages.size()); manager.store().save();
+                    for (String member : group.members) {
+                        if (member.equals(message.from)) continue;
+                        Player online = Bukkit.getPlayer(UUID.fromString(member));
+                        PhoneDataStore.PlayerRecord recipient = manager.store().player(member);
+                        if (online != null && !recipient.doNotDisturb)
+                            online.sendMessage(Component.text("Phone: " + group.name + " | " + manager.displayName(message.from) + ": " + message.text, NamedTextColor.AQUA));
+                    }
+                    openGroup(manager, player, id);
+                }, () -> openGroup(manager, player, id));
+    }
+
+    private static void openGroupMembers(PhoneManager manager, Player player, int id) {
+        PhoneDataStore.GroupChat group = manager.store().database().groups.get(id); if (group == null) return;
+        String self = player.getUniqueId().toString();
+        List<ActionButton> buttons = new ArrayList<>();
+        manager.store().player(self).contacts.keySet().stream().filter(uuid -> !group.members.contains(uuid))
+                .forEach(uuid -> buttons.add(manager.button("Add " + manager.displayName(uuid), "Add contact to group", () -> {
+                    if (group.members.size() >= 20) { player.sendMessage(Component.text("Group is full.", NamedTextColor.RED)); return; }
+                    group.members.add(uuid); group.lastRead.put(uuid, group.messages.size()); manager.store().save();
+                    Player online = Bukkit.getPlayer(UUID.fromString(uuid)); if (online != null) online.sendMessage(Component.text("You were added to " + group.name + ".", NamedTextColor.AQUA));
+                    openGroupMembers(manager, player, id);
+                })));
+        if (group.owner.equals(self)) group.members.stream().filter(uuid -> !uuid.equals(self)).forEach(uuid ->
+                buttons.add(manager.button("Remove " + manager.displayName(uuid), "Remove this member", () -> {
+                    group.members.remove(uuid); group.lastRead.remove(uuid); manager.store().save(); openGroupMembers(manager, player, id);
+                })));
+        buttons.add(manager.button("Leave Group", "Leave and transfer ownership if needed", () -> leaveGroup(manager, player, id)));
+        buttons.add(manager.button("Back", "Return to group", () -> openGroup(manager, player, id)));
+        showActions(player, group.name + " Members", "Owner: " + manager.displayName(group.owner) + " • " + group.members.size() + "/20", buttons, 2);
+    }
+
+    private static void leaveGroup(PhoneManager manager, Player player, int id) {
+        PhoneDataStore.GroupChat group = manager.store().database().groups.get(id); if (group == null) return;
+        String self = player.getUniqueId().toString(); group.members.remove(self); group.lastRead.remove(self);
+        if (group.members.isEmpty()) manager.store().database().groups.remove(id);
+        else if (group.owner.equals(self)) group.owner = group.members.get(0);
+        manager.store().save(); openGroups(manager, player);
+    }
     static void openGames(PhoneManager manager, Player player) { comingSoon(manager, player, "Games", "Game records are ready for the native game implementations."); }
 
     private static void comingSoon(PhoneManager manager, Player player, String title, String body) {
