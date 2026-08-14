@@ -155,6 +155,7 @@ public class VampireSMPPlugin extends JavaPlugin {
    private pow.crimson2.ghost.ModGateManager modGateManager;
    private pow.crimson2.network.WerePiresNetwork werePiresNetwork;
    private pow.crimson2.world.WorldPackManager worldPackManager;
+   private pow.crimson2.phone.PhoneManager phoneManager;
    private org.bukkit.configuration.file.YamlConfiguration stateConfig;
    private java.io.File stateConfigFile;
    private Team castTeam;
@@ -214,6 +215,13 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.werewolfBitingListener = new WerewolfBitingListener(this);
       this.werewolfDietListener = new WerewolfDietListener(this);
       this.thrallManager = new ThrallManager(this);
+      this.phoneManager = new pow.crimson2.phone.PhoneManager(this);
+      this.getServer().getPluginManager().registerEvents(this.phoneManager, this);
+      pow.crimson2.phone.PhoneCommand phoneCommand = new pow.crimson2.phone.PhoneCommand(this.phoneManager);
+      for (String commandName : java.util.List.of("cellphone", "givephone", "phonegive", "checkphonestatus", "phonereset")) {
+         this.getCommand(commandName).setExecutor(phoneCommand);
+         this.getCommand(commandName).setTabCompleter(phoneCommand);
+      }
       this.getServer().getPluginManager().registerEvents(this.damageSuppressionListener, this);
       this.getServer().getPluginManager().registerEvents(this.deathHandler, this);
       this.getServer().getPluginManager().registerEvents(new CombatListener(this, this.vampireManager), this);
@@ -512,6 +520,10 @@ public class VampireSMPPlugin extends JavaPlugin {
 
       if (this.thrallManager != null) {
          this.thrallManager.shutdown();
+      }
+
+      if (this.phoneManager != null) {
+         this.phoneManager.shutdown();
       }
 
       if (this.roleManager != null) {

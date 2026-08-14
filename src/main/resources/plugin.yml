@@ -1,5 +1,5 @@
 name: WerePires
-version: 1.5
+version: 1.15
 main: pow.crimson2.VampireSMPPlugin
 api-version: 1.21.5
 author: PowCreations
@@ -90,6 +90,24 @@ commands:
   ghost:
     description: Reveal/conceal yourself, voice-haunt a player, or stop haunting
     usage: /ghost <show|hide|showall|hideall|list|haunt|unhaunt|setfree> [player]
+  cellphone:
+    description: Open or administer the native cell phone system
+    usage: /cellphone [give <player>|open <player>|reload]
+  givephone:
+    description: Give a phone to yourself or another player
+    usage: /givephone [player]
+    permission: vampiresmp.phone.admin
+  phonegive:
+    description: Give phones to one player or everyone online
+    usage: /phonegive <all|player>
+    permission: vampiresmp.phone.admin
+  checkphonestatus:
+    description: Check whether your inventory contains a phone
+    usage: /checkphonestatus
+  phonereset:
+    description: Reset session phone data while preserving social handles
+    usage: /phonereset confirm
+    permission: vampiresmp.phone.admin
 
 permissions:
   vampiresmp.admin:
@@ -102,6 +120,10 @@ permissions:
 
   vampiresmp.modgate.bypass:
     description: Exempts the player from the compatibility-mod requirement
+    default: op
+
+  vampiresmp.phone.admin:
+    description: Allows phone issuing, reload, open, and reset commands
     default: op
 
   thralls.admin:
