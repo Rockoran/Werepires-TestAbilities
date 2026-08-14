@@ -36,16 +36,19 @@ public final class PhoneManager implements Listener {
     private final NamespacedKey phoneKey;
     private final NamespacedKey colorKey;
     private PhoneCallService callService = PhoneCallService.UNAVAILABLE;
+    private final PhoneGameManager gameManager;
 
     public PhoneManager(VampireSMPPlugin plugin) {
         this.plugin = plugin;
         this.store = new PhoneDataStore(plugin);
         this.phoneKey = new NamespacedKey(plugin, "cell_phone");
         this.colorKey = new NamespacedKey(plugin, "cell_phone_color");
+        this.gameManager = new PhoneGameManager(this);
     }
 
     public PhoneDataStore store() { return store; }
     public PhoneCallService calls() { return callService; }
+    public PhoneGameManager games() { return gameManager; }
     public void setCallService(PhoneCallService callService) { this.callService = callService == null ? PhoneCallService.UNAVAILABLE : callService; }
 
     public ItemStack createPhone(Player owner) {

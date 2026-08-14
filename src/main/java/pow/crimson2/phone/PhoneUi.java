@@ -396,7 +396,7 @@ final class PhoneUi {
         else if (group.owner.equals(self)) group.owner = group.members.get(0);
         manager.store().save(); openGroups(manager, player);
     }
-    static void openGames(PhoneManager manager, Player player) { comingSoon(manager, player, "Games", "Game records are ready for the native game implementations."); }
+    static void openGames(PhoneManager manager, Player player) { manager.games().open(player); }
 
     private static void comingSoon(PhoneManager manager, Player player, String title, String body) {
         showActions(player, title, body, List.of(manager.button("Back", "Return to the phone", () -> manager.openMain(player))), 1);
@@ -413,7 +413,7 @@ final class PhoneUi {
         return offline == null ? null : offline.getUniqueId().toString();
     }
 
-    private static void showActions(Player player, String title, String body, List<ActionButton> buttons, int columns) {
+    static void showActions(Player player, String title, String body, List<ActionButton> buttons, int columns) {
         Dialog dialog = Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(Component.text(title, NamedTextColor.AQUA))
                         .body(List.of(DialogBody.plainMessage(Component.text(body == null ? "" : body)))).build())
@@ -421,9 +421,9 @@ final class PhoneUi {
         player.showDialog(dialog);
     }
 
-    private interface FormSubmit { void accept(io.papermc.paper.dialog.DialogResponseView view); }
+    interface FormSubmit { void accept(io.papermc.paper.dialog.DialogResponseView view); }
 
-    private static void showForm(Player player, String title, String body, List<DialogInput> inputs,
+    static void showForm(Player player, String title, String body, List<DialogInput> inputs,
                                  String submitLabel, FormSubmit submit, Runnable back) {
         Dialog dialog = Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(Component.text(title, NamedTextColor.AQUA))

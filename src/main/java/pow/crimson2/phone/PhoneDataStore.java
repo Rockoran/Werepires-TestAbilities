@@ -88,8 +88,10 @@ public final class PhoneDataStore {
         public Map<Integer, SocialPost> posts = new LinkedHashMap<>();
         public Map<String, String> handles = new HashMap<>();
         public Map<String, GameRecord> games = new HashMap<>();
+        public Map<Integer, GameMatch> matches = new LinkedHashMap<>();
         public int nextGroupId = 1;
         public int nextPostId = 1;
+        public int nextMatchId = 1;
 
         void normalize() {
             if (players == null) players = new HashMap<>();
@@ -98,6 +100,7 @@ public final class PhoneDataStore {
             if (posts == null) posts = new LinkedHashMap<>();
             if (handles == null) handles = new HashMap<>();
             if (games == null) games = new HashMap<>();
+            if (matches == null) matches = new LinkedHashMap<>();
         }
     }
 
@@ -167,10 +170,33 @@ public final class PhoneDataStore {
     }
 
     public static final class GameRecord {
+        public String name = "Unknown";
         public int wins;
         public int losses;
         public int streak;
         public int bestStreak;
-        public int chips;
+        public int chips = 100;
+        public int bestChips = 100;
+        public int memoryBestRound;
+        public int wordleStreak;
+        public int wordleBestStreak;
+    }
+
+    public static final class GameMatch {
+        public int id;
+        public String game;
+        public String challenger;
+        public String opponent;
+        public String challengerUuid;
+        public String opponentUuid;
+        public String state = "pending";
+        public String turn = "challenger";
+        public int wager;
+        public List<String> board = new ArrayList<>();
+        public String challengerPick;
+        public String opponentPick;
+        public int challengerScore;
+        public int opponentScore;
+        public String note;
     }
 }
