@@ -36,6 +36,7 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
     private final Map<UUID, Integer> ringing = new ConcurrentHashMap<>();
     private final Set<UUID> registeredListeners = ConcurrentHashMap.newKeySet();
     private final Map<UUID, PlayerPosition> positions = new ConcurrentHashMap<>();
+    private final ThreadLocal<Boolean> routingAudio = ThreadLocal.withInitial(() -> false);
     private VoicechatServerApi api;
     private BukkitTask maintenance;
 
@@ -164,19 +165,28 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
     private Call callOf(Player player) { Integer id = connected.get(player.getUniqueId()); return id == null ? null : calls.get(id); }
 
     private void routeAudio(UUID source, SoundPacket packet) {
+        // Audio channels invoke player listeners for the packets they emit. Never feed our own
+        // phone-category packets back into the router, and guard synchronous callbacks even if a
+        // server build loses/customizes the category field.
+        if (CATEGORY.equals(packet.getCategory()) || routingAudio.get()) return;
         byte[] audio = packet.getOpusEncodedData(); if (audio == null || audio.length == 0) return;
-        Integer ownCallId = connected.get(source);
-        if (ownCallId != null) {
-            Call call = calls.get(ownCallId);
-            if (call != null && !call.muted.contains(source)) {
-                sendPrivate(call, source, audio, call.members);
-                if (call.speakerOwner != null && !call.speakerOwner.equals(source)) sendSpeaker(call, source, audio);
+        routingAudio.set(true);
+        try {
+            Integer ownCallId = connected.get(source);
+            if (ownCallId != null) {
+                Call call = calls.get(ownCallId);
+                if (call != null && !call.muted.contains(source)) {
+                    sendPrivate(call, source, audio, call.members);
+                    if (call.speakerOwner != null && !call.speakerOwner.equals(source)) sendSpeaker(call, source, audio);
+                }
             }
-        }
-        for (Call call : calls.values()) {
-            UUID speaker = call.speakerOwner;
-            if (speaker == null || call.members.contains(source) || !isNearSpeaker(source, speaker)) continue;
-            sendPrivate(call, source, audio, call.members.stream().filter(member -> !member.equals(speaker)).toList());
+            for (Call call : calls.values()) {
+                UUID speaker = call.speakerOwner;
+                if (speaker == null || call.members.contains(source) || !isNearSpeaker(source, speaker)) continue;
+                sendPrivate(call, source, audio, call.members.stream().filter(member -> !member.equals(speaker)).toList());
+            }
+        } finally {
+            routingAudio.set(false);
         }
     }
 
