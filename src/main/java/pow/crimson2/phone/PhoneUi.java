@@ -148,7 +148,9 @@ final class PhoneUi {
                         () -> openContact(manager, player, entry.getKey()))));
         buttons.add(manager.button("Add Contact", "Add by Minecraft or character name", () -> openAddContact(manager, player)));
         buttons.add(manager.button("Back", "Return to the phone", () -> manager.openMain(player)));
-        showActions(player, "Contacts", record.contacts.size() + " saved contact(s)", buttons, 2);
+        showActions(player, "Contacts", record.contacts.isEmpty()
+                ? "No contacts yet. Shift + right-click a player while holding your phone to add them."
+                : record.contacts.size() + " saved contact(s)", buttons, 2);
     }
 
     private static void openAddContact(PhoneManager manager, Player player) {

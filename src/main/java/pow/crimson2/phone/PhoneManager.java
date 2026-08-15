@@ -16,9 +16,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import pow.crimson2.VampireSMPPlugin;
@@ -178,7 +180,36 @@ public final class PhoneManager implements Listener {
     public void onUse(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (!isPhone(event.getItem())) return;
+        if (event.getPlayer().isSneaking()) return;
         event.setCancelled(true);
         openMain(event.getPlayer());
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onAddContact(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND || !(event.getRightClicked() instanceof Player target)) return;
+        Player owner = event.getPlayer();
+        if (!owner.isSneaking() || !isPhone(owner.getInventory().getItemInMainHand())) return;
+        event.setCancelled(true);
+        if (owner.getUniqueId().equals(target.getUniqueId())) {
+            owner.sendActionBar(Component.text("You cannot add yourself as a contact.", NamedTextColor.RED));
+            return;
+        }
+
+        // Refresh both identities at interaction time so the contact uses the active thrall
+        // character profile, including profile changes made after either player joined.
+        updateIdentity(owner);
+        updateIdentity(target);
+        String ownerId = owner.getUniqueId().toString(), targetId = target.getUniqueId().toString();
+        String characterName = displayName(targetId);
+        if (store.player(ownerId).contacts.containsKey(targetId)) {
+            owner.sendActionBar(Component.text(characterName + " is already in your contacts.", NamedTextColor.GRAY));
+            return;
+        }
+        store.player(ownerId).contacts.put(targetId, new PhoneDataStore.Contact());
+        store.save();
+        owner.sendActionBar(Component.text("[Phone] Added ", NamedTextColor.AQUA)
+                .append(Component.text(characterName, NamedTextColor.YELLOW))
+                .append(Component.text(" to contacts.", NamedTextColor.WHITE)));
     }
 }
