@@ -3,6 +3,8 @@ package pow.crimson2.phone;
 import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.input.DialogInput;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 public final class PhoneGameManager {
     private static final List<String> WORDS = List.of("blood", "night", "fangs", "stake", "crypt", "ghost", "torch", "raven");
@@ -21,6 +24,7 @@ public final class PhoneGameManager {
     private final Map<String, HigherLower> higherLower = new HashMap<>();
     private final Map<String, MemoryGame> memory = new HashMap<>();
     private final Map<String, Wordle> wordle = new HashMap<>();
+    private final Map<UUID, Integer> activeMatchScreens = new HashMap<>();
 
     PhoneGameManager(PhoneManager manager) { this.manager = manager; }
 
@@ -31,6 +35,7 @@ public final class PhoneGameManager {
     }
 
     public void open(Player player) {
+        activeMatchScreens.remove(player.getUniqueId());
         PhoneDataStore.GameRecord record = record(player); manager.store().save();
         List<ActionButton> buttons = new ArrayList<>();
         if (record.chips > 0) {
@@ -123,9 +128,11 @@ public final class PhoneGameManager {
     private void endMemory(Player player,String reason){MemoryGame g=memory.remove(key(player));if(g==null)return;int cleared=Math.max(0,g.sequence.size()-1);PhoneDataStore.GameRecord r=record(player);r.memoryBestRound=Math.max(r.memoryBestRound,cleared);int pay=cleared*5;r.chips+=pay;r.bestChips=Math.max(r.bestChips,r.chips);manager.store().save();PhoneUi.showActions(player,"Memory Result",reason+"\nCleared "+cleared+" rounds for "+pay+" chips.",List.of(manager.button("Games","Return",()->open(player))),1);}
 
     private void startWordle(Player player){wordle.put(key(player),new Wordle(WORDS.get(random.nextInt(WORDS.size()))));openWordle(player);}
-    private void openWordle(Player player){Wordle g=wordle.get(key(player));String history=String.join("\n",g.history);PhoneUi.showForm(player,"Wordle",history.isBlank()?"Six guesses. Green=correct; yellow=present; gray=absent.":history,List.of(DialogInput.text("guess",Component.text("Five-letter guess")).maxLength(5).build()),"Guess",view->guessWordle(player,view.getText("guess")),()->giveUpWordle(player));}
+    private void openWordle(Player player){Wordle g=wordle.get(key(player));Component history=Component.empty();if(g.history.isEmpty())history=Component.text("Six guesses. Green = correct; yellow = present; gray = absent.");else for(Component line:g.history)history=history.append(line).append(Component.newline());PhoneUi.showForm(player,"Wordle",history,List.of(DialogInput.text("guess",Component.text("Five-letter guess")).maxLength(5).build()),"Guess",view->guessWordle(player,view.getText("guess")),()->giveUpWordle(player));}
     private void giveUpWordle(Player player){Wordle g=wordle.remove(key(player));if(g==null){open(player);return;}PhoneDataStore.GameRecord r=record(player);r.wordleStreak=0;manager.store().save();PhoneUi.showActions(player,"Wordle","The word was "+g.word.toUpperCase()+".",List.of(manager.button("Games","Return",()->open(player))),1);}
-    private void guessWordle(Player player,String guess){Wordle g=wordle.get(key(player));if(guess==null||guess.length()!=5){player.sendMessage("§cEnter five letters.");openWordle(player);return;}guess=guess.toLowerCase();StringBuilder result=new StringBuilder();for(int i=0;i<5;i++){char c=guess.charAt(i);result.append(c==g.word.charAt(i)?"🟩":g.word.indexOf(c)>=0?"🟨":"⬛");}g.history.add(result+" "+guess.toUpperCase());if(guess.equals(g.word)){wordle.remove(key(player));PhoneDataStore.GameRecord r=record(player);r.wordleStreak++;r.wordleBestStreak=Math.max(r.wordleBestStreak,r.wordleStreak);int pay=15+(r.wordleStreak-1)*10+(g.history.size()<=3?5:0);r.chips+=pay;r.bestChips=Math.max(r.bestChips,r.chips);manager.store().save();PhoneUi.showActions(player,"Wordle","Solved in "+g.history.size()+" guesses. Won "+pay+" chips.",List.of(manager.button("Games","Return",()->open(player))),1);return;}if(g.history.size()>=6){wordle.remove(key(player));PhoneDataStore.GameRecord r=record(player);r.wordleStreak=0;manager.store().save();PhoneUi.showActions(player,"Wordle","The word was "+g.word.toUpperCase()+".",List.of(manager.button("Games","Return",()->open(player))),1);return;}openWordle(player);}
+    private void guessWordle(Player player,String guess){Wordle g=wordle.get(key(player));if(guess==null||!guess.matches("[A-Za-z]{5}")){player.sendMessage("§cEnter five letters.");openWordle(player);return;}guess=guess.toLowerCase();g.history.add(wordleResult(guess,g.word));if(guess.equals(g.word)){wordle.remove(key(player));PhoneDataStore.GameRecord r=record(player);r.wordleStreak++;r.wordleBestStreak=Math.max(r.wordleBestStreak,r.wordleStreak);int pay=15+(r.wordleStreak-1)*10+(g.history.size()<=3?5:0);r.chips+=pay;r.bestChips=Math.max(r.bestChips,r.chips);manager.store().save();PhoneUi.showActions(player,"Wordle","Solved in "+g.history.size()+" guesses. Won "+pay+" chips.",List.of(manager.button("Games","Return",()->open(player))),1);return;}if(g.history.size()>=6){wordle.remove(key(player));PhoneDataStore.GameRecord r=record(player);r.wordleStreak=0;manager.store().save();PhoneUi.showActions(player,"Wordle","The word was "+g.word.toUpperCase()+".",List.of(manager.button("Games","Return",()->open(player))),1);return;}openWordle(player);}
+
+    private Component wordleResult(String guess,String answer){int[] marks=new int[5];Map<Character,Integer>remaining=new HashMap<>();for(int i=0;i<5;i++){if(guess.charAt(i)==answer.charAt(i))marks[i]=2;else remaining.merge(answer.charAt(i),1,Integer::sum);}for(int i=0;i<5;i++)if(marks[i]==0){char c=guess.charAt(i);int count=remaining.getOrDefault(c,0);if(count>0){marks[i]=1;remaining.put(c,count-1);}}Component line=Component.empty();for(int i=0;i<5;i++){NamedTextColor color=marks[i]==2?NamedTextColor.GREEN:marks[i]==1?NamedTextColor.YELLOW:NamedTextColor.GRAY;line=line.append(Component.text(Character.toUpperCase(guess.charAt(i)),color));if(i<4)line=line.append(Component.space());}return line;}
 
     private void openLeaderboard(Player player){StringBuilder body=new StringBuilder();manager.store().database().games.values().stream().sorted(Comparator.comparingInt((PhoneDataStore.GameRecord r)->r.bestChips).reversed()).limit(10).forEach(r->body.append(r.name).append(" — ").append(r.bestChips).append('\n'));PhoneUi.showActions(player,"Chip Leaderboard",body.length()==0?"Nobody has played yet.":body.toString(),List.of(manager.button("Back","Return",()->open(player))),1);}
     private void openPvpRecords(Player player){StringBuilder body=new StringBuilder();manager.store().database().games.values().stream().sorted(Comparator.comparingInt((PhoneDataStore.GameRecord r)->r.wins).reversed()).limit(10).forEach(r->body.append(r.name).append(" — ").append(r.wins).append('/').append(r.losses).append(" best ").append(r.bestStreak).append('\n'));PhoneUi.showActions(player,"PvP Records",body.length()==0?"No matches played yet.":body.toString(),List.of(manager.button("Back","Return",()->open(player))),1);}
@@ -133,7 +140,7 @@ public final class PhoneGameManager {
     private String gameName(String game) { return game.equals("c4") ? "Connect 4" : game.equals("ttt") ? "Tic-tac-toe" : "Rock Paper Scissors"; }
 
     private void openPvpPicker(Player player, String game) {
-        List<ActionButton> buttons = new ArrayList<>(); String self = key(player);
+        List<ActionButton> buttons = new ArrayList<>(); String self = player.getUniqueId().toString();
         manager.store().player(self).contacts.keySet().stream().map(uuid -> Map.entry(uuid, org.bukkit.Bukkit.getPlayer(java.util.UUID.fromString(uuid))))
                 .filter(entry -> entry.getValue() != null).forEach(entry -> buttons.add(manager.button(manager.displayName(entry.getKey()), "Choose wager", () -> openWager(player, game, entry.getKey()))));
         buttons.add(manager.button("Back", "Return to games", () -> open(player)));
@@ -161,6 +168,7 @@ public final class PhoneGameManager {
     }
 
     private void openMatches(Player player) {
+        activeMatchScreens.remove(player.getUniqueId());
         String self = key(player); List<ActionButton> buttons = new ArrayList<>();
         manager.store().database().matches.values().stream().filter(match -> match.challenger.equals(self) || match.opponent.equals(self)).forEach(match -> {
             String other = match.challenger.equals(self) ? match.opponent : match.challenger;
@@ -173,6 +181,7 @@ public final class PhoneGameManager {
 
     private void openMatch(Player player, int id) {
         PhoneDataStore.GameMatch match = manager.store().database().matches.get(id); if (match == null) { openMatches(player); return; }
+        activeMatchScreens.put(player.getUniqueId(), id);
         if (match.state.equals("pending")) { openPending(player, match); return; }
         if (match.game.equals("c4")) openConnect4(player, match); else if (match.game.equals("ttt")) openTtt(player, match); else openRps(player, match);
     }
@@ -192,12 +201,12 @@ public final class PhoneGameManager {
         if (record.chips < match.wager) { player.sendMessage("§cYou can no longer cover the stake."); return; }
         record.chips -= match.wager; match.state = "active"; match.turn = "challenger";
         int cells = match.game.equals("c4") ? 42 : match.game.equals("ttt") ? 9 : 0;
-        for (int i = 0; i < cells; i++) match.board.add(""); manager.store().save(); notify(match.challengerUuid, "Challenge accepted — your turn in " + gameName(match.game)); openMatch(player, match.id);
+        for (int i = 0; i < cells; i++) match.board.add(""); manager.store().save(); notify(match.challengerUuid, "Challenge accepted — your turn in " + gameName(match.game)); refreshMatchView(match, player.getUniqueId()); openMatch(player, match.id);
     }
 
     private void cancelPending(Player player, PhoneDataStore.GameMatch match, boolean decline) {
         manager.store().database().games.get(match.challenger).chips += match.wager; manager.store().database().matches.remove(match.id); manager.store().save();
-        notify(decline ? match.challengerUuid : match.opponentUuid, (decline ? "Challenge declined: " : "Challenge withdrawn: ") + gameName(match.game)); openMatches(player);
+        notify(decline ? match.challengerUuid : match.opponentUuid, (decline ? "Challenge declined: " : "Challenge withdrawn: ") + gameName(match.game)); refreshMatchView(match, player.getUniqueId()); openMatches(player);
     }
 
     private boolean isTurn(PhoneDataStore.GameMatch match, String uuid) { return match.turn.equals("challenger") ? match.challenger.equals(uuid) : match.opponent.equals(uuid); }
@@ -207,6 +216,7 @@ public final class PhoneGameManager {
     private String matchName(String characterKey) { PhoneDataStore.GameRecord game = manager.store().database().games.get(characterKey); return game == null ? "Unknown" : game.name; }
     private void swapTurn(PhoneDataStore.GameMatch match) { match.turn = match.turn.equals("challenger") ? "opponent" : "challenger"; }
     private void notify(String uuid, String text) { Player player = org.bukkit.Bukkit.getPlayer(java.util.UUID.fromString(uuid)); if (player != null && !manager.store().player(uuid).doNotDisturb) player.sendMessage("§b[Phone] §f" + text); }
+    private void refreshMatchView(PhoneDataStore.GameMatch match,UUID actor){for(String raw:List.of(match.challengerUuid,match.opponentUuid)){UUID uuid=UUID.fromString(raw);if(uuid.equals(actor)||!Integer.valueOf(match.id).equals(activeMatchScreens.get(uuid))||manager.store().player(raw).noRefresh)continue;Bukkit.getScheduler().runTaskLater(manager.plugin(),()->{Player viewer=Bukkit.getPlayer(uuid);if(viewer==null||!Integer.valueOf(match.id).equals(activeMatchScreens.get(uuid)))return;if(manager.store().database().matches.containsKey(match.id))openMatch(viewer,match.id);else openMatches(viewer);},1L);}}
 
     private void openConnect4(Player player, PhoneDataStore.GameMatch match) {
         StringBuilder board = new StringBuilder(); for (int row = 0; row < 6; row++) { for (int col = 0; col < 7; col++) { String cell=match.board.get(row*7+col); board.append(cell.isEmpty()?"⚪":cell.equals("challenger")?"🔴":"🟡"); } board.append('\n'); }
@@ -220,22 +230,22 @@ public final class PhoneGameManager {
         if(placed<0){player.sendMessage("§cThat column is full.");return;} String who=side(match,self);
         if(c4Win(match,who)){finishMatch(match,who,matchName(self)+" won Connect 4");openMatches(player);return;}
         if(match.board.stream().noneMatch(String::isEmpty)){finishMatch(match,"draw","Connect 4 ended level");openMatches(player);return;}
-        swapTurn(match);manager.store().save();notify(uuidFor(match,other(match,self)),matchName(self)+" moved — your turn in Connect 4");openConnect4(player,match);
+        swapTurn(match);manager.store().save();notify(uuidFor(match,other(match,self)),matchName(self)+" moved — your turn in Connect 4");refreshMatchView(match,player.getUniqueId());openConnect4(player,match);
     }
     private boolean c4Win(PhoneDataStore.GameMatch m,String who){for(int r=0;r<6;r++)for(int c=0;c<7;c++)for(int[]d:new int[][]{{0,1},{1,0},{1,1},{1,-1}}){int n=0;for(int k=0;k<4;k++){int rr=r+d[0]*k,cc=c+d[1]*k;if(rr>=0&&rr<6&&cc>=0&&cc<7&&m.board.get(rr*7+cc).equals(who))n++;}if(n==4)return true;}return false;}
 
     private void openTtt(Player player, PhoneDataStore.GameMatch match){List<ActionButton>b=new ArrayList<>();for(int i=0;i<9;i++){int cell=i;String v=match.board.get(i);b.add(manager.button(v.isEmpty()?"·":v.equals("challenger")?"X":"O",v.isEmpty()?"Place mark":"Occupied",()->placeTtt(player,match,cell)));}b.add(manager.button("Resign","Opponent wins",()->resign(player,match)));b.add(manager.button("Back","Return",()->openMatches(player)));PhoneUi.showActions(player,"Tic-tac-toe",isTurn(match,key(player))?"Your turn":"Waiting for opponent",b,3);}
-    private void placeTtt(Player player,PhoneDataStore.GameMatch m,int cell){String self=key(player);if(!isTurn(m,self)||!m.board.get(cell).isEmpty())return;String who=side(m,self);m.board.set(cell,who);if(tttWin(m,who)){finishMatch(m,who,matchName(self)+" won Tic-tac-toe");openMatches(player);return;}if(m.board.stream().noneMatch(String::isEmpty)){finishMatch(m,"draw","Tic-tac-toe ended level");openMatches(player);return;}swapTurn(m);manager.store().save();notify(uuidFor(m,other(m,self)),"Your turn in Tic-tac-toe");openTtt(player,m);}
+    private void placeTtt(Player player,PhoneDataStore.GameMatch m,int cell){String self=key(player);if(!isTurn(m,self)||!m.board.get(cell).isEmpty())return;String who=side(m,self);m.board.set(cell,who);if(tttWin(m,who)){finishMatch(m,who,matchName(self)+" won Tic-tac-toe");openMatches(player);return;}if(m.board.stream().noneMatch(String::isEmpty)){finishMatch(m,"draw","Tic-tac-toe ended level");openMatches(player);return;}swapTurn(m);manager.store().save();notify(uuidFor(m,other(m,self)),"Your turn in Tic-tac-toe");refreshMatchView(m,player.getUniqueId());openTtt(player,m);}
     private boolean tttWin(PhoneDataStore.GameMatch m,String who){int[][]lines={{0,1,2},{3,4,5},{6,7,8},{0,3,6},{1,4,7},{2,5,8},{0,4,8},{2,4,6}};for(int[]l:lines)if(m.board.get(l[0]).equals(who)&&m.board.get(l[1]).equals(who)&&m.board.get(l[2]).equals(who))return true;return false;}
 
     private void openRps(Player player,PhoneDataStore.GameMatch m){String side=side(m,key(player));String pick=side.equals("challenger")?m.challengerPick:m.opponentPick;List<ActionButton>b=new ArrayList<>();if(pick==null){for(String choice:List.of("rock","paper","scissors"))b.add(manager.button(choice.substring(0,1).toUpperCase()+choice.substring(1),"Lock choice",()->pickRps(player,m,choice)));}b.add(manager.button("Resign","Opponent wins",()->resign(player,m)));b.add(manager.button("Back","Return",()->openMatches(player)));String body="First to 2 • Score: "+m.challengerScore+" - "+m.opponentScore+(m.note==null?"":"\n"+m.note)+"\n"+(pick==null?"Choose — picks remain hidden.":"Choice locked. Waiting for opponent.");PhoneUi.showActions(player,"Rock Paper Scissors",body,b,3);}
-    private void pickRps(Player player,PhoneDataStore.GameMatch m,String choice){String side=side(m,key(player));if(side.equals("challenger")){if(m.challengerPick!=null)return;m.challengerPick=choice;}else{if(m.opponentPick!=null)return;m.opponentPick=choice;}if(m.challengerPick!=null&&m.opponentPick!=null){String a=m.challengerPick,b=m.opponentPick,winner=a.equals(b)?"draw":(a.equals("rock")&&b.equals("scissors")||a.equals("paper")&&b.equals("rock")||a.equals("scissors")&&b.equals("paper"))?"challenger":"opponent";if(winner.equals("challenger"))m.challengerScore++;else if(winner.equals("opponent"))m.opponentScore++;m.note="Last round: "+a+" vs "+b;m.challengerPick=null;m.opponentPick=null;if(m.challengerScore>=2||m.opponentScore>=2){String winningKey=m.challengerScore>=2?m.challenger:m.opponent;finishMatch(m,m.challengerScore>=2?"challenger":"opponent",matchName(winningKey)+" won Rock Paper Scissors");openMatches(player);return;}manager.store().save();notify(m.challengerUuid,"RPS round complete — next pick ready");notify(m.opponentUuid,"RPS round complete — next pick ready");openRps(player,m);return;}manager.store().save();notify(uuidFor(m,other(m,key(player))),"Your pick is needed in Rock Paper Scissors");openRps(player,m);}
+    private void pickRps(Player player,PhoneDataStore.GameMatch m,String choice){String side=side(m,key(player));if(side.equals("challenger")){if(m.challengerPick!=null)return;m.challengerPick=choice;}else{if(m.opponentPick!=null)return;m.opponentPick=choice;}if(m.challengerPick!=null&&m.opponentPick!=null){String a=m.challengerPick,b=m.opponentPick,winner=a.equals(b)?"draw":(a.equals("rock")&&b.equals("scissors")||a.equals("paper")&&b.equals("rock")||a.equals("scissors")&&b.equals("paper"))?"challenger":"opponent";if(winner.equals("challenger"))m.challengerScore++;else if(winner.equals("opponent"))m.opponentScore++;m.note="Last round: "+a+" vs "+b;m.challengerPick=null;m.opponentPick=null;if(m.challengerScore>=2||m.opponentScore>=2){String winningKey=m.challengerScore>=2?m.challenger:m.opponent;finishMatch(m,m.challengerScore>=2?"challenger":"opponent",matchName(winningKey)+" won Rock Paper Scissors");openMatches(player);return;}manager.store().save();notify(m.challengerUuid,"RPS round complete — next pick ready");notify(m.opponentUuid,"RPS round complete — next pick ready");refreshMatchView(m,player.getUniqueId());openRps(player,m);return;}manager.store().save();notify(uuidFor(m,other(m,key(player))),"Your pick is needed in Rock Paper Scissors");refreshMatchView(m,player.getUniqueId());openRps(player,m);}
 
     private void resign(Player player,PhoneDataStore.GameMatch m){String winner=side(m,key(player)).equals("challenger")?"opponent":"challenger";finishMatch(m,winner,matchName(key(player))+" resigned");openMatches(player);}
-    private void finishMatch(PhoneDataStore.GameMatch m,String winner,String reason){PhoneDataStore.GameRecord a=manager.store().database().games.get(m.challenger),b=manager.store().database().games.get(m.opponent);if(winner.equals("draw")){a.chips+=m.wager;b.chips+=m.wager;}else{String winUuid=winner.equals("challenger")?m.challengerUuid:m.opponentUuid;PhoneDataStore.GameRecord win=winner.equals("challenger")?a:b,lose=winner.equals("challenger")?b:a;win.chips+=m.wager*2;win.bestChips=Math.max(win.bestChips,win.chips);win.wins++;lose.losses++;win.streak++;lose.streak=0;win.bestStreak=Math.max(win.bestStreak,win.streak);notify(winUuid,"You won " + gameName(m.game) + ": " + reason);}notify(m.challengerUuid,reason);notify(m.opponentUuid,reason);manager.store().database().matches.remove(m.id);manager.store().save();}
+    private void finishMatch(PhoneDataStore.GameMatch m,String winner,String reason){PhoneDataStore.GameRecord a=manager.store().database().games.get(m.challenger),b=manager.store().database().games.get(m.opponent);if(winner.equals("draw")){a.chips+=m.wager;b.chips+=m.wager;}else{String winUuid=winner.equals("challenger")?m.challengerUuid:m.opponentUuid;PhoneDataStore.GameRecord win=winner.equals("challenger")?a:b,lose=winner.equals("challenger")?b:a;win.chips+=m.wager*2;win.bestChips=Math.max(win.bestChips,win.chips);win.wins++;lose.losses++;win.streak++;lose.streak=0;win.bestStreak=Math.max(win.bestStreak,win.streak);notify(winUuid,"You won " + gameName(m.game) + ": " + reason);}notify(m.challengerUuid,reason);notify(m.opponentUuid,reason);manager.store().database().matches.remove(m.id);manager.store().save();refreshMatchView(m,null);}
 
     private static final class Blackjack { final int bet; final List<Integer> player=new ArrayList<>(),dealer=new ArrayList<>(); Blackjack(int bet){this.bet=bet;} }
     private static final class HigherLower { final int bet; int card,streak; HigherLower(int bet,int card){this.bet=bet;this.card=card;} }
     private static final class MemoryGame { final List<Integer> sequence=new ArrayList<>(),entered=new ArrayList<>(); }
-    private static final class Wordle { final String word; final List<String> history=new ArrayList<>(); Wordle(String word){this.word=word;} }
+    private static final class Wordle { final String word; final List<Component> history=new ArrayList<>(); Wordle(String word){this.word=word;} }
 }

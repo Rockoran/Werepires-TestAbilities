@@ -13,6 +13,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -49,6 +50,7 @@ public final class PhoneManager implements Listener {
     }
 
     public PhoneDataStore store() { return store; }
+    VampireSMPPlugin plugin() { return plugin; }
     public PhoneCallService calls() { return callService; }
     public PhoneGameManager games() { return gameManager; }
     public void setCallService(PhoneCallService callService) { this.callService = callService == null ? PhoneCallService.UNAVAILABLE : callService; }
@@ -176,10 +178,10 @@ public final class PhoneManager implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) { callService.disconnect(event.getPlayer()); }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onUse(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if (!isPhone(event.getItem())) return;
+        if (event.getHand() != EquipmentSlot.HAND || !isPhone(event.getPlayer().getInventory().getItemInMainHand())) return;
         if (event.getPlayer().isSneaking()) return;
         event.setCancelled(true);
         openMain(event.getPlayer());

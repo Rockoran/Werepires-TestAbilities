@@ -534,9 +534,14 @@ final class PhoneUi {
 
     static void showForm(Player player, String title, String body, List<DialogInput> inputs,
                                  String submitLabel, FormSubmit submit, Runnable back) {
+        showForm(player, title, Component.text(body == null ? "" : body), inputs, submitLabel, submit, back);
+    }
+
+    static void showForm(Player player, String title, Component body, List<DialogInput> inputs,
+                                 String submitLabel, FormSubmit submit, Runnable back) {
         Dialog dialog = Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(Component.text(title, NamedTextColor.AQUA))
-                        .body(List.of(DialogBody.plainMessage(Component.text(body == null ? "" : body))))
+                        .body(List.of(DialogBody.plainMessage(body == null ? Component.empty() : body)))
                         .inputs(inputs).build())
                 .type(DialogType.multiAction(List.of(
                         ActionButton.create(Component.text(submitLabel, NamedTextColor.GREEN), null, 120,
