@@ -81,6 +81,7 @@ public final class PhoneDataStore {
         database.conversations.clear();
         database.groups.clear();
         database.posts.clear();
+        database.socialFollowing.clear();
         database.games.clear();
         database.matches.clear();
         database.nextGroupId = 1;
@@ -96,13 +97,14 @@ public final class PhoneDataStore {
     }
 
     public static final class PhoneDatabase {
-        public int schemaVersion = 1;
+        public int schemaVersion = 2;
         public boolean legacyMigrationComplete;
         public Map<String, PlayerRecord> players = new HashMap<>();
         public Map<String, Conversation> conversations = new HashMap<>();
         public Map<Integer, GroupChat> groups = new LinkedHashMap<>();
         public Map<Integer, SocialPost> posts = new LinkedHashMap<>();
         public Map<String, String> handles = new HashMap<>();
+        public Map<String, List<String>> socialFollowing = new HashMap<>();
         public Map<String, GameRecord> games = new HashMap<>();
         public Map<Integer, GameMatch> matches = new LinkedHashMap<>();
         public int nextGroupId = 1;
@@ -115,15 +117,29 @@ public final class PhoneDataStore {
             if (groups == null) groups = new LinkedHashMap<>();
             if (posts == null) posts = new LinkedHashMap<>();
             if (handles == null) handles = new HashMap<>();
+            if (socialFollowing == null) socialFollowing = new HashMap<>();
             if (games == null) games = new HashMap<>();
             if (matches == null) matches = new LinkedHashMap<>();
+            if (schemaVersion < 2) {
+                Map<String, String> migratedHandles = new HashMap<>();
+                handles.forEach((key, handle) -> {
+                    PlayerRecord player = players.get(key);
+                    if (player == null || key.contains("|")) migratedHandles.put(key, handle);
+                    else {
+                        String character = player.characterName == null || player.characterName.isBlank() ? player.minecraftName : player.characterName;
+                        migratedHandles.put(key + "|" + character.toLowerCase(java.util.Locale.ROOT), handle);
+                    }
+                });
+                handles = migratedHandles;
+                schemaVersion = 2;
+            }
         }
     }
 
     public static final class PlayerRecord {
         public String minecraftName = "";
         public String characterName = "";
-        public String color = "black";
+        public String color = "purple";
         public boolean doNotDisturb;
         public boolean silent;
         public boolean vibrate;

@@ -113,19 +113,19 @@ final class LegacyPhoneImporter {
     private static void importSocial(YamlConfiguration yaml, PhoneDataStore.PhoneDatabase db) {
         ConfigurationSection handles = section(yaml, "handles");
         if (handles != null) for (String lower : handles.getKeys(false)) {
-            String identity = identity(handles.getString(lower + ".key", "")); String handle = handles.getString(lower + ".handle", lower);
+            String identity = handles.getString(lower + ".key", ""); String handle = handles.getString(lower + ".handle", lower);
             if (!identity.isBlank()) db.handles.put(identity, handle);
         }
         ConfigurationSection follows = section(yaml, "follows");
         if (follows != null) for (String followerKey : follows.getKeys(false)) {
-            String follower = identity(followerKey); PhoneDataStore.PlayerRecord record = db.players.computeIfAbsent(follower, ignored -> new PhoneDataStore.PlayerRecord());
+            String follower = followerKey; List<String> following = db.socialFollowing.computeIfAbsent(follower, ignored -> new ArrayList<>());
             ConfigurationSection followed = section(follows, followerKey); if (followed == null) continue;
-            for (String handle : followed.getKeys(false)) if (followed.getBoolean(handle)) findHandleOwner(db, handle).ifPresent(record.following::add);
+            for (String handle : followed.getKeys(false)) if (followed.getBoolean(handle)) findHandleOwner(db, handle).ifPresent(following::add);
         }
         ConfigurationSection posts = section(yaml, "posts"); if (posts == null) return;
         for (String index : posts.getKeys(false)) {
             PhoneDataStore.SocialPost post = new PhoneDataStore.SocialPost(); post.handle = posts.getString(index + ".handle", "unknown");
-            post.author = identity(posts.getString(index + ".key", "")); post.text = posts.getString(index + ".text", ""); post.sentAt = parseTime(posts.get(index + ".time"));
+            post.author = posts.getString(index + ".key", ""); post.text = posts.getString(index + ".text", ""); post.sentAt = parseTime(posts.get(index + ".time"));
             int id = number(index); db.posts.put(id, post); db.nextPostId = Math.max(db.nextPostId, id + 1);
         }
     }

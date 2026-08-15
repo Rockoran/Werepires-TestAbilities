@@ -112,12 +112,15 @@ commands:
   answer:
     description: Answer an incoming phone call
     usage: /answer
+    aliases: [pickup]
   decline:
     description: Decline an incoming phone call
     usage: /decline
+    aliases: [reject]
   hangup:
     description: Leave or cancel a phone call
     usage: /hangup
+    aliases: [cphangup]
   cpacceptcall:
     description: Internal phone call accept alias
     usage: /cpacceptcall [call]

@@ -53,10 +53,10 @@ public final class PhoneManager implements Listener {
 
     public ItemStack createPhone(Player owner) {
         String color = store.player(owner.getUniqueId().toString()).color;
-        if (!COLORS.contains(color)) color = "black";
+        if (!COLORS.contains(color)) color = "purple";
         ItemStack item = new ItemStack(Material.STICK);
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text("Cell Phone", NamedTextColor.AQUA));
+        meta.displayName(Component.text("CellPhone", NamedTextColor.WHITE));
         meta.lore(List.of(Component.text("Right-click to open", NamedTextColor.GRAY)));
         meta.getPersistentDataContainer().set(phoneKey, PersistentDataType.BYTE, (byte) 1);
         meta.getPersistentDataContainer().set(colorKey, PersistentDataType.STRING, color);
@@ -66,8 +66,10 @@ public final class PhoneManager implements Listener {
     }
 
     public boolean isPhone(ItemStack item) {
-        return item != null && item.getType() == Material.STICK && item.hasItemMeta()
-                && item.getItemMeta().getPersistentDataContainer().has(phoneKey, PersistentDataType.BYTE);
+        if (item == null || item.getType() != Material.STICK || !item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+        return meta.getPersistentDataContainer().has(phoneKey, PersistentDataType.BYTE)
+                || meta.getItemModel() != null && meta.getItemModel().getKey().startsWith("phone_");
     }
 
     public boolean hasPhone(Player player) {
@@ -135,6 +137,29 @@ public final class PhoneManager implements Listener {
         PhoneDataStore.PlayerRecord record = store.database().players.get(uuid);
         if (record == null) return uuid;
         return record.characterName == null || record.characterName.isBlank() ? record.minecraftName : record.characterName;
+    }
+
+    String contactName(String owner, String target) {
+        PhoneDataStore.Contact contact = store.player(owner).contacts.get(target);
+        return contact != null && contact.nickname != null && !contact.nickname.isBlank() ? contact.nickname : displayName(target);
+    }
+
+    String characterKey(Player player) {
+        String name = store.player(player.getUniqueId().toString()).characterName;
+        if (name == null || name.isBlank()) name = player.getName();
+        return player.getUniqueId() + "|" + name.toLowerCase(Locale.ROOT);
+    }
+
+    List<String> socialFollowing(Player player) {
+        return store.database().socialFollowing.computeIfAbsent(characterKey(player), ignored -> new java.util.ArrayList<>());
+    }
+
+    void applyColor(Player player, String color) {
+        for (ItemStack item : player.getInventory().getContents()) if (isPhone(item)) {
+            ItemMeta meta = item.getItemMeta(); meta.setItemModel(NamespacedKey.minecraft("phone_" + color));
+            meta.getPersistentDataContainer().set(phoneKey, PersistentDataType.BYTE, (byte) 1);
+            meta.getPersistentDataContainer().set(colorKey, PersistentDataType.STRING, color); item.setItemMeta(meta);
+        }
     }
 
     String conversationKey(String first, String second) {
