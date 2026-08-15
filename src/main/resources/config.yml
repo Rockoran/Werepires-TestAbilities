@@ -1169,6 +1169,7 @@ server-resource-pack:
   enabled: true
   url: 'https://download.mc-packs.net/pack/4f52f1c8b41931ef9bd00b008fe8d308519d9b5b.zip'
   sha1: '4f52f1c8b41931ef9bd00b008fe8d308519d9b5b'
+  prompt: ''
   required: false
   join-delay-ticks: 20
 

@@ -19,9 +19,11 @@ public class VampireTexturePackManager {
    private static final String HUMAN_TEXTURE_PACK_PROMPT = "§aVampireSMP Human Pack\n§7This pack enhances your human experience!";
    // Base server pack pushed to every player on join (before any vampire pack is layered on top).
    // Hosted on mc-packs.net; the URL path is the file's SHA-1.
-   private static final String BASE_TEXTURE_PACK_URL = "https://download.mc-packs.net/pack/9f6987c60fc0f3d4ded0c03a1473b66f1488e979.zip";
-   private static final String BASE_TEXTURE_PACK_SHA1_STRING = "9f6987c60fc0f3d4ded0c03a1473b66f1488e979";
-   private static final String BASE_TEXTURE_PACK_PROMPT = "§6VampireSMP Server Pack\n§7Custom server textures!";
+   private final String baseTexturePackUrl;
+   private final String baseTexturePackSha1;
+   private final String baseTexturePackPrompt;
+   private final boolean baseTexturePackRequired;
+   private final long baseTexturePackDelay;
    private final Set<UUID> playersWithVampireTexturePack = new HashSet<>();
    private final Set<UUID> playersWithHumanTexturePack = new HashSet<>();
    private final Set<UUID> playersWithBaseTexturePack = new HashSet<>();
@@ -29,6 +31,11 @@ public class VampireTexturePackManager {
    public VampireTexturePackManager(VampireSMPPlugin plugin) {
       this.plugin = plugin;
       this.vampireManager = plugin.getVampireManager();
+      this.baseTexturePackUrl = plugin.getConfig().getString("server-resource-pack.url", "").strip();
+      this.baseTexturePackSha1 = plugin.getConfig().getString("server-resource-pack.sha1", "").strip();
+      this.baseTexturePackPrompt = plugin.getConfig().getString("server-resource-pack.prompt", "").strip();
+      this.baseTexturePackRequired = plugin.getConfig().getBoolean("server-resource-pack.required", false);
+      this.baseTexturePackDelay = Math.max(0L, plugin.getConfig().getLong("server-resource-pack.join-delay-ticks", 20L));
       plugin.logInfo("VampireTexturePackManager initialized");
    }
 
@@ -84,16 +91,12 @@ public class VampireTexturePackManager {
     * pack layered on top a moment later (see {@link #onVampireLogin(Player)}).
     */
    public void applyBaseTexturePack(Player player, String reason) {
+      if (!this.plugin.getConfig().getBoolean("server-resource-pack.enabled", true)) return;
       try {
-         byte[] sha1Bytes = hexStringToByteArray(BASE_TEXTURE_PACK_SHA1_STRING);
-         UUID packId = UUID.randomUUID();
-         player.addResourcePack(
-            packId,
-            BASE_TEXTURE_PACK_URL,
-            sha1Bytes,
-            BASE_TEXTURE_PACK_PROMPT,
-            true
-         );
+         if (!this.baseTexturePackSha1.matches("(?i)[0-9a-f]{40}")) throw new IllegalArgumentException("Base texture pack SHA-1 must be 40 hexadecimal characters");
+         byte[] sha1Bytes = hexStringToByteArray(this.baseTexturePackSha1);
+         String prompt = this.baseTexturePackPrompt.isBlank() ? null : this.baseTexturePackPrompt;
+         player.setResourcePack(this.baseTexturePackUrl, sha1Bytes, prompt, this.baseTexturePackRequired);
          this.playersWithBaseTexturePack.add(player.getUniqueId());
          player.sendMessage("§7Applying server texture pack...");
          this.plugin.logInfo("Sent base server texture pack to " + player.getName() + " - " + reason);
@@ -105,12 +108,12 @@ public class VampireTexturePackManager {
 
    /** Push the base server pack shortly after join, once the connection has settled. */
    public void onPlayerLogin(Player player) {
-      this.plugin.logInfo("Scheduled base server texture pack for " + player.getName() + " in 1.0 seconds - player join");
+      this.plugin.logInfo("Scheduled base server texture pack for " + player.getName() + " in " + this.baseTexturePackDelay / 20.0 + " seconds - player join");
       Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
          if (player.isOnline()) {
             this.applyBaseTexturePack(player, "player join");
          }
-      }, 20L);
+      }, this.baseTexturePackDelay);
    }
 
    public boolean hasBaseTexturePack(Player player) {

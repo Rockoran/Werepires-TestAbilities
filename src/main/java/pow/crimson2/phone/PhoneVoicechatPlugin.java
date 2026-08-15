@@ -5,10 +5,9 @@ import de.maxhenkel.voicechat.api.VoicechatPlugin;
 import de.maxhenkel.voicechat.api.VoicechatServerApi;
 import de.maxhenkel.voicechat.api.audiochannel.EntityAudioChannel;
 import de.maxhenkel.voicechat.api.audiochannel.StaticAudioChannel;
-import de.maxhenkel.voicechat.api.audiolistener.PlayerAudioListener;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
+import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.events.VoicechatServerStartedEvent;
-import de.maxhenkel.voicechat.api.packets.SoundPacket;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -34,9 +33,7 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
     private final Map<Integer, Call> calls = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> connected = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> ringing = new ConcurrentHashMap<>();
-    private final Set<UUID> registeredListeners = ConcurrentHashMap.newKeySet();
     private final Map<UUID, PlayerPosition> positions = new ConcurrentHashMap<>();
-    private final ThreadLocal<Boolean> routingAudio = ThreadLocal.withInitial(() -> false);
     private VoicechatServerApi api;
     private BukkitTask maintenance;
 
@@ -45,12 +42,17 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
     public void initialize(de.maxhenkel.voicechat.api.VoicechatApi api) {}
 
     public void registerEvents(EventRegistration registration) {
+        registration.registerEvent(MicrophonePacketEvent.class, event -> {
+            VoicechatConnection sender = event.getSenderConnection();
+            if (sender != null && sender.getPlayer() != null) {
+                routeAudio(sender.getPlayer().getUuid(), event.getPacket().getOpusEncodedData());
+            }
+        });
         registration.registerEvent(VoicechatServerStartedEvent.class, event -> {
             api = event.getVoicechat();
             api.registerVolumeCategory(api.volumeCategoryBuilder().setId(CATEGORY).setName("Phone Calls")
                     .setDescription("WerePires phone calls and speakerphone audio").build());
             Bukkit.getScheduler().runTask(plugin, () -> {
-                Bukkit.getOnlinePlayers().forEach(this::connect);
                 if (maintenance != null) maintenance.cancel();
                 maintenance = Bukkit.getScheduler().runTaskTimer(plugin, this::maintainSpeakerphones, 20L, 20L);
             });
@@ -59,12 +61,7 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
 
     public boolean available() { return api != null; }
 
-    public void connect(Player player) {
-        if (!available() || !registeredListeners.add(player.getUniqueId())) return;
-        PlayerAudioListener listener = api.playerAudioListenerBuilder().setPlayer(player.getUniqueId())
-                .setPacketListener(packet -> routeAudio(player.getUniqueId(), packet)).build();
-        if (!api.registerAudioListener(listener)) registeredListeners.remove(player.getUniqueId());
-    }
+    public void connect(Player player) { }
 
     public void call(Player caller, String targetUuid) {
         Player target;
@@ -91,7 +88,7 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
         int id = sequence.incrementAndGet(); Call call = new Call(id, title); calls.put(id, call);
         if (!join(caller, call, false)) { destroy(call); return; }
         for (Player target : availableTargets) {
-            connect(target); ringing.put(target.getUniqueId(), id);
+            ringing.put(target.getUniqueId(), id);
             target.sendMessage("§b[Phone] §e" + manager.displayName(callerId.toString()) + "§f is calling. §a/answer §7or §c/decline");
         }
         caller.sendMessage("§b[Phone] §fCalling §e" + title + "§f... §7(/hangup to cancel)");
@@ -107,7 +104,7 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
     private boolean join(Player player, Call call, boolean announce) {
         VoicechatConnection connection = api.getConnectionOf(player.getUniqueId());
         if (connection == null || !connection.isInstalled() || !connection.isConnected()) { player.sendMessage("§cSimple Voice Chat is not connected."); return false; }
-        connect(player); connected.put(player.getUniqueId(), call.id); call.members.add(player.getUniqueId());
+        connected.put(player.getUniqueId(), call.id); call.members.add(player.getUniqueId());
         if (call.speakerOwner != null) {
             Player owner = Bukkit.getPlayer(call.speakerOwner); if (owner != null) prepareSpeakerChannels(call, owner);
         }
@@ -151,7 +148,7 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
         if (call.speakerOwner != null) { player.sendMessage("§cSomeone else already has this call on speaker."); return; }
         call.speakerOwner = uuid;
         for (Player online : Bukkit.getOnlinePlayers()) {
-            connect(online); Location location = online.getLocation();
+            Location location = online.getLocation();
             positions.put(online.getUniqueId(), new PlayerPosition(location.getWorld().getUID(), location.getX(), location.getY(), location.getZ()));
         }
         prepareSpeakerChannels(call, player);
@@ -164,14 +161,8 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
     public boolean isSpeaker(Player player) { Call call = callOf(player); return call != null && player.getUniqueId().equals(call.speakerOwner); }
     private Call callOf(Player player) { Integer id = connected.get(player.getUniqueId()); return id == null ? null : calls.get(id); }
 
-    private void routeAudio(UUID source, SoundPacket packet) {
-        // Audio channels invoke player listeners for the packets they emit. Never feed our own
-        // phone-category packets back into the router, and guard synchronous callbacks even if a
-        // server build loses/customizes the category field.
-        if (CATEGORY.equals(packet.getCategory()) || routingAudio.get()) return;
-        byte[] audio = packet.getOpusEncodedData(); if (audio == null || audio.length == 0) return;
-        routingAudio.set(true);
-        try {
+    private void routeAudio(UUID source, byte[] audio) {
+        if (audio == null || audio.length == 0) return;
             Integer ownCallId = connected.get(source);
             if (ownCallId != null) {
                 Call call = calls.get(ownCallId);
@@ -185,9 +176,6 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
                 if (speaker == null || call.members.contains(source) || !isNearSpeaker(source, speaker)) continue;
                 sendPrivate(call, source, audio, call.members.stream().filter(member -> !member.equals(speaker)).toList());
             }
-        } finally {
-            routingAudio.set(false);
-        }
     }
 
     private void sendPrivate(Call call, UUID source, byte[] audio, Collection<UUID> recipients) {
@@ -225,7 +213,6 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
         for (Call call : calls.values()) if (call.speakerOwner != null) {
             Player owner = Bukkit.getPlayer(call.speakerOwner);
             if (owner == null || !call.members.contains(call.speakerOwner)) { disableSpeaker(call, "§7Speakerphone turned off."); continue; }
-            Bukkit.getOnlinePlayers().forEach(this::connect);
             prepareSpeakerChannels(call, owner);
         }
     }
@@ -245,12 +232,10 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
     public void shutdown() {
         if (maintenance != null) maintenance.cancel();
         for (Call call : new ArrayList<>(calls.values())) destroy(call);
-        if (api != null) for (UUID listener : new ArrayList<>(registeredListeners)) api.unregisterAudioListener(listener);
-        registeredListeners.clear();
     }
 
     public void disconnect(Player player) {
-        UUID uuid = player.getUniqueId(); positions.remove(uuid); registeredListeners.remove(uuid); if (api != null) api.unregisterAudioListener(uuid);
+        UUID uuid = player.getUniqueId(); positions.remove(uuid);
         Integer ring = ringing.remove(uuid); Integer id = connected.remove(uuid); Call call = id == null ? (ring == null ? null : calls.get(ring)) : calls.get(id);
         if (call != null) { call.members.remove(uuid); call.muted.remove(uuid); call.deafened.remove(uuid); if (uuid.equals(call.speakerOwner)) disableSpeaker(call, "§7Speakerphone turned off."); cleanupIfEmpty(call); }
     }

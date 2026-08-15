@@ -74,7 +74,6 @@ import pow.crimson2.managers.PassiveMobSpawningManager;
 import pow.crimson2.managers.PermadeathManager;
 import pow.crimson2.managers.PlayerChatManager;
 import pow.crimson2.managers.SessionManager;
-import pow.crimson2.managers.ServerResourcePackManager;
 import pow.crimson2.managers.ThirstManager;
 import pow.crimson2.managers.TomeDistributionManager;
 import pow.crimson2.managers.TomeManager;
@@ -157,7 +156,6 @@ public class VampireSMPPlugin extends JavaPlugin {
    private pow.crimson2.network.WerePiresNetwork werePiresNetwork;
    private pow.crimson2.world.WorldPackManager worldPackManager;
    private pow.crimson2.phone.PhoneManager phoneManager;
-   private ServerResourcePackManager serverResourcePackManager;
    private org.bukkit.configuration.file.YamlConfiguration stateConfig;
    private java.io.File stateConfigFile;
    private Team castTeam;
@@ -219,8 +217,6 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.thrallManager = new ThrallManager(this);
       this.phoneManager = new pow.crimson2.phone.PhoneManager(this);
       this.getServer().getPluginManager().registerEvents(this.phoneManager, this);
-      this.serverResourcePackManager = new ServerResourcePackManager(this);
-      this.getServer().getPluginManager().registerEvents(this.serverResourcePackManager, this);
       pow.crimson2.phone.PhoneCommand phoneCommand = new pow.crimson2.phone.PhoneCommand(this.phoneManager);
       for (String commandName : java.util.List.of("cellphone", "givephone", "phonegive", "checkphonestatus", "phonereset")) {
          this.getCommand(commandName).setExecutor(phoneCommand);
