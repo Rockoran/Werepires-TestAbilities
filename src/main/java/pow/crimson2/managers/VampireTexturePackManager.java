@@ -9,6 +9,7 @@ import org.bukkit.scheduler.BukkitTask;
 import pow.crimson2.VampireSMPPlugin;
 
 public class VampireTexturePackManager {
+   private static final UUID BASE_TEXTURE_PACK_ID = UUID.fromString("b75409cb-7f31-4a42-a8d8-8e2dc43d11ae");
    private final VampireSMPPlugin plugin;
    private final VampireManager vampireManager;
    private static final String VAMPIRE_TEXTURE_PACK_URL = "https://download.mc-packs.net/pack/e139890dd34f56724efcd5becb476999651ca43c.zip";
@@ -96,7 +97,7 @@ public class VampireTexturePackManager {
          if (!this.baseTexturePackSha1.matches("(?i)[0-9a-f]{40}")) throw new IllegalArgumentException("Base texture pack SHA-1 must be 40 hexadecimal characters");
          byte[] sha1Bytes = hexStringToByteArray(this.baseTexturePackSha1);
          String prompt = this.baseTexturePackPrompt.isBlank() ? null : this.baseTexturePackPrompt;
-         player.setResourcePack(this.baseTexturePackUrl, sha1Bytes, prompt, this.baseTexturePackRequired);
+         player.addResourcePack(BASE_TEXTURE_PACK_ID, this.baseTexturePackUrl, sha1Bytes, prompt, this.baseTexturePackRequired);
          this.playersWithBaseTexturePack.add(player.getUniqueId());
          player.sendMessage("§7Applying server texture pack...");
          this.plugin.logInfo("Sent base server texture pack to " + player.getName() + " - " + reason);
