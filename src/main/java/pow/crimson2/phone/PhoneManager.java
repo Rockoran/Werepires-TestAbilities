@@ -169,7 +169,7 @@ public final class PhoneManager implements Listener {
     public void shutdown() { callService.shutdown(); store.save(); }
 
     @EventHandler
-    public void onJoin(PlayerJoinEvent event) { updateIdentity(event.getPlayer()); }
+    public void onJoin(PlayerJoinEvent event) { updateIdentity(event.getPlayer()); callService.connect(event.getPlayer()); }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) { callService.disconnect(event.getPlayer()); }

@@ -223,7 +223,7 @@ public class VampireSMPPlugin extends JavaPlugin {
          this.getCommand(commandName).setTabCompleter(phoneCommand);
       }
       pow.crimson2.phone.PhoneCallCommand phoneCallCommand = new pow.crimson2.phone.PhoneCallCommand(this.phoneManager);
-      for (String commandName : java.util.List.of("answer", "decline", "hangup", "cpacceptcall", "cpdeclinecall", "cphanghup")) {
+      for (String commandName : java.util.List.of("answer", "decline", "hangup", "cpacceptcall", "cpdeclinecall", "cphanghup", "callmute", "calldeafen", "speaker")) {
          this.getCommand(commandName).setExecutor(phoneCallCommand);
       }
       this.getServer().getPluginManager().registerEvents(this.damageSuppressionListener, this);

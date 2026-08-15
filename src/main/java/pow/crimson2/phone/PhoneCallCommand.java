@@ -14,6 +14,9 @@ public final class PhoneCallCommand implements CommandExecutor {
             case "answer", "cpacceptcall" -> manager.calls().answer(player);
             case "decline", "cpdeclinecall" -> manager.calls().decline(player);
             case "hangup", "cphanghup" -> manager.calls().hangup(player);
+            case "callmute" -> manager.calls().toggleMute(player);
+            case "calldeafen" -> manager.calls().toggleDeafen(player);
+            case "speaker" -> manager.calls().toggleSpeaker(player);
             default -> { return false; }
         }
         return true;

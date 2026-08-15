@@ -9,6 +9,14 @@ public interface PhoneCallService {
     void answer(Player player);
     void decline(Player player);
     void hangup(Player player);
+    void toggleMute(Player player);
+    void toggleDeafen(Player player);
+    void toggleSpeaker(Player player);
+    boolean isInCall(Player player);
+    boolean isMuted(Player player);
+    boolean isDeafened(Player player);
+    boolean isSpeaker(Player player);
+    void connect(Player player);
     void disconnect(Player player);
     void shutdown();
 
@@ -20,6 +28,14 @@ public interface PhoneCallService {
         public void answer(Player p) { unavailable(p); }
         public void decline(Player p) { unavailable(p); }
         public void hangup(Player p) { unavailable(p); }
+        public void toggleMute(Player p) { unavailable(p); }
+        public void toggleDeafen(Player p) { unavailable(p); }
+        public void toggleSpeaker(Player p) { unavailable(p); }
+        public boolean isInCall(Player p) { return false; }
+        public boolean isMuted(Player p) { return false; }
+        public boolean isDeafened(Player p) { return false; }
+        public boolean isSpeaker(Player p) { return false; }
+        public void connect(Player p) {}
         public void disconnect(Player p) {}
         public void shutdown() {}
     };

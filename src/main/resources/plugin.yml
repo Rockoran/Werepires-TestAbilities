@@ -130,6 +130,15 @@ commands:
   cphanghup:
     description: Legacy misspelled phone hangup alias
     usage: /cphanghup
+  callmute:
+    description: Mute or unmute your microphone for the phone call only
+    usage: /callmute
+  calldeafen:
+    description: Mute or restore incoming phone call audio only
+    usage: /calldeafen
+  speaker:
+    description: Toggle two-way speakerphone mode for your active call
+    usage: /speaker
 
 permissions:
   vampiresmp.admin:

@@ -329,6 +329,11 @@ final class PhoneUi {
         buttons.add(manager.button("Answer", "Answer an incoming call", () -> manager.calls().answer(player)));
         buttons.add(manager.button("Decline", "Decline an incoming call", () -> manager.calls().decline(player)));
         buttons.add(manager.button("Hang Up", "Leave or cancel a call", () -> manager.calls().hangup(player)));
+        if (manager.calls().isInCall(player)) {
+            buttons.add(manager.button(manager.calls().isMuted(player) ? "Unmute Call Mic" : "Mute Call Mic", "Only affects the phone call; proximity remains active", () -> { manager.calls().toggleMute(player); openCalls(manager, player); }));
+            buttons.add(manager.button(manager.calls().isDeafened(player) ? "Hear Call" : "Mute Call Audio", "Only affects incoming call audio; proximity remains active", () -> { manager.calls().toggleDeafen(player); openCalls(manager, player); }));
+            buttons.add(manager.button(manager.calls().isSpeaker(player) ? "Speaker: ON" : "Speaker: OFF", "Nearby players can hear and speak into the call", () -> { manager.calls().toggleSpeaker(player); openCalls(manager, player); }));
+        }
         buttons.add(manager.button("Back", "Return to the phone", () -> manager.openMain(player)));
         showActions(player, "Calls", manager.calls().available() ? "Simple Voice Chat connected" : "Voice calls unavailable", buttons, 2);
     }

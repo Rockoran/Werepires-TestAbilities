@@ -1161,6 +1161,19 @@ starterkit:
 
 
 # ============================================================================
+# CELLPHONE VOICE CALLS
+# ============================================================================
+phone:
+  calls:
+    speaker:
+      # Enables two-way speakerphone mode for active Simple Voice Chat calls.
+      enabled: true
+      # How far away other players can hear audio coming from the phone.
+      radius: 8.0
+      # How far away players can speak into the phone and be heard by remote callers.
+      transmit-radius: 8.0
+
+# ============================================================================
 # INTERNAL STATE TRACKING - DO NOT MODIFY
 # ============================================================================
 # WARNING: The following values are used by the plugin to track game state.

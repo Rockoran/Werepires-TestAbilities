@@ -134,6 +134,8 @@
                 <excludes>
                     <!-- Binary files must never be filtered — it corrupts them -->
                     <exclude>**/*.zip</exclude>
+                    <!-- Historical build output exists under resources; never package it recursively. -->
+                    <exclude>target/**</exclude>
                 </excludes>
             </resource>
             <!-- Binary resources — no filtering, copied byte-for-byte -->
@@ -143,6 +145,9 @@
                 <includes>
                     <include>**/*.zip</include>
                 </includes>
+                <excludes>
+                    <exclude>target/**</exclude>
+                </excludes>
             </resource>
         </resources>
     </build>
