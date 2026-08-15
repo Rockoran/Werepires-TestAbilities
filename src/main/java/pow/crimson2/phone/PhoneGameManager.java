@@ -17,7 +17,22 @@ import java.util.Random;
 import java.util.UUID;
 
 public final class PhoneGameManager {
-    private static final List<String> WORDS = List.of("blood", "night", "fangs", "stake", "crypt", "ghost", "torch", "raven");
+    private static final List<String> WORDS = List.of(
+            "blood", "night", "fangs", "stake", "crypt", "ghost", "torch", "raven",
+            "altar", "amber", "angel", "apple", "arrow", "ashes", "basil", "beast",
+            "black", "blade", "blaze", "blind", "bones", "briar", "cabin", "candy",
+            "chain", "charm", "chase", "chest", "chill", "cloak", "cloud", "coral",
+            "coven", "crown", "curse", "demon", "dream", "druid", "dwarf", "eagle",
+            "earth", "ember", "fairy", "feast", "fiend", "flame", "flask", "frost",
+            "giant", "gloom", "grave", "guard", "haunt", "heart", "herbs", "hound",
+            "ivory", "jewel", "knave", "knife", "lance", "leech", "light", "magic",
+            "maple", "misty", "lunar", "mourn", "noble", "ocean", "onion", "pearl",
+            "tonic", "psalm", "queen", "realm", "relic", "river", "rites", "shade",
+            "shady", "steel", "skull", "smoke", "snake", "solar", "spear", "spell",
+            "spice", "wight", "stone", "storm", "sword", "thorn", "tiger", "tower",
+            "venom", "vigil", "witch", "woods", "ghoul", "wrath", "drake", "youth",
+            "zebra", "adore", "brave", "cider", "dance", "elbow", "forge", "globe"
+    );
     private final PhoneManager manager;
     private final Random random = new Random();
     private final Map<String, Blackjack> blackjack = new HashMap<>();
