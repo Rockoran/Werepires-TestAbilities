@@ -190,6 +190,7 @@ public class VampireManager {
     */
    public void setPlayerAsVampire(Player player, int stage, boolean adminOverride, boolean bypassFaeLock) {
       UUID playerId = player.getUniqueId();
+      int previousStage = this.getVampireStage(player);
 
       // A fae bargain pins the stage in both directions: thirst promotion, thirst demotion and
       // admin stage changes all get folded back to the agreed stage. Breaking the bargain (or
@@ -240,7 +241,7 @@ public class VampireManager {
          int finalStage = stage;
          // Trigger skin change for tier-up / tier-down
          if (this.plugin.getSkinShuffleManager() != null) {
-            this.plugin.getSkinShuffleManager().applyVampireSkin(player, finalStage);
+            this.plugin.getSkinShuffleManager().applyVampireSkin(player, previousStage, finalStage);
          }
 
          boolean wasBatForm = isInBatForm;

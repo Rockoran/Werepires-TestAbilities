@@ -32,7 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *   /skin register stage3
  *
  * When a player tiers up or down, the plugin automatically applies the
- * registered skin for the new stage. When cured, the "human" skin is restored.
+ * registered skin for the new stage unless that player has disabled automatic
+ * tier-down changes. When cured, the "human" skin is restored.
  *
  * Data is stored per-player at:
  *   plugins/WerePires/player_skins/{uuid}.json
@@ -80,6 +81,8 @@ public class SkinShuffleManager implements PluginMessageListener {
      * Populated when a player joins or registers a skin.
      */
     private final Map<UUID, Map<String, ProfileProperty>> cache = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> tierDownEnabled = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> lastAutomaticVampireStage = new ConcurrentHashMap<>();
 
     public SkinShuffleManager(VampireSMPPlugin plugin) {
         this.plugin = plugin;
@@ -123,9 +126,36 @@ public class SkinShuffleManager implements PluginMessageListener {
      * Apply the registered skin for this vampire stage (1, 2, or 3).
      * Does nothing if the player has no skin registered for that stage.
      */
-    public void applyVampireSkin(Player player, int stage) {
+    public void applyVampireSkin(Player player, int previousStage, int stage) {
         if (!isEnabled()) return;
+        if (!isTierDownEnabled(player) && stage < previousStage) {
+            player.sendMessage("§7[SkinShuffle] Kept your current skin because automatic tier-down skins are off.");
+            plugin.logInfo("[SkinShuffle] Skipped tier-down skin for " + player.getName()
+                    + " (stage " + previousStage + " -> " + stage + ")");
+            return;
+        }
         applyStageSkin(player, stageToKey(stage));
+        if (hasStageRegistered(player, stageToKey(stage))) {
+            lastAutomaticVampireStage.put(player.getUniqueId(), stage);
+            saveSkins(player.getUniqueId());
+        }
+    }
+
+    /** Whether automatic skin changes are allowed when this player loses a vampire tier. */
+    public boolean isTierDownEnabled(Player player) {
+        return tierDownEnabled.getOrDefault(player.getUniqueId(), true);
+    }
+
+    /** Persist the player's automatic tier-down skin preference. */
+    public void setTierDownEnabled(Player player, boolean enabled) {
+        tierDownEnabled.put(player.getUniqueId(), enabled);
+        if (!enabled) {
+            int currentStage = currentVampireStage(player);
+            if (currentStage > 0) {
+                lastAutomaticVampireStage.putIfAbsent(player.getUniqueId(), currentStage);
+            }
+        }
+        saveSkins(player.getUniqueId());
     }
 
     /**
@@ -174,7 +204,17 @@ public class SkinShuffleManager implements PluginMessageListener {
             return;
         }
         int stage = currentVampireStage(player);
+        int lastStage = lastAutomaticVampireStage.getOrDefault(player.getUniqueId(), stage);
+        if (!isTierDownEnabled(player) && stage < lastStage) {
+            plugin.logInfo("[SkinShuffle] Kept tier " + lastStage + " skin for returning player "
+                    + player.getName() + " at vampire stage " + stage);
+            return;
+        }
         applyStageSkin(player, stageToKey(stage));
+        if (hasStageRegistered(player, stageToKey(stage))) {
+            lastAutomaticVampireStage.put(player.getUniqueId(), stage);
+            saveSkins(player.getUniqueId());
+        }
     }
 
     /**
@@ -205,6 +245,8 @@ public class SkinShuffleManager implements PluginMessageListener {
             sb.append("\n  ").append(displayName(stage)).append(": ");
             sb.append(skins.containsKey(stage) ? "§a✔ registered" : "§8none");
         }
+        sb.append("\n  Automatic tier-down skins: ")
+                .append(isTierDownEnabled(player) ? "§aon" : "§coff");
         return sb.toString();
     }
 
@@ -215,6 +257,13 @@ public class SkinShuffleManager implements PluginMessageListener {
         try (FileReader reader = new FileReader(file)) {
             JsonObject root = gson.fromJson(reader, JsonObject.class);
             if (root == null) return;
+            if (root.has("tierDownEnabled")) {
+                tierDownEnabled.put(player.getUniqueId(), root.get("tierDownEnabled").getAsBoolean());
+            }
+            if (root.has("lastAutomaticVampireStage")) {
+                lastAutomaticVampireStage.put(player.getUniqueId(),
+                        root.get("lastAutomaticVampireStage").getAsInt());
+            }
             Map<String, ProfileProperty> map = new HashMap<>();
             for (String stage : VALID_STAGES) {
                 if (!root.has(stage)) continue;
@@ -271,10 +320,14 @@ public class SkinShuffleManager implements PluginMessageListener {
     /** Remove the player's data from the in-memory cache on quit. */
     public void clearCache(Player player) {
         cache.remove(player.getUniqueId());
+        tierDownEnabled.remove(player.getUniqueId());
+        lastAutomaticVampireStage.remove(player.getUniqueId());
     }
 
     public void shutdown() {
         cache.clear();
+        tierDownEnabled.clear();
+        lastAutomaticVampireStage.clear();
     }
 
     // ── SkinShuffle mod bridge (plugin messages) ──────────────────────────────
@@ -561,6 +614,10 @@ public class SkinShuffleManager implements PluginMessageListener {
     private void saveSkins(UUID uuid) {
         Map<String, ProfileProperty> skins = cache.get(uuid);
         JsonObject root = new JsonObject();
+        root.addProperty("tierDownEnabled", tierDownEnabled.getOrDefault(uuid, true));
+        if (lastAutomaticVampireStage.containsKey(uuid)) {
+            root.addProperty("lastAutomaticVampireStage", lastAutomaticVampireStage.get(uuid));
+        }
         if (skins != null) {
             for (Map.Entry<String, ProfileProperty> entry : skins.entrySet()) {
                 JsonObject obj = new JsonObject();

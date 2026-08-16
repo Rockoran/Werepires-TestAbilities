@@ -1,7 +1,7 @@
 # Complete WerePires fork changelog from VampireSMP 1.0.6
 
 Last audited: 2026-08-16
-Current branch version: WerePires 1.15.11 TESTBUILD
+Current branch version: WerePires 1.15.12 TESTBUILD
 
 This is the consolidated change inventory for the **entire fork**. The cellphone branch name does not limit its scope.
 
@@ -217,3 +217,4 @@ For the exhaustive source-level inventory—including every command/subcommand/a
 - **1.15.9:** unread/call privacy fixes and complete fork documentation.
 - **1.15.10:** source-level completeness audit; restored the unreachable Blood Moon admin command and every handler-supported minor alias omitted from the Brigadier tree.
 - **1.15.11:** extended the audit across every system: restored additional ability/Fae/stage aliases, corrected command manifests and permissions, centralized duplicate listener registration, completed mutable-state migration, added safe legacy data-folder migration, corrected admin paths and branding, and added a repeatable whole-source audit script.
+- **1.15.12:** added the persistent per-player `/skin tierdown on|off` preference. Turning it off keeps automatic tier-up skin changes but suppresses automatic tier-down skin changes, including after reconnecting; manual skin application and cure/ghost skins still work.

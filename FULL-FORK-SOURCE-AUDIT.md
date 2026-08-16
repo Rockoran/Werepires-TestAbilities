@@ -11,7 +11,7 @@ This is the source-level companion to `CHANGELOG-FROM-VAMPIRESMP-1.0.6.md`. It r
 ## Audit totals
 
 - 185 Java source files inspected.
-- 84 files differ from the repository baseline: 59 Java files, 2 runtime resource files, `pom.xml`, 20 release/changelog records, this audit document, and the repeatable source-audit script.
+- 85 files differ from the repository baseline: 59 Java files, 2 runtime resource files, `pom.xml`, 21 release/changelog records, this audit document, and the repeatable source-audit script.
 - 35 Bukkit command roots are declared in `plugin.yml`.
 - 4 Paper Brigadier roots are registered at runtime: `/pow` plus the three Latin ritual commands.
 - 7 permissions are declared and every literal permission checked by Java is declared.
@@ -127,7 +127,7 @@ Plugin messaging lifecycle was checked as a pair: WerePires registers incoming/o
 - `VampireManager.java`: stage cap/promotion-ban and bargain integration.
 - `VampireTexturePackManager.java`: managed, stacked, stable-ID resource-pack delivery.
 - `RevivalBookManager.java` and `WorldManager.java`: moved mutable unlock/world selection into `state.yml` and corrected WerePires data paths.
-- `SkinShuffleManager.java`, `VampireSireManager.java`, `RoleManager.java`, and `ThrallDataManager.java`: corrected paths, notifications, and permission-based staff visibility.
+- `SkinShuffleManager.java`, `VampireSireManager.java`, `RoleManager.java`, and `ThrallDataManager.java`: corrected paths, notifications, permission-based staff visibility, and persistent per-player tier-down skin preferences.
 - `StarterKitManager.java`: corrected its player-facing permission and retained explicit shutdown persistence.
 
 ### Listeners

@@ -1,5 +1,5 @@
 name: WerePires
-version: 1.15.11
+version: 1.15.12
 main: pow.crimson2.VampireSMPPlugin
 api-version: 1.21.5
 author: PowCreations
@@ -86,7 +86,7 @@ commands:
 
   skin:
     description: Register and manage per-stage vampire skins
-    usage: /skin <register|apply|clear|list|reload> [human|stage1|stage2|stage3|cured|ghost]
+    usage: /skin <register|apply|clear|list|tierdown|reload> [human|stage1|stage2|stage3|cured|ghost|on|off]
   stash_third_book:
     description: Place the third cure book in its legacy map chest
     usage: /stash_third_book
