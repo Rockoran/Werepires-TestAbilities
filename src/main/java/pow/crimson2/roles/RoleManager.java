@@ -16,7 +16,7 @@ import pow.crimson2.VampireSMPPlugin;
 /**
  * Runtime state for the vampiric roles system (vampire_hunter, medic, tracker).
  * Persists role pools, game admins, vampire pool, and config values to
- * plugins/VampireSMP/roles_data.yml.
+ * plugins/WerePires/roles_data.yml.
  *
  * Note: /findvampires applies the GLOWING potion effect to nearby vampires for the
  * scan duration. Unlike the original SkBee version this glow is visible to all
@@ -227,7 +227,7 @@ public class RoleManager {
         }
         if (!sent) {
             for (Player p : Bukkit.getOnlinePlayers()) {
-                if (p.isOp()) p.sendMessage(msg);
+                if (p.hasPermission("vampiresmp.admin")) p.sendMessage(msg);
             }
         }
     }

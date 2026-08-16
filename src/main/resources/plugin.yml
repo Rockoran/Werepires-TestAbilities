@@ -1,9 +1,9 @@
 name: WerePires
-version: 1.15.10
+version: 1.15.11
 main: pow.crimson2.VampireSMPPlugin
 api-version: 1.21.5
 author: PowCreations
-description: The official Vampire SMP plugin
+description: WerePires vampire, werewolf, human, Fae, thrall, ghost, and roleplay systems
 softdepend: [Multiverse-Core, voicechat]
 
 commands:
@@ -15,7 +15,7 @@ commands:
   # ── Roles ──────────────────────────────────────────────────────────────────
   role:
     description: View or manage your human role
-    usage: /role [info|list]
+    usage: /role <vampire_hunter|tracker|medic> <optin|optout>
     permission: vampiresmp.player
   rolecfg:
     description: Configure role settings
@@ -27,7 +27,7 @@ commands:
     permission: vampiresmp.admin
   vampire:
     description: Vampire role info
-    usage: /vampire
+    usage: /vampire <optin|optout|select|list|clearlist|removeplayer>
     permission: vampiresmp.player
   gameadmin:
     description: Game admin utilities
@@ -53,8 +53,8 @@ commands:
     permission: starterkit.admin
   starterkit:
     description: Open the starter kit settings GUI
-    usage: /starterkit [player]
-    permission: starterkit.admin
+    usage: /starterkit [edit]
+    permission: starterkit.use
   starterkitgive:
     description: Give the starter kit to a specific player
     usage: /starterkitgive <player>
@@ -81,12 +81,12 @@ commands:
   # ── Game Start ─────────────────────────────────────────────────────────────
   gamestart:
     description: Session setup wizard
-    usage: /gamestart [timer|cancel|sessionend|resumesession]
+    usage: /gamestart [timer|cancel|sessionend|resumesession|breaktimer]
     permission: vampiresmp.admin
 
   skin:
     description: Register and manage per-stage vampire skins
-    usage: /skin <register|apply|clear|list> [stage]
+    usage: /skin <register|apply|clear|list|reload> [human|stage1|stage2|stage3|cured|ghost]
   stash_third_book:
     description: Place the third cure book in its legacy map chest
     usage: /stash_third_book
@@ -97,7 +97,7 @@ commands:
     permission: vampiresmp.admin
   ghost:
     description: Reveal/conceal yourself, voice-haunt a player, or stop haunting
-    usage: /ghost <show|hide|showall|hideall|list|haunt|unhaunt|setfree> [player]
+    usage: /ghost <show|hide|showall|hideall|list|haunt|unhaunt|stop|setfree> [player]
   cellphone:
     description: Open or administer the native cell phone system
     usage: /cellphone [give <player>|open <player>|reload]
@@ -131,10 +131,10 @@ commands:
     aliases: [cphangup]
   cpacceptcall:
     description: Internal phone call accept alias
-    usage: /cpacceptcall [call]
+    usage: /cpacceptcall
   cpdeclinecall:
     description: Internal phone call decline alias
-    usage: /cpdeclinecall [call]
+    usage: /cpdeclinecall
   cphanghup:
     description: Legacy misspelled phone hangup alias
     usage: /cphanghup

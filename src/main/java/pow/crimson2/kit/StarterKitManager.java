@@ -17,7 +17,7 @@ import pow.crimson2.VampireSMPPlugin;
 /**
  * Logic and persistence for the Starter Kit system.
  *
- * Per-player data (YAML: plugins/VampireSMP/starterkit_data.yml):
+ * Per-player data (YAML: plugins/WerePires/starterkit_data.yml):
  *   - disabled category set (absence = enabled, presence = disabled)
  *   - character selection ("Lucifer", "Marlow", "Flynnley", "Ludwig", "Worven", "none")
  *   - log preference (e.g. "SPRUCE_LOG")

@@ -356,18 +356,18 @@ public class BrigadierCommands {
                                                                       String player = StringArgumentType.getString(
                                                                               ctx, "player"
                                                                       );
-                                                                      return this.executePowCommand(
-                                                                              ctx, "admin", "vampire", player, "clearcap"
-                                                                      );
-                                                                    })))
+                                                                       return this.executePowCommand(
+                                                                               ctx, "admin", "vampire", player, "clearcap"
+                                                                       );
+                                                                     })))
                                                                     .then(Commands.literal("clearban").executes(ctx -> {
                                                                       String player = StringArgumentType.getString(
                                                                               ctx, "player"
                                                                       );
-                                                                      return this.executePowCommand(
-                                                                              ctx, "admin", "vampire", player, "clearban"
-                                                                      );
-                                                                    }))
+                                                                       return this.executePowCommand(
+                                                                               ctx, "admin", "vampire", player, "clearban"
+                                                                       );
+                                                                     }))
                                                     )
                                     ))
                                     .then(
@@ -771,6 +771,8 @@ public class BrigadierCommands {
                                                     .executes(ctx -> this.executePowCommand(ctx, "admin", "fadestatus"))
                                     )
                                     .then(this.buildAdminFaeSubcommand())
+                                    .then(this.buildAdminStageAliasSubcommand("vampire"))
+                                    .then(this.buildAdminStageAliasSubcommand("werewolf"))
                                     .then(this.buildTurnLockSubcommand("canturn", "admin"))
                                     .then(this.buildTurnLockSubcommand("canbeturned", "admin"))
                                     .then(this.buildTurnLocksStatusSubcommand("admin"))
@@ -826,6 +828,8 @@ public class BrigadierCommands {
     return Commands.literal(literal)
             .executes(ctx -> this.executePowCommand(ctx, "ability"))
             .then(Commands.literal("list").executes(ctx -> this.executePowCommand(ctx, "ability", "list")))
+            .then(Commands.literal("status").executes(ctx -> this.executePowCommand(ctx, "ability", "status")))
+            .then(Commands.literal("help").executes(ctx -> this.executePowCommand(ctx, "ability", "help")))
             .then(Commands.literal("enable").executes(ctx -> this.executePowCommand(ctx, "ability", "enable")))
             .then(Commands.literal("disable").executes(ctx -> this.executePowCommand(ctx, "ability", "disable")))
             .then(Commands.literal("check")
@@ -855,6 +859,8 @@ public class BrigadierCommands {
     return Commands.literal(literal)
             .executes(ctx -> this.executePowCommand(ctx, "faedeal"))
             .then(Commands.literal("bargains").executes(ctx -> this.executePowCommand(ctx, "faedeal", "bargains")))
+            .then(Commands.literal("list").executes(ctx -> this.executePowCommand(ctx, "faedeal", "list")))
+            .then(Commands.literal("help").executes(ctx -> this.executePowCommand(ctx, "faedeal", "help")))
             .then(Commands.literal("vampire")
                     .then(Commands.argument("player", StringArgumentType.word())
                             .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
@@ -871,6 +877,11 @@ public class BrigadierCommands {
                     .then(Commands.argument("player", StringArgumentType.word())
                             .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
                             .executes(ctx -> this.executePowCommand(ctx, "faedeal", "release",
+                                    StringArgumentType.getString(ctx, "player")))))
+            .then(Commands.literal("free")
+                    .then(Commands.argument("player", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                            .executes(ctx -> this.executePowCommand(ctx, "faedeal", "free",
                                     StringArgumentType.getString(ctx, "player")))))
             .then(this.buildTurnLockSubcommand("canturn", "faedeal"))
             .then(this.buildTurnLockSubcommand("canbeturned", "faedeal"))
@@ -893,6 +904,19 @@ public class BrigadierCommands {
                             .executes(ctx -> this.executePowCommand(ctx, "admin", "fae",
                                     StringArgumentType.getString(ctx, "player"),
                                     StringArgumentType.getString(ctx, "action")))));
+  }
+
+  /** Handler-supported long spellings retained for scripts and old command books. */
+  private LiteralArgumentBuilder<CommandSourceStack> buildAdminStageAliasSubcommand(String faction) {
+    return Commands.literal(faction)
+            .then(Commands.argument("player", StringArgumentType.word())
+                    .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                    .then(Commands.literal("clear_stage_cap")
+                            .executes(ctx -> this.executePowCommand(ctx, "admin", faction,
+                                    StringArgumentType.getString(ctx, "player"), "clear_stage_cap")))
+                    .then(Commands.literal("clear_promotion_ban")
+                            .executes(ctx -> this.executePowCommand(ctx, "admin", faction,
+                                    StringArgumentType.getString(ctx, "player"), "clear_promotion_ban"))));
   }
 
   /**

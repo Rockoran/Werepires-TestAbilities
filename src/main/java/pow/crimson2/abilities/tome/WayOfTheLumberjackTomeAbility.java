@@ -8,7 +8,6 @@ import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -52,7 +51,6 @@ public class WayOfTheLumberjackTomeAbility extends TomeAbility implements Listen
       this.doubleDropChance = plugin.getConfig().getDouble("abilities.tome.wayofthelumberjack.double-drop-chance", 0.30);
       this.placedLogsFile = new File(plugin.getDataFolder(), "placed_logs.json");
       this.loadPlacedLogs();
-      Bukkit.getPluginManager().registerEvents(this, plugin);
    }
 
    @Override

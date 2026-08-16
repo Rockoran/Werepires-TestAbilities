@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * registered skin for the new stage. When cured, the "human" skin is restored.
  *
  * Data is stored per-player at:
- *   plugins/VampireSMP/player_skins/{uuid}.json
+ *   plugins/WerePires/player_skins/{uuid}.json
  *
  * The feature is gated by config key  vampire-skins.enabled  (default false).
  */

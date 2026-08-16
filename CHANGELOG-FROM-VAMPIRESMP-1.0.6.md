@@ -1,11 +1,11 @@
 # Complete WerePires fork changelog from VampireSMP 1.0.6
 
 Last audited: 2026-08-16
-Current branch version: WerePires 1.15.10 TESTBUILD
+Current branch version: WerePires 1.15.11 TESTBUILD
 
 This is the consolidated change inventory for the **entire fork**. The cellphone branch name does not limit its scope.
 
-For the exhaustive source-level inventory—including every command/subcommand/alias, permission, manager, listener, service, registration path, and all 43 Java files changed on the branch—see `FULL-FORK-SOURCE-AUDIT.md`.
+For the exhaustive source-level inventory—including every command/subcommand/alias, permission, manager, listener, service, registration path, and every Java file changed on the branch—see `FULL-FORK-SOURCE-AUDIT.md`.
 
 ## Baseline used for the audit
 
@@ -15,7 +15,7 @@ For the exhaustive source-level inventory—including every command/subcommand/a
 
 ## Platform, packaging, and compatibility
 
-- Renamed the plugin from VampireSMP to WerePires while retaining `plugins/VampireSMP/` as the compatible data folder.
+- Renamed the plugin from VampireSMP to WerePires. Bukkit now uses `plugins/WerePires/`; on startup a copy-only migration brings across files missing from `plugins/VampireSMP/` and preserves the original folder as a backup.
 - Moved the project to Paper 1.21.10 APIs and declared 1.21.5 as the minimum plugin API.
 - Kept Java 17 bytecode compatibility and added a reproducible Maven shade build.
 - Replaced decompiled embedded Gson sources with the declared Gson dependency and shaded it into the output JAR.
@@ -216,3 +216,4 @@ For the exhaustive source-level inventory—including every command/subcommand/a
 - **1.15.8:** stable stacked resource-pack delivery.
 - **1.15.9:** unread/call privacy fixes and complete fork documentation.
 - **1.15.10:** source-level completeness audit; restored the unreachable Blood Moon admin command and every handler-supported minor alias omitted from the Brigadier tree.
+- **1.15.11:** extended the audit across every system: restored additional ability/Fae/stage aliases, corrected command manifests and permissions, centralized duplicate listener registration, completed mutable-state migration, added safe legacy data-folder migration, corrected admin paths and branding, and added a repeatable whole-source audit script.

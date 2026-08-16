@@ -200,7 +200,7 @@ public class PlayerJoinListener implements Listener {
       }
 
       for (Player potentialOp : this.plugin.getWorld().getPlayers()) {
-         if (potentialOp.isOp()) {
+         if (potentialOp.hasPermission("vampiresmp.admin")) {
             if (this.plugin.getSessionManager().isSessionActive()) {
                potentialOp.sendMessage(
                   "Note: " + event.getPlayer().getName() + " has left during an active session. Consider pausing the session if this was unintended."

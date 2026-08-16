@@ -327,18 +327,6 @@ public class ConfigManager {
       return this.config.getInt("abilities.tome.unnatural-haste-cooldown", 900);
    }
 
-   public int getTomeWayOfTheLandCooldown() {
-      return this.config.getInt("abilities.tome.way-of-the-land-cooldown", 600);
-   }
-
-   public int getTomeWayOfTheLumberjackCooldown() {
-      return this.config.getInt("abilities.tome.way-of-the-lumberjack-cooldown", 600);
-   }
-
-   public int getTomeWayOfTheProspectorCooldown() {
-      return this.config.getInt("abilities.tome.way-of-the-prospector-cooldown", 600);
-   }
-
    public int getTomeStopTheBleedingCooldown() {
       return this.config.getInt("abilities.tome.stop-the-bleeding-cooldown", 7200);
    }
@@ -788,10 +776,6 @@ public class ConfigManager {
    }
 
    /** PERMADEATH (only a permanent death breaks bargains) or ANY_DEATH. */
-   public String getFaeBreakDealsOn() {
-      return this.config.getString("fae.break-deals-on", "PERMADEATH");
-   }
-
    public boolean isFaeRevertToHumanOnBreak() {
       return this.config.getBoolean("fae.revert-to-human-on-break", true);
    }

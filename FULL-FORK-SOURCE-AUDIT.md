@@ -11,12 +11,12 @@ This is the source-level companion to `CHANGELOG-FROM-VAMPIRESMP-1.0.6.md`. It r
 ## Audit totals
 
 - 185 Java source files inspected.
-- 67 files differ from the repository baseline: 44 Java files, 2 runtime resource files, `pom.xml`, 19 release/changelog records, and this audit document.
+- 84 files differ from the repository baseline: 59 Java files, 2 runtime resource files, `pom.xml`, 20 release/changelog records, this audit document, and the repeatable source-audit script.
 - 35 Bukkit command roots are declared in `plugin.yml`.
 - 4 Paper Brigadier roots are registered at runtime: `/pow` plus the three Latin ritual commands.
 - 7 permissions are declared and every literal permission checked by Java is declared.
-- 38 listener classes were inspected, plus listener-capable commands, managers, tome abilities, and voice-chat event subscribers.
-- 36 manager-named classes were inspected, plus phone, role, thrall, game-start, world, and ability managers outside the manager package.
+- 58 listener-capable classes were inspected, including commands, managers, tome abilities, and voice-chat event subscribers; 2 are intentional compatibility placeholders.
+- 50 manager-named classes were inspected, plus services and hooks outside the manager package.
 
 ## Complete command surface
 
@@ -72,8 +72,8 @@ Directly registered Bukkit listeners:
 
 Self-registered or manager-registered listeners:
 
-- `HolyWordTomeAbility`, `WayOfTheProspectorTomeAbility`, `WayOfTheLumberjackTomeAbility`, `WayOfTheLandTomeAbility`, `BlessedBladeTomeAbility`, and any future `TomeAbility` that also implements `Listener` are registered by `TomeManager`.
-- `BloodMoonAttributeListener`, `HolyWaterEffectManager`, and `SkinPreviewGui` self-register during construction.
+- `HolyWordTomeAbility`, `WayOfTheProspectorTomeAbility`, `WayOfTheLumberjackTomeAbility`, `WayOfTheLandTomeAbility`, `BlessedBladeTomeAbility`, and any future `TomeAbility` that also implements `Listener` are registered exactly once by `TomeManager`.
+- `BloodMoonAttributeListener` is registered once by the plugin; `HolyWaterEffectManager` and `SkinPreviewGui` self-register during construction.
 - `WerewolfAbilityListener` is intentionally an empty placeholder; Feral Charge is command-driven and registered by `WerewolfAbilityManager`.
 - `ThrallInventoryListener` is intentionally a registered compatibility stub; inventory offers were replaced by Paper Dialog callbacks.
 - Simple Voice Chat event subscribers are `GhostVoicechatPlugin` and `PhoneVoicechatPlugin`; the phone plugin also registers the call volume category after voice-chat server startup.
@@ -111,6 +111,8 @@ Plugin messaging lifecycle was checked as a pair: WerePires registers incoming/o
 - `StashThirdBookCommand.java`: restored legacy placement command plus the missing Cure Book 3 hidden identity.
 - `TomeAbilityCommand.java`: new tome names, aliases, enablement, and invocation.
 - `TurnLockCommand.java`: turn/can-be-turned controls and status.
+- `GameStartCommand.java`: permission-based administration instead of an undocumented operator-only gate.
+- `RoleCommand.java` and `ThrallCommand.java`: aligned permission checks and help visibility with declared permissions.
 
 ### Managers
 
@@ -124,6 +126,9 @@ Plugin messaging lifecycle was checked as a pair: WerePires registers incoming/o
 - `VampireFeedingManager.java`: session feed limits and survival-state cancellation.
 - `VampireManager.java`: stage cap/promotion-ban and bargain integration.
 - `VampireTexturePackManager.java`: managed, stacked, stable-ID resource-pack delivery.
+- `RevivalBookManager.java` and `WorldManager.java`: moved mutable unlock/world selection into `state.yml` and corrected WerePires data paths.
+- `SkinShuffleManager.java`, `VampireSireManager.java`, `RoleManager.java`, and `ThrallDataManager.java`: corrected paths, notifications, and permission-based staff visibility.
+- `StarterKitManager.java`: corrected its player-facing permission and retained explicit shutdown persistence.
 
 ### Listeners
 
@@ -131,6 +136,7 @@ Plugin messaging lifecycle was checked as a pair: WerePires registers incoming/o
 - `DeathHandler.java`: Fae bargain breaking, counters, and permanent-death integration.
 - `ExperienceBottleListener.java`: corrected hand/item processing.
 - `PlayerJoinListener.java`: join-time state, phone/pack/mod synchronization.
+- `BloodMoonAttributeListener.java`: single registration ownership, preventing duplicate event handling.
 - `TomeVampireRestrictionListener.java`: preserved-ability rules.
 - `WerewolfBitingListener.java`: turn-lock checks and conversion protections.
 - `BloodConsumeListener.java`: corrected drink interaction, vial consumption, glass return, and bond/thirst routing.
@@ -142,6 +148,7 @@ Plugin messaging lifecycle was checked as a pair: WerePires registers incoming/o
 - `BlueFireBreathTomeAbility.java`: Magic Fire Breath naming/legacy identity and balancing.
 - `ScryingTomeAbility.java`: targeted temporary tracking.
 - `FadingTomeAbility.java`: configurable opacity ability.
+- `HolyWordTomeAbility.java`, `WayOfTheLandTomeAbility.java`, `WayOfTheLumberjackTomeAbility.java`, and `WayOfTheProspectorTomeAbility.java`: removed duplicate self-registration so `TomeManager` is the sole listener owner.
 
 ### Phone
 
@@ -166,4 +173,10 @@ Plugin messaging lifecycle was checked as a pair: WerePires registers incoming/o
 - Restored Brigadier access to handler-supported aliases: `abilities`, `fae`, `toggle_permadeath`, `togglepermadeath`, plural/singular vault forms, and beacon `delete`, `desecrate`, and `repair`.
 - Added the missing `StarterKitManager.shutdown()` call to the plugin-disable lifecycle.
 - Registered the two orphaned stash command classes and repaired the third book's hidden cure-book identity.
+- Restored handler-supported `ability status/help`, Fae `list/help/free`, and long-form vampire/werewolf stage-cap and promotion-ban aliases in Brigadier.
+- Corrected `/pow admin` usage messages, Bukkit command usage metadata, starter-kit access, and role/session staff checks to match declared permissions.
+- Moved active world/template and revival-unlock values into `state.yml`, including migration when an existing state file is already present.
+- Added copy-only migration from legacy `plugins/VampireSMP/` data to `plugins/WerePires/` without overwriting current files or deleting the source.
+- Removed duplicate tome and Blood Moon listener registration paths.
+- Added `scripts/audit_source.py` so command, permission, listener, ability, manager, lifecycle, and literal config coverage can be rechecked on every build.
 - Verified all `plugin.yml` command roots are assigned an executor, all Java permission literals are declared, and all non-placeholder listener classes are registered directly or through their owning manager.

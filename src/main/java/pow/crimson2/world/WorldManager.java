@@ -35,10 +35,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
- * Manages named world templates stored in plugins/VampireSMP/worlds/.
+ * Manages named world templates stored in plugins/WerePires/worlds/.
  *
  * Each world lives in its own subfolder:
- *   plugins/VampireSMP/worlds/WorldName/
+ *   plugins/WerePires/worlds/WorldName/
  *     [Minecraft world files: region/, level.dat, …]
  *     Config.yml           — overrides config.yml keys for this world
  *     Beacons.json         — beacon definitions for this world
@@ -67,7 +67,7 @@ public class WorldManager {
 
     private final VampireSMPPlugin plugin;
 
-    /** plugins/VampireSMP/worlds/ — pristine templates, never modified. */
+    /** plugins/WerePires/worlds/ — pristine templates, never modified. */
     private final File worldsFolder;
 
     /** Bukkit name of the currently active world (always "world" after a swap). */
@@ -102,8 +102,8 @@ public class WorldManager {
         this.plugin = plugin;
         this.worldsFolder = new File(plugin.getDataFolder(), "worlds");
         if (!worldsFolder.exists()) worldsFolder.mkdirs();
-        this.activeWorldName    = plugin.getConfig().getString("active-world",    TARGET_WORLD);
-        this.activeTemplateName = plugin.getConfig().getString("active-template", "");
+        this.activeWorldName    = plugin.getStateConfig().getString("world.active-world", TARGET_WORLD);
+        this.activeTemplateName = plugin.getStateConfig().getString("world.active-template", "");
         generateExampleFiles();
         extractBundledWorlds();
         extractDropInZips();
@@ -128,6 +128,7 @@ public class WorldManager {
 
     public String getActiveWorldName()    { return activeWorldName;    }
     public String getActiveTemplateName() { return activeTemplateName; }
+    public File getWorldsFolder()         { return worldsFolder;       }
 
     public World getActiveWorld() {
         World w = Bukkit.getWorld(activeWorldName);
@@ -149,7 +150,7 @@ public class WorldManager {
             sender.sendMessage("§7Expected world data at: §eworlds/" + templateName + "/" + templateName + "/");
             List<String> available = getAvailableWorlds();
             if (available.isEmpty()) {
-                sender.sendMessage("§7No templates found in: §eplugins/VampireSMP/worlds/");
+                sender.sendMessage("§7No templates found in: §e" + worldsFolder.getPath());
             } else {
                 sender.sendMessage("§7Available: §e" + String.join(", ", available));
             }
@@ -443,9 +444,9 @@ public class WorldManager {
         int applied = applyWorldConfig(templateName);
         activeWorldName    = worldName;
         activeTemplateName = templateName;
-        plugin.getConfig().set("active-world",    worldName);
-        plugin.getConfig().set("active-template", templateName);
-        plugin.saveConfig();
+        plugin.getStateConfig().set("world.active-world", worldName);
+        plugin.getStateConfig().set("world.active-template", templateName);
+        plugin.saveStateConfig();
         updateServerProperties(worldName);
         plugin.reloadVampireRespawnLocation();
 
@@ -481,7 +482,7 @@ public class WorldManager {
      * Priority:
      *   1. worlds/{name}/Config.yml           (preferred — inside world subfolder)
      *   2. worlds/{name}_Config.yml           (legacy flat layout)
-     *   3. plugins/VampireSMP/{name}_Config.yml (oldest legacy)
+     *   3. plugins/WerePires/{name}_Config.yml (oldest legacy after folder migration)
      */
     private File findWorldConfigFile(String templateName) {
         File inDir = new File(worldDir(templateName), "Config.yml");
@@ -565,9 +566,9 @@ public class WorldManager {
 
         activeWorldName    = worldName;
         activeTemplateName = templateName;
-        plugin.getConfig().set("active-world",    worldName);
-        plugin.getConfig().set("active-template", templateName);
-        plugin.saveConfig();
+        plugin.getStateConfig().set("world.active-world", worldName);
+        plugin.getStateConfig().set("world.active-template", templateName);
+        plugin.saveStateConfig();
 
         updateServerProperties(worldName);
 

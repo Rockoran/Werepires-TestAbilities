@@ -1114,6 +1114,9 @@ blood-draw:
     allow-vampires: true   # true preserves vanilla vampire behaviour
     allow-humans: true
     allow-thralls: true
+    # Damage and cooldown applied to a successful animal blood draw
+    damage-hearts: 2.0
+    cooldown-seconds: 60
 
 
 # ============================================================================

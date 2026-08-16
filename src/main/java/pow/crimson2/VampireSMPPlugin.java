@@ -163,6 +163,7 @@ public class VampireSMPPlugin extends JavaPlugin {
    private Location vampireRespawnLocation;
 
    public void onEnable() {
+      this.migrateLegacyDataFolder();
       this.saveDefaultConfig();
       this.loadStateConfig();
       this.configManager = new ConfigManager(this);
@@ -395,7 +396,7 @@ public class VampireSMPPlugin extends JavaPlugin {
          this.worldPackManager = new pow.crimson2.world.WorldPackManager(this, networkKey, srvName);
          this.worldPackManager.start();
       }
-      this.logInfo("VampireSMP Plugin has been enabled!");
+      this.logInfo("WerePires Plugin has been enabled!");
    }
 
    public void onDisable() {
@@ -576,7 +577,7 @@ public class VampireSMPPlugin extends JavaPlugin {
          this.werePiresNetwork.stop();
       }
 
-      this.logInfo("VampireSMP Plugin has been disabled!");
+      this.logInfo("WerePires Plugin has been disabled!");
    }
 
    private void initializeCastTeam() {
@@ -909,24 +910,85 @@ public class VampireSMPPlugin extends JavaPlugin {
    private void loadStateConfig() {
       this.stateConfigFile = new java.io.File(getDataFolder(), "state.yml");
       this.stateConfig = new org.bukkit.configuration.file.YamlConfiguration();
-      if (this.stateConfigFile.exists()) {
+      boolean stateFileExisted = this.stateConfigFile.exists();
+      if (stateFileExisted) {
          this.stateConfig = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(this.stateConfigFile);
-      } else {
-         // Migrate old state keys out of config.yml on first run
-         String[] stateKeys = {"first_beacon_converted","humans_own_all_beacons","vampires_own_all_beacons",
-                               "one_human_left","fourth_book_has_spawned","fourth_book_spawn_enabled"};
-         boolean migrated = false;
-         for (String key : stateKeys) {
-            if (getConfig().contains(key)) {
-               this.stateConfig.set(key, getConfig().get(key));
-               getConfig().set(key, null);
-               migrated = true;
+      }
+
+      // Migrate mutable values even when state.yml already exists. Older builds
+      // wrote the world selection and revival unlock back into config.yml,
+      // which could strip its comments during normal play.
+      java.util.Map<String, String> stateKeys = new java.util.LinkedHashMap<>();
+      stateKeys.put("first_beacon_converted", "first_beacon_converted");
+      stateKeys.put("humans_own_all_beacons", "humans_own_all_beacons");
+      stateKeys.put("vampires_own_all_beacons", "vampires_own_all_beacons");
+      stateKeys.put("one_human_left", "one_human_left");
+      stateKeys.put("fourth_book_has_spawned", "fourth_book_has_spawned");
+      stateKeys.put("fourth_book_spawn_enabled", "fourth_book_spawn_enabled");
+      stateKeys.put("active-world", "world.active-world");
+      stateKeys.put("active-template", "world.active-template");
+      stateKeys.put("revival.fourth-book-spawn-enabled", "revival.fourth-book-spawn-enabled");
+
+      boolean migrated = false;
+      for (java.util.Map.Entry<String, String> entry : stateKeys.entrySet()) {
+         if (getConfig().contains(entry.getKey())) {
+            if (!this.stateConfig.contains(entry.getValue())) {
+               this.stateConfig.set(entry.getValue(), getConfig().get(entry.getKey()));
             }
+            getConfig().set(entry.getKey(), null);
+            migrated = true;
          }
-         if (migrated) saveConfig();
-         saveStateConfig();
+      }
+      if (migrated) {
+         saveConfig();
+         getLogger().info("[WerePires] Migrated mutable values from config.yml → state.yml");
+      }
+      saveStateConfig();
+      if (!stateFileExisted) {
          getLogger().info("[WerePires] Migrated game-state keys from config.yml → state.yml");
       }
+   }
+
+   /**
+    * Bukkit derives the data-folder name from plugin.yml. The WerePires rename
+    * therefore moved it from plugins/VampireSMP to plugins/WerePires. Merge any
+    * missing legacy files before config.yml or a manager creates new defaults;
+    * never overwrite current files and leave the legacy folder as a backup.
+    */
+   private void migrateLegacyDataFolder() {
+      java.io.File currentFolder = getDataFolder();
+      java.io.File pluginsFolder = currentFolder.getParentFile();
+      if (pluginsFolder == null) return;
+
+      java.io.File legacyFolder = new java.io.File(pluginsFolder, "VampireSMP");
+      if (!legacyFolder.isDirectory() || legacyFolder.equals(currentFolder)) return;
+
+      try {
+         int copied = copyMissingLegacyFiles(legacyFolder.toPath(), currentFolder.toPath());
+         if (copied > 0) {
+            getLogger().info("[WerePires] Migrated " + copied
+                    + " legacy data file(s) from plugins/VampireSMP; the original folder was preserved.");
+         }
+      } catch (java.io.IOException e) {
+         getLogger().severe("[WerePires] Failed to migrate plugins/VampireSMP data: " + e.getMessage());
+      }
+   }
+
+   private int copyMissingLegacyFiles(java.nio.file.Path source, java.nio.file.Path target) throws java.io.IOException {
+      java.nio.file.Files.createDirectories(target);
+      int copied = 0;
+      try (java.nio.file.DirectoryStream<java.nio.file.Path> entries = java.nio.file.Files.newDirectoryStream(source)) {
+         for (java.nio.file.Path entry : entries) {
+            java.nio.file.Path destination = target.resolve(entry.getFileName().toString());
+            if (java.nio.file.Files.isDirectory(entry)) {
+               copied += copyMissingLegacyFiles(entry, destination);
+            } else if (!java.nio.file.Files.exists(destination)) {
+               java.nio.file.Files.copy(entry, destination, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
+               copied++;
+            }
+         }
+      }
+      return copied;
    }
 
    public org.bukkit.configuration.file.YamlConfiguration getStateConfig() {

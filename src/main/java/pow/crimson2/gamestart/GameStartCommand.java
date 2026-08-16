@@ -80,7 +80,7 @@ public class GameStartCommand implements CommandExecutor, TabCompleter, Listener
             return true;
         }
         Player p = (Player) sender;
-        if (!p.isOp()) { p.sendMessage("§cYou need OP to use this command."); return true; }
+        if (!p.hasPermission("vampiresmp.admin")) { p.sendMessage("§cYou need the WerePires admin permission to use this command."); return true; }
 
         if (args.length > 0) {
             switch (args[0].toLowerCase()) {

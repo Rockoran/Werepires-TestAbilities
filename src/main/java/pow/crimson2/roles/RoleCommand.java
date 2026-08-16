@@ -64,7 +64,7 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
 
         // ── Admin sub-commands ──────────────────────────────────────────────
         if (sub.equals("cooldownreset")) {
-            if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
             if (args.length < 2) {
                 sender.sendMessage("§cUsage: /role cooldownreset <role> [<player>|@a]");
                 return;
@@ -105,7 +105,7 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
         }
 
         if (sub.equals("clearlist")) {
-            if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
             if (args.length < 2) { sender.sendMessage("§cUsage: /role clearlist <role>"); return; }
             String role = args[1].toLowerCase();
             if (!RoleManager.KNOWN_ROLES.contains(role)) {
@@ -118,7 +118,7 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
         }
 
         if (sub.equals("removeplayer")) {
-            if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
             if (args.length < 3) {
                 sender.sendMessage("§cUsage: /role removeplayer <role> <player>"); return;
             }
@@ -140,7 +140,7 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
         }
 
         if (sub.equals("sessionreset")) {
-            if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
             for (Player p : Bukkit.getOnlinePlayers()) {
                 for (String role : RoleManager.KNOWN_ROLES) {
                     p.removeScoreboardTag(role);
@@ -188,7 +188,7 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
     // =========================================================================
 
     private void handleRolecfg(CommandSender sender, String[] args) {
-        if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
 
         if (args.length == 0) {
             if (!(sender instanceof Player)) {
@@ -236,7 +236,7 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
     // =========================================================================
 
     private void handleRolestart(CommandSender sender, String[] args) {
-        if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
         if (args.length == 0) {
             sender.sendMessage("§cUsage: /rolestart <role|all>"); return;
         }
@@ -298,7 +298,7 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
                 break;
             }
             case "select": {
-                if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
                 if (args.length < 2) { sender.sendMessage("§cUsage: /vampire select <amount>"); return; }
                 try {
                     int amount = Integer.parseInt(args[1]);
@@ -326,7 +326,7 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
                 break;
             }
             case "list": {
-                if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
                 List<String> pool = roleManager.getVampirePool();
                 if (pool.isEmpty()) { sender.sendMessage("§cNo players are opted in."); return; }
                 sender.sendMessage("§7§m--------------------");
@@ -335,13 +335,13 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
                 break;
             }
             case "clearlist": {
-                if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
                 roleManager.clearVampirePool();
                 sender.sendMessage("§cVampire pool cleared.");
                 break;
             }
             case "removeplayer": {
-                if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
                 if (args.length < 2) { sender.sendMessage("§cUsage: /vampire removeplayer <player>"); return; }
                 String pName = args[1];
                 if (!roleManager.removeFromVampirePool(pName)) {
@@ -364,7 +364,7 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
     // =========================================================================
 
     private void handleGameadmin(CommandSender sender, String[] args) {
-        if (!sender.isOp()) { sender.sendMessage("§cNo permission."); return; }
+            if (!sender.hasPermission("vampiresmp.admin")) { sender.sendMessage("§cNo permission."); return; }
         if (args.length == 0) {
             sender.sendMessage("§cUsage: /gameadmin <add|remove|list|clear>"); return;
         }
@@ -441,15 +441,15 @@ public class RoleCommand implements CommandExecutor, TabCompleter {
             case "role":
                 if (args.length == 1) {
                     out.addAll(RoleManager.KNOWN_ROLES);
-                    if (sender.isOp()) out.addAll(Arrays.asList("cooldownreset", "clearlist", "removeplayer", "sessionreset"));
+                    if (sender.hasPermission("vampiresmp.admin")) out.addAll(Arrays.asList("cooldownreset", "clearlist", "removeplayer", "sessionreset"));
                 } else if (args.length == 2) {
                     String a1 = args[0].toLowerCase();
                     if (RoleManager.KNOWN_ROLES.contains(a1)) out.addAll(Arrays.asList("optin", "optout"));
-                    else if (sender.isOp()) {
+                    else if (sender.hasPermission("vampiresmp.admin")) {
                         if (a1.equals("cooldownreset") || a1.equals("clearlist") || a1.equals("removeplayer"))
                             out.addAll(RoleManager.KNOWN_ROLES);
                     }
-                } else if (args.length == 3 && sender.isOp()) {
+                } else if (args.length == 3 && sender.hasPermission("vampiresmp.admin")) {
                     if (args[0].equalsIgnoreCase("cooldownreset"))
                         Bukkit.getOnlinePlayers().forEach(p -> out.add(p.getName()));
                     else if (args[0].equalsIgnoreCase("removeplayer"))

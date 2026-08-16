@@ -1,7 +1,6 @@
 package pow.crimson2.abilities.tome;
 
 import java.util.Random;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
@@ -27,7 +26,6 @@ public class WayOfTheLandTomeAbility extends TomeAbility implements Listener {
          0
       );
       this.doubleDropChance = plugin.getConfig().getDouble("abilities.tome.wayoftheland.double-drop-chance", 0.75);
-      Bukkit.getPluginManager().registerEvents(this, plugin);
    }
 
    @Override

@@ -39,7 +39,6 @@ public class HolyWordTomeAbility extends TomeAbility implements Listener {
       );
       this.RADIUS = plugin.getConfigManager().getHolyWordRadius();
       this.PARALYSIS_DURATION = plugin.getConfigManager().getHolyWordParalysisDurationTicks();
-      Bukkit.getPluginManager().registerEvents(this, plugin);
    }
 
    @Override

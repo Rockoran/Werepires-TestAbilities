@@ -303,7 +303,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       List<String> available = this.plugin.getWorldManager().getAvailableWorlds();
       String active = this.plugin.getWorldManager().getActiveWorldName();
       sender.sendMessage("§6§l=== World Templates ===");
-      sender.sendMessage("§7Stored in: §eplugins/VampireSMP/worlds/");
+      sender.sendMessage("§7Stored in: §e" + this.plugin.getWorldManager().getWorldsFolder().getPath());
       if (available.isEmpty()) {
          sender.sendMessage("§8No world templates found.");
       } else {
@@ -933,7 +933,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
             return true;
          } else {
-            sender.sendMessage("§cUsage: /beacon debug [beacon_name]");
+            sender.sendMessage("§cUsage: /pow admin beacon debug [beacon_name]");
             return true;
          }
       } else {
@@ -1248,7 +1248,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
    private boolean handleGiveTomeCommand(CommandSender sender, String[] args) {
       if (args.length < 2) {
-         sender.sendMessage("§cUsage: /givetome <player> <ability> [amount]");
+         sender.sendMessage("§cUsage: /pow admin givetome <player> <ability> [amount]");
          return true;
       }
 
@@ -1665,7 +1665,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
    private boolean handleClearBloodMoonBuffsCommand(CommandSender sender, String[] args) {
       if (args.length == 0) {
-         sender.sendMessage("§cUsage: /clearbloodmoonbuffs <player|all>");
+         sender.sendMessage("§cUsage: /pow admin clearbloodmoonbuffs <player|all>");
          sender.sendMessage("§7This command removes stacked blood moon attribute modifiers");
          return true;
       }
@@ -1703,7 +1703,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             this.plugin.getBloodMoonAttributeListener().forceCleanupOnJoin(player);
             sender.sendMessage("§aAggressively cleaned your attribute modifiers.");
          } else {
-            sender.sendMessage("§cUsage: /fixattributes <player|all>");
+            sender.sendMessage("§cUsage: /pow admin fixattributes <player|all>");
          }
 
          return true;
@@ -1737,10 +1737,10 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
    private boolean handleRemoveEndermenCommand(CommandSender sender, String[] args) {
       if (args.length == 0) {
-         sender.sendMessage("§cUsage: /removeendermen <all|toggle|status>");
-         sender.sendMessage("§7- /removeendermen all §8- Remove all existing endermen from loaded chunks");
-         sender.sendMessage("§7- /removeendermen toggle §8- Toggle enderman spawn prevention on/off");
-         sender.sendMessage("§7- /removeendermen status §8- Check if enderman removal is enabled");
+         sender.sendMessage("§cUsage: /pow admin removeendermen <all|toggle|status>");
+         sender.sendMessage("§7- /pow admin removeendermen all §8- Remove all existing endermen from loaded chunks");
+         sender.sendMessage("§7- /pow admin removeendermen toggle §8- Toggle enderman spawn prevention on/off");
+         sender.sendMessage("§7- /pow admin removeendermen status §8- Check if enderman removal is enabled");
          return true;
       }
 
@@ -1823,7 +1823,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
    private boolean handleSetupPlayerCommand(CommandSender sender, String[] args) {
       if (args.length != 1) {
-         sender.sendMessage("§cUsage: /setupplayer <playername>");
+         sender.sendMessage("§cUsage: /pow admin setupplayer <playername>");
          return true;
       }
 
