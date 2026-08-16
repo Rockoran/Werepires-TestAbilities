@@ -1,5 +1,5 @@
 name: WerePires
-version: 1.15.9
+version: 1.15.10
 main: pow.crimson2.VampireSMPPlugin
 api-version: 1.21.5
 author: PowCreations
@@ -87,6 +87,14 @@ commands:
   skin:
     description: Register and manage per-stage vampire skins
     usage: /skin <register|apply|clear|list> [stage]
+  stash_third_book:
+    description: Place the third cure book in its legacy map chest
+    usage: /stash_third_book
+    permission: vampiresmp.admin
+  stash_fourth_book:
+    description: Place the fourth cure book in a chest at coordinates
+    usage: /stash_fourth_book <x> <y> <z>
+    permission: vampiresmp.admin
   ghost:
     description: Reveal/conceal yourself, voice-haunt a player, or stop haunting
     usage: /ghost <show|hide|showall|hideall|list|haunt|unhaunt|setfree> [player]

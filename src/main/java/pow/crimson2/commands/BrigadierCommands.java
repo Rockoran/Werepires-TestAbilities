@@ -171,6 +171,18 @@ public class BrigadierCommands {
                                     .then(Commands.literal("off").executes(ctx -> this.executePowCommand(ctx, "permadeath", "off"))))
                                     .then(Commands.literal("absolute").executes(ctx -> this.executePowCommand(ctx, "permadeath", "absolute")))
                     )
+                    .then(
+                            ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal("toggle_permadeath")
+                                    .then(Commands.literal("on").executes(ctx -> this.executePowCommand(ctx, "permadeath", "on"))))
+                                    .then(Commands.literal("off").executes(ctx -> this.executePowCommand(ctx, "permadeath", "off"))))
+                                    .then(Commands.literal("absolute").executes(ctx -> this.executePowCommand(ctx, "permadeath", "absolute")))
+                    )
+                    .then(
+                            ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal("togglepermadeath")
+                                    .then(Commands.literal("on").executes(ctx -> this.executePowCommand(ctx, "permadeath", "on"))))
+                                    .then(Commands.literal("off").executes(ctx -> this.executePowCommand(ctx, "permadeath", "off"))))
+                                    .then(Commands.literal("absolute").executes(ctx -> this.executePowCommand(ctx, "permadeath", "absolute")))
+                    )
                     .then(Commands.literal("toggle-turning").executes(ctx -> this.executePowCommand(ctx, "toggle-turning")))
                     .then(Commands.literal("turning").executes(ctx -> this.executePowCommand(ctx, "toggle-turning")))
                     .then(Commands.literal("permakill").executes(ctx -> this.executePowCommand(ctx, "permakill")))
@@ -552,6 +564,15 @@ public class BrigadierCommands {
                                                     .executes(ctx -> this.executePowCommand(ctx, "admin", "distributetomes"))
                                     ))
                                     .then(
+                                            ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal("bloodmoon")
+                                                    .then(Commands.literal("start")
+                                                            .executes(ctx -> this.executePowCommand(ctx, "admin", "bloodmoon", "start"))))
+                                                    .then(Commands.literal("stop")
+                                                            .executes(ctx -> this.executePowCommand(ctx, "admin", "bloodmoon", "stop"))))
+                                                    .then(Commands.literal("status")
+                                                            .executes(ctx -> this.executePowCommand(ctx, "admin", "bloodmoon", "status")))
+                                    )
+                                    .then(
                                             ((LiteralArgumentBuilder) Commands.literal("clearbloodmoonbuffs")
                                                     .then(
                                                             Commands.literal("all")
@@ -629,8 +650,10 @@ public class BrigadierCommands {
                                     .then(Commands.literal("addtomevault").executes(ctx -> this.executePowCommand(ctx, "admin", "addtomevault")))
                                     .then(Commands.literal("removetomevault").executes(ctx -> this.executePowCommand(ctx, "admin", "removetomevault")))
                                     .then(Commands.literal("listtomevault").executes(ctx -> this.executePowCommand(ctx, "admin", "listtomevault")))
+                                    .then(Commands.literal("listtomevaults").executes(ctx -> this.executePowCommand(ctx, "admin", "listtomevaults")))
                                     .then(Commands.literal("addominouscurevault").executes(ctx -> this.executePowCommand(ctx, "admin", "addominouscurevault")))
                                     .then(Commands.literal("removeominouscurevault").executes(ctx -> this.executePowCommand(ctx, "admin", "removeominouscurevault")))
+                                    .then(Commands.literal("listominouscurevault").executes(ctx -> this.executePowCommand(ctx, "admin", "listominouscurevault")))
                                     .then(Commands.literal("listominouscurevaults").executes(ctx -> this.executePowCommand(ctx, "admin", "listominouscurevaults")))
                                     .then(Commands.literal("give_revival_book")
                                             .then(Commands.argument("player", StringArgumentType.word())
@@ -767,7 +790,9 @@ public class BrigadierCommands {
                                     )
                     )
                     .then(this.buildAbilitySubcommand())
+                    .then(this.buildAbilitySubcommand("abilities"))
                     .then(this.buildFaeDealSubcommand())
+                    .then(this.buildFaeDealSubcommand("fae"))
                     .executes(ctx -> this.executePowCommand(ctx, "help")))
                     .build(),
             "VampireSMP main command",
@@ -794,7 +819,11 @@ public class BrigadierCommands {
 
   /** {@code /pow ability [list|check|allow|deny|enable|disable]} */
   private LiteralArgumentBuilder<CommandSourceStack> buildAbilitySubcommand() {
-    return Commands.literal("ability")
+    return this.buildAbilitySubcommand("ability");
+  }
+
+  private LiteralArgumentBuilder<CommandSourceStack> buildAbilitySubcommand(String literal) {
+    return Commands.literal(literal)
             .executes(ctx -> this.executePowCommand(ctx, "ability"))
             .then(Commands.literal("list").executes(ctx -> this.executePowCommand(ctx, "ability", "list")))
             .then(Commands.literal("enable").executes(ctx -> this.executePowCommand(ctx, "ability", "enable")))
@@ -819,7 +848,11 @@ public class BrigadierCommands {
 
   /** {@code /pow faedeal ...} — fae-only, gated in FaeDealCommand rather than here. */
   private LiteralArgumentBuilder<CommandSourceStack> buildFaeDealSubcommand() {
-    return Commands.literal("faedeal")
+    return this.buildFaeDealSubcommand("faedeal");
+  }
+
+  private LiteralArgumentBuilder<CommandSourceStack> buildFaeDealSubcommand(String literal) {
+    return Commands.literal(literal)
             .executes(ctx -> this.executePowCommand(ctx, "faedeal"))
             .then(Commands.literal("bargains").executes(ctx -> this.executePowCommand(ctx, "faedeal", "bargains")))
             .then(Commands.literal("vampire")
@@ -916,7 +949,7 @@ public class BrigadierCommands {
   }
 
   private LiteralArgumentBuilder<CommandSourceStack> buildBeaconSubcommand() {
-    return (LiteralArgumentBuilder<CommandSourceStack>) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal(
+    return (LiteralArgumentBuilder<CommandSourceStack>) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal(
                     "beacon"
             )
             .then(
@@ -941,6 +974,15 @@ public class BrigadierCommands {
                                             })
                             )
             ))
+            .then(
+                    Commands.literal("delete")
+                            .then(
+                                    Commands.argument("name", StringArgumentType.word())
+                                            .suggests((ctx, builder) -> this.suggestBeaconNames(builder))
+                                            .executes(ctx -> this.executePowCommand(ctx, "admin", "beacon", "delete",
+                                                    StringArgumentType.getString(ctx, "name")))
+                            )
+            )
             .then(Commands.literal("list").executes(ctx -> this.executePowCommand(ctx, "admin", "beacon", "list"))))
             .then(
                     Commands.literal("info")
@@ -979,6 +1021,15 @@ public class BrigadierCommands {
                             )
             ))
             .then(
+                    Commands.literal("desecrate")
+                            .then(
+                                    Commands.argument("name", StringArgumentType.word())
+                                            .suggests((ctx, builder) -> this.suggestBeaconNames(builder))
+                                            .executes(ctx -> this.executePowCommand(ctx, "admin", "beacon", "desecrate",
+                                                    StringArgumentType.getString(ctx, "name")))
+                            )
+            )
+            .then(
                     Commands.literal("neutral")
                             .then(
                                     Commands.argument("name", StringArgumentType.word())
@@ -990,6 +1041,7 @@ public class BrigadierCommands {
                             )
             ))
             .then(Commands.literal("fix").executes(ctx -> this.executePowCommand(ctx, "admin", "beacon", "fix"))))
+            .then(Commands.literal("repair").executes(ctx -> this.executePowCommand(ctx, "admin", "beacon", "repair"))))
             .then(Commands.literal("refresh").executes(ctx -> this.executePowCommand(ctx, "admin", "beacon", "refresh"))))
             .then(Commands.literal("cleanup").executes(ctx -> this.executePowCommand(ctx, "admin", "beacon", "cleanup"))))
             .then(Commands.literal("clearcooldowns").executes(ctx -> this.executePowCommand(ctx, "admin", "beacon", "clearcooldowns"))))

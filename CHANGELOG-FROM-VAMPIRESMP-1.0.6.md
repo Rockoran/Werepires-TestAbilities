@@ -1,9 +1,11 @@
 # Complete WerePires fork changelog from VampireSMP 1.0.6
 
 Last audited: 2026-08-16
-Current branch version: WerePires 1.15.9 TESTBUILD
+Current branch version: WerePires 1.15.10 TESTBUILD
 
 This is the consolidated change inventory for the **entire fork**. The cellphone branch name does not limit its scope.
+
+For the exhaustive source-level inventory—including every command/subcommand/alias, permission, manager, listener, service, registration path, and all 43 Java files changed on the branch—see `FULL-FORK-SOURCE-AUDIT.md`.
 
 ## Baseline used for the audit
 
@@ -213,3 +215,4 @@ This is the consolidated change inventory for the **entire fork**. The cellphone
 - **1.15.7:** 112-word Wordle pool.
 - **1.15.8:** stable stacked resource-pack delivery.
 - **1.15.9:** unread/call privacy fixes and complete fork documentation.
+- **1.15.10:** source-level completeness audit; restored the unreachable Blood Moon admin command and every handler-supported minor alias omitted from the Brigadier tree.

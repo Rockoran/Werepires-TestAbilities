@@ -377,6 +377,8 @@ public class VampireSMPPlugin extends JavaPlugin {
       SkinCommand skinCommand = new SkinCommand(this);
       this.getCommand("skin").setExecutor(skinCommand);
       this.getCommand("skin").setTabCompleter(skinCommand);
+      this.getCommand("stash_third_book").setExecutor(new pow.crimson2.commands.StashThirdBookCommand(this));
+      this.getCommand("stash_fourth_book").setExecutor(new pow.crimson2.commands.StashFourthBookCommand(this));
       this.werewolfPackManager.start();
       this.initializeDeathScoreboard();
       this.effectManager.startEffectTask();
@@ -535,6 +537,10 @@ public class VampireSMPPlugin extends JavaPlugin {
 
       if (this.roleManager != null) {
          this.roleManager.shutdown();
+      }
+
+      if (this.starterKitManager != null) {
+         this.starterKitManager.shutdown();
       }
 
       if (this.gameStartManager != null) {

@@ -11,6 +11,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.NamespacedKey;
+import org.bukkit.persistence.PersistentDataType;
 import pow.crimson2.VampireSMPPlugin;
 
 public class StashThirdBookCommand implements CommandExecutor {
@@ -59,6 +61,11 @@ public class StashThirdBookCommand implements CommandExecutor {
                "§7/§6voluntate-mea-hoc-nefandum-vinculum-abicio",
                "§0§lBeware: The price of such liberation burns away the very sanctity that enables it forever, and a child of the night may not return to their corrupted ways once liberated, only death waits for them now."
             }
+         );
+         bookMeta.getPersistentDataContainer().set(
+            new NamespacedKey(this.plugin, "vampiresmp_cure_book"),
+            PersistentDataType.INTEGER,
+            3
          );
          book.setItemMeta(bookMeta);
       }
