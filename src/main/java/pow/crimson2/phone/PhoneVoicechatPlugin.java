@@ -67,7 +67,7 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
         Player target;
         try { target = Bukkit.getPlayer(UUID.fromString(targetUuid)); } catch (IllegalArgumentException ex) { target = null; }
         if (target == null) { caller.sendMessage("§cThat contact is offline."); return; }
-        start(caller, List.of(target), manager.displayName(caller.getUniqueId().toString()));
+        start(caller, List.of(target), manager.displayName(targetUuid));
     }
 
     public void callGroup(Player caller, int groupId) {
@@ -83,13 +83,21 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
         UUID callerId = caller.getUniqueId();
         if (connected.containsKey(callerId) || ringing.containsKey(callerId)) { caller.sendMessage("§cYou are already in or receiving a call."); return; }
         List<Player> availableTargets = targets.stream().filter(p -> !connected.containsKey(p.getUniqueId()))
-                .filter(p -> !ringing.containsKey(p.getUniqueId())).filter(p -> !manager.store().player(p.getUniqueId().toString()).doNotDisturb).toList();
+                .filter(p -> !ringing.containsKey(p.getUniqueId()))
+                .filter(p -> !manager.store().player(p.getUniqueId().toString()).doNotDisturb)
+                .filter(p -> {
+                    PhoneDataStore.Contact callerContact = manager.store().player(p.getUniqueId().toString())
+                            .contacts.get(callerId.toString());
+                    return callerContact == null || !callerContact.blocked;
+                }).toList();
         if (availableTargets.isEmpty()) { caller.sendMessage("§cNobody is available to answer."); return; }
-        int id = sequence.incrementAndGet(); Call call = new Call(id, title); calls.put(id, call);
+        int id = sequence.incrementAndGet();
+        String callerName = manager.displayName(callerId.toString());
+        Call call = new Call(id, callerName); calls.put(id, call);
         if (!join(caller, call, false)) { destroy(call); return; }
         for (Player target : availableTargets) {
             ringing.put(target.getUniqueId(), id);
-            target.sendMessage("§b[Phone] §e" + manager.displayName(callerId.toString()) + "§f is calling. §a/answer §7or §c/decline");
+            target.sendMessage("§b[Phone] §e" + callerName + "§f is calling. §a/answer §7or §c/decline");
         }
         caller.sendMessage("§b[Phone] §fCalling §e" + title + "§f... §7(/hangup to cancel)");
         call.timeout = Bukkit.getScheduler().runTaskLater(plugin, () -> expire(call), 600L);
@@ -243,7 +251,7 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
     private void expire(Call call) {
         ringing.entrySet().removeIf(entry -> {
             if (entry.getValue() != call.id) return false;
-            Player player = Bukkit.getPlayer(entry.getKey()); if (player != null) player.sendMessage("§7Missed call from §e" + call.title + "§7."); return true;
+            Player player = Bukkit.getPlayer(entry.getKey()); if (player != null) player.sendMessage("§7Missed call from §e" + call.callerName + "§7."); return true;
         }); cleanupIfEmpty(call);
     }
 
@@ -264,12 +272,13 @@ public final class PhoneVoicechatPlugin implements VoicechatPlugin, PhoneCallSer
     private void broadcastExcept(Call call, UUID excluded, String message) { for (UUID member : call.members) if (!member.equals(excluded)) { Player p = Bukkit.getPlayer(member); if (p != null) p.sendMessage("§b[Phone] " + message); } }
 
     private static final class Call {
-        final int id; final String title; final Set<UUID> members = ConcurrentHashMap.newKeySet();
+        final int id; final Set<UUID> members = ConcurrentHashMap.newKeySet();
         final Set<UUID> muted = ConcurrentHashMap.newKeySet(); final Set<UUID> deafened = ConcurrentHashMap.newKeySet();
         final Map<UUID, StaticAudioChannel> privateChannels = new ConcurrentHashMap<>();
         final Map<UUID, EntityAudioChannel> speakerChannels = new ConcurrentHashMap<>();
+        final String callerName;
         volatile UUID speakerOwner; BukkitTask timeout;
-        Call(int id, String title) { this.id = id; this.title = title; }
+        Call(int id, String callerName) { this.id = id; this.callerName = callerName; }
     }
     private record PlayerPosition(UUID world, double x, double y, double z) {}
 }

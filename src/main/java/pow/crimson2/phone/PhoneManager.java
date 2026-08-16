@@ -129,10 +129,17 @@ public final class PhoneManager implements Listener {
     int unreadCount(Player player) {
         String uuid = player.getUniqueId().toString();
         int unread = 0;
-        for (PhoneDataStore.Conversation conversation : store.database().conversations.values()) {
+        for (var entry : store.database().conversations.entrySet()) {
+            String key = entry.getKey();
+            if (!key.startsWith(uuid + ":") && !key.endsWith(":" + uuid)) continue;
+            PhoneDataStore.Conversation conversation = entry.getValue();
             for (PhoneDataStore.Message message : conversation.messages) {
                 if (!message.read && !uuid.equals(message.from)) unread++;
             }
+        }
+        for (PhoneDataStore.GroupChat group : store.database().groups.values()) {
+            if (!group.members.contains(uuid)) continue;
+            unread += Math.max(0, group.messages.size() - group.lastRead.getOrDefault(uuid, 0));
         }
         return unread;
     }
