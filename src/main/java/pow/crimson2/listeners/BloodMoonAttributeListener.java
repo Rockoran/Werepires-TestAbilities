@@ -29,7 +29,6 @@ public class BloodMoonAttributeListener implements Listener {
    public BloodMoonAttributeListener(VampireSMPPlugin plugin) {
       this.plugin = plugin;
       this.vampireManager = plugin.getVampireManager();
-      Bukkit.getPluginManager().registerEvents(this, plugin);
       plugin.logInfo("BloodMoonAttributeListener initialized");
    }
 

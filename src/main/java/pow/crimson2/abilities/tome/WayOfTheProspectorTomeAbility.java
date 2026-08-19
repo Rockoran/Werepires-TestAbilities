@@ -2,7 +2,6 @@ package pow.crimson2.abilities.tome;
 
 import java.util.Random;
 import java.util.Set;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
@@ -49,7 +48,6 @@ public class WayOfTheProspectorTomeAbility extends TomeAbility implements Listen
          },
          0
       );
-      Bukkit.getPluginManager().registerEvents(this, plugin);
    }
 
    @Override

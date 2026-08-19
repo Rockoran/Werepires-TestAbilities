@@ -104,9 +104,9 @@ public class RevivalBookManager implements Listener {
          p.sendMessage("§dThe rite demands vampire blood, the dead of night, and ground broken by desecration.");
          p.sendMessage("§7But the words themselves, and their price, remain hidden in a final tome.");
          p.sendMessage("");
-         if (!plugin.getConfig().getBoolean("revival.fourth-book-spawn-enabled", false)) {
-            plugin.getConfig().set("revival.fourth-book-spawn-enabled", true);
-            plugin.saveConfig();
+         if (!plugin.getStateConfig().getBoolean("revival.fourth-book-spawn-enabled", false)) {
+            plugin.getStateConfig().set("revival.fourth-book-spawn-enabled", true);
+            plugin.saveStateConfig();
             plugin.logInfo("[Revival] " + p.getName() + " learned the conditions; The Price can now spawn.");
          }
       }

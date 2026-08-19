@@ -20,7 +20,7 @@ import pow.crimson2.VampireSMPPlugin;
  * Handles persistence for thrall bond data and profiles.
  *
  * <p><b>Bonds</b> are stored as one small file per player in
- * {@code plugins/VampireSMP/thralls/<username>.yml}. The filename is the player's name
+ * {@code plugins/WerePires/thralls/<username>.yml}. The filename is the player's name
  * (for readability), but the authoritative key is the {@code uuid} stored <i>inside</i>
  * the file — usernames can change, so a rename is detected and the stale file removed.</p>
  *

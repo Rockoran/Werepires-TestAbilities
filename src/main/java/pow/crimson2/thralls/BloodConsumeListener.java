@@ -45,8 +45,12 @@ public class BloodConsumeListener implements Listener {
                 else player.getWorld().dropItemNaturally(player.getLocation(), glass);
             }, 1L);
 
-            // Vampires cannot be thralled
-            if (thrallManager.isVampire(player)) return;
+            // Vampires drink the same bottle as food; they never enter the thrall path.
+            if (thrallManager.isVampire(player)) {
+                plugin.getThirstManager().quenchThirst(player, 8);
+                thrallManager.sendActionBar(player, "§4The vampire blood quenches your thirst.");
+                return;
+            }
 
             UUID ownerId = bloodBottleManager.getBloodOwner(item);
             if (ownerId == null) return;

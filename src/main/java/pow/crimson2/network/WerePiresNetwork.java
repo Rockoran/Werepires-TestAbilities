@@ -12,6 +12,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class WerePiresNetwork {
 
+    // =========================================================================
+    //  KILL SWITCH — flip to false to deactivate the network protocol entirely.
+    //
+    //  false means: no licence validation, no heartbeat, no telemetry, no
+    //  outbound HTTP at all, and nothing that can disable or suspend the plugin
+    //  or kick players. Use it for local testing, where an empty key or an
+    //  unreachable backend would otherwise shut the plugin down on startup
+    //  before anything can be tested.
+    //
+    //  Deliberately a source constant and NOT a config option, so it cannot be
+    //  toggled on a live server. Set it back to true before shipping a build —
+    //  a warning banner prints on startup while it is off.
+    // =========================================================================
+    private static final boolean PROTOCOL_ENABLED = false;
+
     private static final String EDGE_FUNCTION_URL = "https://iktbixeivylotgzspexl.supabase.co/functions/v1/report";
     private static final int POLL_INTERVAL_TICKS = 20 * 60; // 60s between reactivation checks
 
@@ -40,6 +55,16 @@ public class WerePiresNetwork {
     // -------------------------------------------------------------------------
 
     public void start() {
+        if (!PROTOCOL_ENABLED) {
+            plugin.getLogger().warning("╔══════════════════════════════════════════════╗");
+            plugin.getLogger().warning("║   WerePires — NETWORK PROTOCOL DISABLED      ║");
+            plugin.getLogger().warning("║  Kill switch is on: no licence check, no     ║");
+            plugin.getLogger().warning("║  heartbeat, no telemetry, no remote disable. ║");
+            plugin.getLogger().warning("║  TESTING ONLY — unset to restore enforcement ║");
+            plugin.getLogger().warning("╚══════════════════════════════════════════════╝");
+            return;
+        }
+
         if (serverKey.isEmpty()) {
             plugin.getLogger().severe("╔══════════════════════════════════════════════╗");
             plugin.getLogger().severe("║         WerePires — NO LICENSE KEY          ║");
@@ -73,7 +98,7 @@ public class WerePiresNetwork {
         cancelTask(pollTaskId);
         heartbeatTaskId = -1;
         pollTaskId = -1;
-        if (!serverKey.isEmpty()) post("offline", "{}");
+        if (PROTOCOL_ENABLED && !serverKey.isEmpty()) post("offline", "{}");
     }
 
     // -------------------------------------------------------------------------
@@ -81,6 +106,7 @@ public class WerePiresNetwork {
     // -------------------------------------------------------------------------
 
     private void suspendByNetwork(String reason) {
+        if (!PROTOCOL_ENABLED) return; // kill switch: never suspend or kick during testing
         if (suspended.getAndSet(true)) return; // already suspended
 
         cancelTask(heartbeatTaskId);
@@ -153,15 +179,24 @@ public class WerePiresNetwork {
     // -------------------------------------------------------------------------
 
     public boolean isSuspended() {
-        return suspended.get();
+        return PROTOCOL_ENABLED && suspended.get();
     }
 
+    /**
+     * Whether the network is live. Every telemetry call site already checks this, so returning
+     * false with the kill switch on silences all of them without touching those call sites.
+     */
     public boolean isEnabled() {
-        return !serverKey.isEmpty();
+        return PROTOCOL_ENABLED && !serverKey.isEmpty();
+    }
+
+    /** Whether the protocol is switched on at all — see {@code werepires-network.enabled}. */
+    public boolean isProtocolEnabled() {
+        return PROTOCOL_ENABLED;
     }
 
     public void logEvent(String eventType, String playerUuid, String playerName, String extraData) {
-        if (serverKey.isEmpty() || suspended.get()) return;
+        if (!PROTOCOL_ENABLED || serverKey.isEmpty() || suspended.get()) return;
         String payload = "{"
                 + "\"event_type\":" + q(eventType) + ","
                 + "\"player_uuid\":" + q(playerUuid) + ","
@@ -172,7 +207,7 @@ public class WerePiresNetwork {
     }
 
     public void updatePlayer(String uuid, String username, String role, String extraData) {
-        if (serverKey.isEmpty() || suspended.get()) return;
+        if (!PROTOCOL_ENABLED || serverKey.isEmpty() || suspended.get()) return;
         boolean isOp = extraData != null && extraData.contains("op=true");
         String payload = "{"
                 + "\"minecraft_uuid\":" + q(uuid) + ","
@@ -188,6 +223,7 @@ public class WerePiresNetwork {
     // -------------------------------------------------------------------------
 
     private String postSync(String type, String payload) {
+        if (!PROTOCOL_ENABLED) return null; // defence in depth: no traffic while the switch is off
         try {
             HttpRequest req = buildRequest(type, payload);
             HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
@@ -199,6 +235,7 @@ public class WerePiresNetwork {
     }
 
     private void post(String type, String payload) {
+        if (!PROTOCOL_ENABLED) return; // defence in depth: no traffic while the switch is off
         try {
             HttpRequest req = buildRequest(type, payload);
             http.sendAsync(req, HttpResponse.BodyHandlers.ofString())

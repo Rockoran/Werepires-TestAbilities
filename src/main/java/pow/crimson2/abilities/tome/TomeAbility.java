@@ -30,6 +30,11 @@ public abstract class TomeAbility {
       return this.name;
    }
 
+   /** Abilities in the same family can share one cooldown without sharing a display name. */
+   protected String getCooldownKey() {
+      return this.name;
+   }
+
    /**
     * Whether this tome is enabled on the server. New tomes override this to read a config toggle;
     * built-in ones are always enabled. Checked before learning and before use, so a tome can be
@@ -53,13 +58,18 @@ public abstract class TomeAbility {
    }
 
    public final boolean use(Player player) {
+      return this.use(player, new String[0]);
+   }
+
+   /** @param args anything the player typed after the ability name, e.g. a target player. */
+   public final boolean use(Player player, String[] args) {
       if (this.isOnCooldown(player)) {
          long remainingTime = this.getRemainingCooldown(player);
          this.sendCannotUseMessage(player, "ability is on cooldown! " + VampireAbilityManager.formatTime(remainingTime) + " remaining.");
          return false;
       }
 
-      boolean success = this.useAbility(player);
+      boolean success = this.useAbility(player, args == null ? new String[0] : args);
       if (success) {
          this.setCooldown(player);
       }
@@ -67,10 +77,23 @@ public abstract class TomeAbility {
       return success;
    }
 
+   /**
+    * Argument-aware entry point. Abilities that take no arguments — which is all of the original
+    * ones — inherit this and never see the array.
+    */
+   protected boolean useAbility(Player player, String[] args) {
+      return this.useAbility(player);
+   }
+
    protected abstract boolean useAbility(Player var1);
 
    protected boolean canUse(Player player) {
-      return this.plugin.getVampireManager().isHuman(player);
+      if (this.plugin.getVampireManager().isHuman(player)) {
+         return true;
+      }
+      // Turned players may still use abilities named in allow.use.after.turned.abilities.
+      // Every ability routes its self-check through here, so this is the one place that decides it.
+      return this.plugin.getConfigManager().isAbilityAllowedAfterTurned(this.name);
    }
 
    protected void sendCannotUseMessage(Player player, String reason) {
@@ -84,8 +107,9 @@ public abstract class TomeAbility {
    protected boolean isOnCooldown(Player player) {
       UUID playerId = player.getUniqueId();
       Map<String, Long> cooldowns = playerCooldowns.get(playerId);
-      if (cooldowns != null && cooldowns.containsKey(this.name)) {
-         long cooldownEnd = cooldowns.get(this.name);
+      String key = this.getCooldownKey();
+      if (cooldowns != null && cooldowns.containsKey(key)) {
+         long cooldownEnd = cooldowns.get(key);
          return System.currentTimeMillis() < cooldownEnd;
       } else {
          return false;
@@ -95,8 +119,9 @@ public abstract class TomeAbility {
    protected long getRemainingCooldown(Player player) {
       UUID playerId = player.getUniqueId();
       Map<String, Long> cooldowns = playerCooldowns.get(playerId);
-      if (cooldowns != null && cooldowns.containsKey(this.name)) {
-         long cooldownEnd = cooldowns.get(this.name);
+      String key = this.getCooldownKey();
+      if (cooldowns != null && cooldowns.containsKey(key)) {
+         long cooldownEnd = cooldowns.get(key);
          long remaining = cooldownEnd - System.currentTimeMillis();
          return Math.max(0L, remaining / 1000L);
       } else {
@@ -108,12 +133,12 @@ public abstract class TomeAbility {
       UUID playerId = player.getUniqueId();
       Map<String, Long> cooldowns = playerCooldowns.computeIfAbsent(playerId, k -> new HashMap<>());
       long cooldownEnd = System.currentTimeMillis() + this.cooldownSeconds * 1000L;
-      cooldowns.put(this.name, cooldownEnd);
+      cooldowns.put(this.getCooldownKey(), cooldownEnd);
       this.scheduleCooldownNotification(player, this.cooldownSeconds);
    }
 
    private void scheduleCooldownNotification(Player player, int cooldownSeconds) {
-      String taskKey = player.getUniqueId() + ":" + this.name;
+      String taskKey = player.getUniqueId() + ":" + this.getCooldownKey();
       BukkitTask existingTask = cooldownNotificationTasks.get(taskKey);
       if (existingTask != null && !existingTask.isCancelled()) {
          existingTask.cancel();

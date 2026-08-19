@@ -42,6 +42,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
    private final TomeManager tomeManager;
    private final pow.crimson2.config.ConfigEditor configEditor;
    private final PermakillCommand permakillCommand;
+   private final TurnLockCommand turnLockCommand;
+   private final DeathCounterCommand deathCounterCommand;
+   private final FaeCommand faeCommand;
 
    public CommandHandler(VampireSMPPlugin plugin, SessionManager sessionManager, VampireManager vampireManager) {
       this.plugin = plugin;
@@ -52,6 +55,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       this.tomeManager = plugin.getTomeManager();
       this.configEditor = new pow.crimson2.config.ConfigEditor(plugin);
       this.permakillCommand = new PermakillCommand(plugin);
+      this.turnLockCommand = new TurnLockCommand(plugin);
+      this.deathCounterCommand = new DeathCounterCommand(plugin);
+      this.faeCommand = new FaeCommand(plugin);
    }
 
    public pow.crimson2.config.ConfigEditor getConfigEditor() {
@@ -134,6 +140,25 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          return this.handleReloadConfig(sender, args);
       } else if (command.getName().equalsIgnoreCase("config")) {
          return this.configEditor.handle(sender, args);
+      } else if (command.getName().equalsIgnoreCase("fadestatus")) {
+         if (this.plugin.getFadeManager() == null) {
+            sender.sendMessage("§cFade manager is not available.");
+            return true;
+         }
+         this.plugin.getFadeManager().printStatus(sender);
+         return true;
+      } else if (command.getName().equalsIgnoreCase("fae")) {
+         return this.faeCommand.handle(sender, args);
+      } else if (command.getName().equalsIgnoreCase("canturn")) {
+         return this.turnLockCommand.handle(sender, args, true);
+      } else if (command.getName().equalsIgnoreCase("canbeturned")) {
+         return this.turnLockCommand.handle(sender, args, false);
+      } else if (command.getName().equalsIgnoreCase("turnlocks")) {
+         return this.turnLockCommand.handleStatus(sender, args);
+      } else if (command.getName().equalsIgnoreCase("deaths")) {
+         return this.deathCounterCommand.handle(sender, args, false);
+      } else if (command.getName().equalsIgnoreCase("hearts")) {
+         return this.deathCounterCommand.handle(sender, args, true);
       } else if (command.getName().equalsIgnoreCase("permakill")) {
          this.permakillCommand.adminPermakill(sender, args.length > 0 ? args[0] : null);
          return true;
@@ -278,7 +303,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       List<String> available = this.plugin.getWorldManager().getAvailableWorlds();
       String active = this.plugin.getWorldManager().getActiveWorldName();
       sender.sendMessage("§6§l=== World Templates ===");
-      sender.sendMessage("§7Stored in: §eplugins/VampireSMP/worlds/");
+      sender.sendMessage("§7Stored in: §e" + this.plugin.getWorldManager().getWorldsFolder().getPath());
       if (available.isEmpty()) {
          sender.sendMessage("§8No world templates found.");
       } else {
@@ -908,7 +933,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
             return true;
          } else {
-            sender.sendMessage("§cUsage: /beacon debug [beacon_name]");
+            sender.sendMessage("§cUsage: /pow admin beacon debug [beacon_name]");
             return true;
          }
       } else {
@@ -1203,13 +1228,27 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          }
       }
 
+      // Respect the admin turn locks rather than silently overriding them — an admin who really
+      // wants this can clear the lock first.
+      TurnLockManager locks = this.plugin.getTurnLockManager();
+      if (!locks.canBeTurned(target, TurnLockManager.Species.VAMPIRE)) {
+         sender.sendMessage("§c" + target.getName() + " is locked against being turned into a vampire.");
+         sender.sendMessage("§7Clear it with §e/pow admin canbeturned " + target.getName() + " vampire allow");
+         return true;
+      }
+      if (turner != null && !locks.canTurn(turner, TurnLockManager.Species.VAMPIRE)) {
+         sender.sendMessage("§c" + turner.getName() + " is locked against turning others into vampires.");
+         sender.sendMessage("§7Clear it with §e/pow admin canturn " + turner.getName() + " vampire allow");
+         return true;
+      }
+
       this.plugin.getVampireManager().performVampireTurning(target, turner);
       return true;
    }
 
    private boolean handleGiveTomeCommand(CommandSender sender, String[] args) {
       if (args.length < 2) {
-         sender.sendMessage("§cUsage: /givetome <player> <ability> [amount]");
+         sender.sendMessage("§cUsage: /pow admin givetome <player> <ability> [amount]");
          return true;
       }
 
@@ -1626,7 +1665,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
    private boolean handleClearBloodMoonBuffsCommand(CommandSender sender, String[] args) {
       if (args.length == 0) {
-         sender.sendMessage("§cUsage: /clearbloodmoonbuffs <player|all>");
+         sender.sendMessage("§cUsage: /pow admin clearbloodmoonbuffs <player|all>");
          sender.sendMessage("§7This command removes stacked blood moon attribute modifiers");
          return true;
       }
@@ -1664,7 +1703,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             this.plugin.getBloodMoonAttributeListener().forceCleanupOnJoin(player);
             sender.sendMessage("§aAggressively cleaned your attribute modifiers.");
          } else {
-            sender.sendMessage("§cUsage: /fixattributes <player|all>");
+            sender.sendMessage("§cUsage: /pow admin fixattributes <player|all>");
          }
 
          return true;
@@ -1698,10 +1737,10 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
    private boolean handleRemoveEndermenCommand(CommandSender sender, String[] args) {
       if (args.length == 0) {
-         sender.sendMessage("§cUsage: /removeendermen <all|toggle|status>");
-         sender.sendMessage("§7- /removeendermen all §8- Remove all existing endermen from loaded chunks");
-         sender.sendMessage("§7- /removeendermen toggle §8- Toggle enderman spawn prevention on/off");
-         sender.sendMessage("§7- /removeendermen status §8- Check if enderman removal is enabled");
+         sender.sendMessage("§cUsage: /pow admin removeendermen <all|toggle|status>");
+         sender.sendMessage("§7- /pow admin removeendermen all §8- Remove all existing endermen from loaded chunks");
+         sender.sendMessage("§7- /pow admin removeendermen toggle §8- Toggle enderman spawn prevention on/off");
+         sender.sendMessage("§7- /pow admin removeendermen status §8- Check if enderman removal is enabled");
          return true;
       }
 
@@ -1784,7 +1823,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
    private boolean handleSetupPlayerCommand(CommandSender sender, String[] args) {
       if (args.length != 1) {
-         sender.sendMessage("§cUsage: /setupplayer <playername>");
+         sender.sendMessage("§cUsage: /pow admin setupplayer <playername>");
          return true;
       }
 

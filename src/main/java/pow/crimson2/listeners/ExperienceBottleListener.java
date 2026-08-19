@@ -2,6 +2,7 @@ package pow.crimson2.listeners;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -48,9 +49,29 @@ public class ExperienceBottleListener implements Listener {
 
       event.setCancelled(true);
 
-      // Vampire blood (vbowner lore) is now drinkable via FOOD/CONSUMABLE components
-      // and handled entirely by BloodConsumeListener — skip it here so it isn't thrown.
-      if (bloodBottleManager.isBloodBottle(item)) return;
+      // EXPERIENCE_BOTTLE always tries to throw itself before its custom consumable component can
+      // run. Intercept tagged Vampire Blood here and use the same immediate bottle-drinking path
+      // as the other blood items, while leaving ordinary experience bottles unchanged below.
+      if (bloodBottleManager.isBloodBottle(item)) {
+         UUID ownerId = bloodBottleManager.getBloodOwner(item);
+         if (ownerId == null) {
+            player.sendMessage("§cThis vial of vampire blood has lost its binding and cannot be consumed.");
+            return;
+         }
+
+         consumeBottle(player, event);
+         player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_WITCH_DRINK, 1.0F, 1.0F);
+         if (vampireManager.isVampire(player)) {
+            thirstManager.quenchThirst(player, 8);
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
+               new TextComponent("§4The vampire blood quenches your thirst."));
+         } else {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+               if (player.isOnline()) thrallManager.applyBlood(player, ownerId);
+            }, 1L);
+         }
+         return;
+      }
 
       // ── Thrall bonding blood (has vthrall lore) ───────────────────────────────
       if (bloodBottleManager.isThrallBloodBottle(item)) {

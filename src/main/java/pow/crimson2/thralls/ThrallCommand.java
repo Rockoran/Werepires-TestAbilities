@@ -846,7 +846,10 @@ public class ThrallCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§7/thrall profile create <name> <taste>");
         player.sendMessage("§7/thrall profile select | list | delete <n>");
         player.sendMessage("§7/thrall preferences list §8| §7/thrall preferences <player>");
-        player.sendMessage("§8Admin: /thrall admin <cooldownreset|reset|setowner|bondset>");
+        if (player.hasPermission("thralls.admin")) {
+            player.sendMessage("§7/thrall checkconfig");
+            player.sendMessage("§8Admin: /thrall admin <cooldownreset|reset|setowner|bondset|forcesave>");
+        }
     }
 
     // =========================================================================

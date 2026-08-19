@@ -17,9 +17,9 @@ public class BlueFireBreathTomeAbility extends TomeAbility {
    public BlueFireBreathTomeAbility(VampireSMPPlugin plugin) {
       super(
          plugin,
-         "BlueFireBreath",
+         "MagicFireBreath",
          new String[]{
-            "You channel ancient soul fire into a concentrated torrent of blue flame,",
+            "You channel ancient magic fire into a concentrated torrent of flame,",
             "scorching all in a narrow cone before you with supernatural heat."
          },
          plugin.getConfigManager().getTomeBlueFireBreathCooldown()
@@ -32,6 +32,11 @@ public class BlueFireBreathTomeAbility extends TomeAbility {
    }
 
    @Override
+   protected String getCooldownKey() {
+      return "FireBreathFamily";
+   }
+
+   @Override
    protected boolean useAbility(Player player) {
       if (!this.canUse(player)) {
          this.sendCannotUseMessage(player, "Only humans can use tome abilities!");
@@ -39,13 +44,13 @@ public class BlueFireBreathTomeAbility extends TomeAbility {
       }
 
       if (!this.plugin.getTomeManager().hasAbility(player, "FireBreath")) {
-         this.sendCannotUseMessage(player, "You must first master Fire Breath before wielding soul flame.");
+         this.sendCannotUseMessage(player, "You must first master Fire Breath before wielding magic fire.");
          return false;
       }
 
       player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_SHOOT, SoundCategory.PLAYERS, 1.2f, 0.6f);
       player.playSound(player.getLocation(), Sound.BLOCK_SOUL_SAND_PLACE, SoundCategory.PLAYERS, 0.8f, 1.5f);
-      this.sendSuccessMessage(player, "You unleash a torrent of soul flame!");
+      this.sendSuccessMessage(player, "You unleash a torrent of magic fire!");
       this.startBreathStream(player);
       return true;
    }
