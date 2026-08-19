@@ -28,7 +28,9 @@ public class TomeAbilityCommand implements CommandExecutor, TabCompleter {
       if (!(sender instanceof Player player)) {
          sender.sendMessage("§cOnly players can use tome abilities.");
          return true;
-      } else if (!this.vampireManager.isHuman(player)) {
+      } else if (!this.vampireManager.isHuman(player) && !this.plugin.getConfigManager().isAllowUseAfterTurned()) {
+         // When the feature is on we let the request through; TomeManager.useAbility does the
+         // per-ability allow-list check and refuses anything not on it.
          player.sendMessage("§cOnly humans can use tome abilities.");
          return true;
       } else if (args.length == 0) {
@@ -36,7 +38,10 @@ public class TomeAbilityCommand implements CommandExecutor, TabCompleter {
          return true;
       } else {
          String subCommand = args[0].toLowerCase();
-         return subCommand.equals("list") ? this.handleListCommand(player) : this.handleAbilityUse(player, subCommand);
+         if (subCommand.equals("list")) {
+            return this.handleListCommand(player);
+         }
+         return this.handleAbilityUse(player, subCommand, java.util.Arrays.copyOfRange(args, 1, args.length));
       }
    }
 
@@ -71,9 +76,9 @@ public class TomeAbilityCommand implements CommandExecutor, TabCompleter {
       return true;
    }
 
-   private boolean handleAbilityUse(Player player, String abilityName) {
-      boolean success = this.tomeManager.useAbility(player, abilityName);
-      return !success ? true : true;
+   private boolean handleAbilityUse(Player player, String abilityName, String[] args) {
+      this.tomeManager.useAbility(player, abilityName, args);
+      return true;
    }
 
    private void sendUsage(Player player) {
@@ -95,6 +100,22 @@ public class TomeAbilityCommand implements CommandExecutor, TabCompleter {
             completions.addAll(playerAbilities);
             String input = args[0].toLowerCase();
             completions.removeIf(s -> !s.toLowerCase().startsWith(input));
+         } else if (args.length == 2 && args[0].equalsIgnoreCase("scrying")) {
+            // Scrying takes a target player; suggest who they could reach for.
+            String input = args[1].toLowerCase();
+            for (Player other : org.bukkit.Bukkit.getOnlinePlayers()) {
+               if (!other.equals(player) && other.getName().toLowerCase().startsWith(input)) {
+                  completions.add(other.getName());
+               }
+            }
+         } else if (args.length == 2 && args[0].equalsIgnoreCase("fading")) {
+            // Fading takes an optional opacity; offer a few sensible stops.
+            String input = args[1].toLowerCase();
+            for (String step : new String[]{"0", "25", "50", "75", "100"}) {
+               if (step.startsWith(input)) {
+                  completions.add(step);
+               }
+            }
          }
 
          return completions;

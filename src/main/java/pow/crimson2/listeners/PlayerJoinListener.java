@@ -39,6 +39,17 @@ public class PlayerJoinListener implements Listener {
    public void onPlayerJoin(PlayerJoinEvent event) {
       Player player = event.getPlayer();
 
+      // Stage caps live in an in-memory map, so a fae bargain has to be re-applied every login
+      // or the bound player would silently regain the ability to change stage after a restart.
+      if (this.plugin.getFaeManager() != null) {
+         this.plugin.getFaeManager().reassert(player);
+      }
+
+      // Send the joining client everyone who is already faded, otherwise they render solid to it.
+      if (this.plugin.getFadeManager() != null) {
+         this.plugin.getFadeManager().onJoin(player);
+      }
+
       // If the player spawned in the wrong world (e.g. vanilla overworld while a
       // loaded world pack is active as a named dimension), teleport them to the
       // active world's spawn before any other logic runs.
@@ -182,6 +193,11 @@ public class PlayerJoinListener implements Listener {
    @EventHandler
    public void onPlayerQuit(PlayerQuitEvent event) {
       Player player = event.getPlayer();
+
+      // Clear their fade so remaining viewers stop drawing a player who is no longer here.
+      if (this.plugin.getFadeManager() != null) {
+         this.plugin.getFadeManager().onQuit(player);
+      }
 
       for (Player potentialOp : this.plugin.getWorld().getPlayers()) {
          if (potentialOp.isOp()) {

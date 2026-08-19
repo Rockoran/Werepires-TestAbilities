@@ -55,8 +55,14 @@ public class BrigadierCommands {
           "sanctuary",
           "cleansingsmoke",
           "huntersmark",
-          "lastvigil"
+          "lastvigil",
+          "firebreath",
+          "magicfirebreath",
+          "scrying",
+          "fading"
   );
+
+  private static final List<String> FAE_SPECIES = Arrays.asList("vampire", "werewolf");
 
   public BrigadierCommands(VampireSMPPlugin plugin) {
     this.plugin = plugin;
@@ -738,6 +744,16 @@ public class BrigadierCommands {
                                                     .executes(ctx -> this.executePowCommand(ctx, "admin", "listworlds"))
                                     )
                                     .then(
+                                            Commands.literal("fadestatus")
+                                                    .executes(ctx -> this.executePowCommand(ctx, "admin", "fadestatus"))
+                                    )
+                                    .then(this.buildAdminFaeSubcommand())
+                                    .then(this.buildTurnLockSubcommand("canturn", "admin"))
+                                    .then(this.buildTurnLockSubcommand("canbeturned", "admin"))
+                                    .then(this.buildTurnLocksStatusSubcommand("admin"))
+                                    .then(this.buildDeathCounterSubcommand("deaths", "admin"))
+                                    .then(this.buildDeathCounterSubcommand("hearts", "admin"))
+                                    .then(
                                             ((LiteralArgumentBuilder) Commands.literal("loadworld")
                                                     .executes(ctx -> this.executePowCommand(ctx, "admin", "loadworld")))
                                                     .then(
@@ -750,11 +766,153 @@ public class BrigadierCommands {
                                                     )
                                     )
                     )
+                    .then(this.buildAbilitySubcommand())
+                    .then(this.buildFaeDealSubcommand())
                     .executes(ctx -> this.executePowCommand(ctx, "help")))
                     .build(),
             "VampireSMP main command",
             List.of("vampiresmp", "vsmp")
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Subcommands added alongside the turn-lock / fae / fading features.
+  //
+  // /pow is registered through Brigadier, so a subcommand that only exists in
+  // PowCommand's own switch is unreachable — it has to be declared here too.
+  // ---------------------------------------------------------------------------
+
+  private CompletableFuture<Suggestions> suggestFrom(SuggestionsBuilder builder, List<String> options) {
+    String remaining = builder.getRemainingLowerCase();
+    for (String option : options) {
+      if (option.toLowerCase().startsWith(remaining)) {
+        builder.suggest(option);
+      }
+    }
+    return builder.buildFuture();
+  }
+
+  /** {@code /pow ability [list|check|allow|deny|enable|disable]} */
+  private LiteralArgumentBuilder<CommandSourceStack> buildAbilitySubcommand() {
+    return Commands.literal("ability")
+            .executes(ctx -> this.executePowCommand(ctx, "ability"))
+            .then(Commands.literal("list").executes(ctx -> this.executePowCommand(ctx, "ability", "list")))
+            .then(Commands.literal("enable").executes(ctx -> this.executePowCommand(ctx, "ability", "enable")))
+            .then(Commands.literal("disable").executes(ctx -> this.executePowCommand(ctx, "ability", "disable")))
+            .then(Commands.literal("check")
+                    .executes(ctx -> this.executePowCommand(ctx, "ability", "check"))
+                    .then(Commands.argument("player", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                            .executes(ctx -> this.executePowCommand(ctx, "ability", "check",
+                                    StringArgumentType.getString(ctx, "player")))))
+            .then(Commands.literal("allow")
+                    .then(Commands.argument("ability", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestFrom(builder, TOME_ABILITIES))
+                            .executes(ctx -> this.executePowCommand(ctx, "ability", "allow",
+                                    StringArgumentType.getString(ctx, "ability")))))
+            .then(Commands.literal("deny")
+                    .then(Commands.argument("ability", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestFrom(builder, TOME_ABILITIES))
+                            .executes(ctx -> this.executePowCommand(ctx, "ability", "deny",
+                                    StringArgumentType.getString(ctx, "ability")))));
+  }
+
+  /** {@code /pow faedeal ...} — fae-only, gated in FaeDealCommand rather than here. */
+  private LiteralArgumentBuilder<CommandSourceStack> buildFaeDealSubcommand() {
+    return Commands.literal("faedeal")
+            .executes(ctx -> this.executePowCommand(ctx, "faedeal"))
+            .then(Commands.literal("bargains").executes(ctx -> this.executePowCommand(ctx, "faedeal", "bargains")))
+            .then(Commands.literal("vampire")
+                    .then(Commands.argument("player", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                            .then(Commands.argument("stage", IntegerArgumentType.integer(1, 3))
+                                    .executes(ctx -> this.executePowCommand(ctx, "faedeal", "vampire",
+                                            StringArgumentType.getString(ctx, "player"),
+                                            String.valueOf(IntegerArgumentType.getInteger(ctx, "stage"))))
+                                    .then(Commands.argument("breakOnFaePermadeath", BoolArgumentType.bool())
+                                            .executes(ctx -> this.executePowCommand(ctx, "faedeal", "vampire",
+                                                    StringArgumentType.getString(ctx, "player"),
+                                                    String.valueOf(IntegerArgumentType.getInteger(ctx, "stage")),
+                                                    String.valueOf(BoolArgumentType.getBool(ctx, "breakOnFaePermadeath"))))))))
+            .then(Commands.literal("release")
+                    .then(Commands.argument("player", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                            .executes(ctx -> this.executePowCommand(ctx, "faedeal", "release",
+                                    StringArgumentType.getString(ctx, "player")))))
+            .then(this.buildTurnLockSubcommand("canturn", "faedeal"))
+            .then(this.buildTurnLockSubcommand("canbeturned", "faedeal"))
+            .then(this.buildTurnLocksStatusSubcommand("faedeal"))
+            .then(this.buildDeathCounterSubcommand("deaths", "faedeal"))
+            .then(this.buildDeathCounterSubcommand("hearts", "faedeal"));
+  }
+
+  /** {@code /pow admin fae <player> [add|remove|status]} and {@code /pow admin fae list}. */
+  private LiteralArgumentBuilder<CommandSourceStack> buildAdminFaeSubcommand() {
+    return Commands.literal("fae")
+            .executes(ctx -> this.executePowCommand(ctx, "admin", "fae"))
+            .then(Commands.literal("list").executes(ctx -> this.executePowCommand(ctx, "admin", "fae", "list")))
+            .then(Commands.argument("player", StringArgumentType.word())
+                    .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                    .executes(ctx -> this.executePowCommand(ctx, "admin", "fae",
+                            StringArgumentType.getString(ctx, "player")))
+                    .then(Commands.argument("action", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestFrom(builder, Arrays.asList("add", "remove", "status")))
+                            .executes(ctx -> this.executePowCommand(ctx, "admin", "fae",
+                                    StringArgumentType.getString(ctx, "player"),
+                                    StringArgumentType.getString(ctx, "action")))));
+  }
+
+  /**
+   * {@code canturn} / {@code canbeturned}, shared by the admin tree and {@code /pow faedeal}.
+   *
+   * @param prefix "admin" or "faedeal" — the leading argument PowCommand dispatches on.
+   */
+  private LiteralArgumentBuilder<CommandSourceStack> buildTurnLockSubcommand(String literal, String prefix) {
+    return Commands.literal(literal)
+            .then(Commands.argument("player", StringArgumentType.word())
+                    .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                    .then(Commands.argument("species", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestFrom(builder, FAE_SPECIES))
+                            .executes(ctx -> this.executePowCommand(ctx, prefix, literal,
+                                    StringArgumentType.getString(ctx, "player"),
+                                    StringArgumentType.getString(ctx, "species")))
+                            .then(Commands.argument("action", StringArgumentType.word())
+                                    .suggests((ctx, builder) -> this.suggestFrom(builder, Arrays.asList("allow", "deny", "status")))
+                                    .executes(ctx -> this.executePowCommand(ctx, prefix, literal,
+                                            StringArgumentType.getString(ctx, "player"),
+                                            StringArgumentType.getString(ctx, "species"),
+                                            StringArgumentType.getString(ctx, "action"))))));
+  }
+
+  private LiteralArgumentBuilder<CommandSourceStack> buildTurnLocksStatusSubcommand(String prefix) {
+    return Commands.literal("turnlocks")
+            .then(Commands.argument("player", StringArgumentType.word())
+                    .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                    .executes(ctx -> this.executePowCommand(ctx, prefix, "turnlocks",
+                            StringArgumentType.getString(ctx, "player"))));
+  }
+
+  /** {@code deaths} / {@code hearts} — same counter, different verbs. */
+  private LiteralArgumentBuilder<CommandSourceStack> buildDeathCounterSubcommand(String literal, String prefix) {
+    List<String> actions = literal.equals("hearts")
+            ? Arrays.asList("get", "give", "take")
+            : Arrays.asList("get", "set", "add", "remove");
+
+    return Commands.literal(literal)
+            .then(Commands.argument("player", StringArgumentType.word())
+                    .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                    .executes(ctx -> this.executePowCommand(ctx, prefix, literal,
+                            StringArgumentType.getString(ctx, "player")))
+                    .then(Commands.argument("action", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestFrom(builder, actions))
+                            .executes(ctx -> this.executePowCommand(ctx, prefix, literal,
+                                    StringArgumentType.getString(ctx, "player"),
+                                    StringArgumentType.getString(ctx, "action")))
+                            .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                    .executes(ctx -> this.executePowCommand(ctx, prefix, literal,
+                                            StringArgumentType.getString(ctx, "player"),
+                                            StringArgumentType.getString(ctx, "action"),
+                                            String.valueOf(IntegerArgumentType.getInteger(ctx, "amount")))))));
   }
 
   private LiteralArgumentBuilder<CommandSourceStack> buildBeaconSubcommand() {

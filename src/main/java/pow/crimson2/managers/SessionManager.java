@@ -416,6 +416,9 @@ public class SessionManager {
       this.plugin.getVampireAbilityManager().clearAllCooldownsForNewSession();
       this.freezeTick();
       this.plugin.getTomeDistributionManager().stopDistributionTask();
+      if (this.plugin.getFadeManager() != null) {
+         this.plugin.getFadeManager().resetAll();
+      }
       this.broadcastMessage("§c§lSESSION ENDED! §cThe SMP session has concluded. See you next time!");
    }
 

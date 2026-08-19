@@ -209,6 +209,23 @@ public class DeathHandler implements Listener {
    public void onPlayerDeath(PlayerDeathEvent event) {
       Player victim = event.getEntity();
       Player killer = victim.getKiller();
+
+      if (victim.getScoreboardTags().contains("CommandPermakillPending")) {
+         String kind = this.vampireManager.isVampire(victim) ? "vampire" : "human";
+         event.setDeathMessage("§4" + victim.getName() + " chose permanent death as a " + kind + ".");
+         victim.removeScoreboardTag("CommandPermakillPending");
+      }
+
+      // Ordinary death never breaks a bargain. Life-bound bargains are handled by the permanent
+      // death pipeline so staking and command permakills cannot bypass the rule.
+      if (this.plugin.getFaeManager() != null) {
+         this.plugin.getFaeManager().onFaeDeath(victim, false);
+      }
+
+      // Dying snaps you back to fully visible — a corpse should not stay half-faded.
+      if (this.plugin.getFadeManager() != null) {
+         this.plugin.getFadeManager().reset(victim);
+      }
       UUID trackedKillerUUID = this.woodenStakeKills.remove(victim.getUniqueId());
       if (trackedKillerUUID != null && killer == null) {
          Player trackedKiller = this.plugin.getServer().getPlayer(trackedKillerUUID);
@@ -277,7 +294,12 @@ public class DeathHandler implements Listener {
       if (this.vampireManager.isVampire(victim)) {
          int woodenStakeThreshold = this.plugin.getConfigManager().getPermadeathMinimumStage();
          int victimStage = this.vampireManager.getVampireStage(victim);
-         if (victimStage <= woodenStakeThreshold && killedWithWoodenWeapon) {
+         // A fae bargain makes you stakeable at whatever stage you were pinned to, so a stage 2
+         // or 3 bargain is not a free ride past the normal stake threshold.
+         boolean faeStakeable = this.plugin.getFaeManager() != null
+            && this.plugin.getFaeManager().hasDeal(victim)
+            && this.plugin.getConfigManager().isFaeStakingIgnoresMinimumStage();
+         if ((victimStage <= woodenStakeThreshold || faeStakeable) && killedWithWoodenWeapon) {
             victim.addScoreboardTag("PermaKilled");
             killer.sendMessage("§4You have permanently killed the vampire " + victim.getName() + "!");
             this.createVampireDeathEffects(victim.getLocation());

@@ -17,6 +17,7 @@ import org.bukkit.Material;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import pow.crimson2.VampireSMPPlugin;
+import pow.crimson2.managers.TurnLockManager;
 import pow.crimson2.managers.VampireManager;
 
 public class WerewolfBitingListener implements Listener {
@@ -79,6 +80,20 @@ public class WerewolfBitingListener implements Listener {
       // Cannot bite other werewolves
       if (this.vampireManager.isWerewolf(victim)) {
          biter.sendMessage("§6You cannot turn another beast.");
+         event.setCancelled(true);
+         return;
+      }
+
+      // Admin turn locks — checked before a session starts so the biter gets told immediately
+      // rather than wasting the full channel and failing at the end.
+      TurnLockManager locks = this.plugin.getTurnLockManager();
+      if (!locks.canTurn(biter, TurnLockManager.Species.WEREWOLF)) {
+         biter.sendMessage("§6Your curse refuses to pass on. You cannot infect anyone.");
+         event.setCancelled(true);
+         return;
+      }
+      if (!locks.canBeTurned(victim, TurnLockManager.Species.WEREWOLF)) {
+         biter.sendMessage("§6" + victim.getName() + " will not take the curse. Something in them resists.");
          event.setCancelled(true);
          return;
       }
@@ -183,6 +198,14 @@ public class WerewolfBitingListener implements Listener {
       if (biter == null || victim == null) return;
       if (!biter.isOnline() || !victim.isOnline()) return;
       if (this.vampireManager.isWerewolf(victim)) return;
+
+      // Re-check the locks: one may have been applied while the bite was channelling.
+      TurnLockManager locks = this.plugin.getTurnLockManager();
+      if (locks.isTurnBlocked(biter, victim, TurnLockManager.Species.WEREWOLF)) {
+         biter.sendMessage("§6The curse slips away at the last moment. The infection fails.");
+         victim.sendMessage("§6You feel the beast recede. Whatever took hold of you has passed.");
+         return;
+      }
 
       this.vampireManager.setPlayerAsWerewolf(victim, 1);
       victim.addPotionEffect(new org.bukkit.potion.PotionEffect(

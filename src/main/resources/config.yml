@@ -69,6 +69,72 @@ messages:
 
 
 # ============================================================================
+# ABILITIES THAT SURVIVE THE TURN
+# ============================================================================
+# Normally being turned into a vampire strips every tome ability the player had — the
+# tome_ability_* tags are deleted outright. This section lets named abilities live through it.
+# Manage it in-game with /pow ability.
+allow:
+  use:
+    after:
+      turned:
+        # Master switch. With this false nothing below has any effect.
+        enabled: false
+
+        # Abilities that keep working after the player is turned.
+        # Use the exact ability name, or a single "*" entry to mean every ability.
+        #   abilities: ["Blessing", "StopTheBleeding"]
+        #   abilities: ["*"]
+        abilities: []
+
+        # Keep the tome_ability_* tag through the turn. This must be true for the above to do
+        # anything — with it false the tag is deleted on turning and the ability is gone for good,
+        # even if the name is on the allow-list.
+        keep-on-turn: true
+
+        # Turned players may also carry the physical tome books. Off by default: keeping the
+        # ability is one thing, but tomes searing a vampire's hands is a separate flavour rule.
+        allow-tome-items: false
+
+
+# ============================================================================
+# FAE — BARGAINS
+# ============================================================================
+# A fae is a player tagged with /pow admin fae <player>. The tag grants nothing on its own; it
+# unlocks /pow faedeal, where a fae can pin a human into a vampire stage of their choosing.
+fae:
+  enabled: true
+
+  # Which stages a fae may pin someone to.
+  allowed-stages: [1, 2, 3]
+
+  # Bargains survive the fae by default. Pass true as the final argument to
+  # /pow faedeal vampire <player> <stage> true to bind that deal to the fae's permanent life.
+
+  # When a bargain breaks, does the bound vampire turn back into a human?
+  # false leaves them a vampire but frees them from the locked stage.
+  revert-to-human-on-break: true
+
+  # Also tag reverted players as CuredVampire. That tag makes a vampire kill permanent for them
+  # instead of re-turning them, so this is a significant buff to the freed player — off by default.
+  mark-as-cured-on-break: false
+
+  # Fae-turned vampires cannot sire anyone themselves (applies the no_vampire_turn lock).
+  turned-cannot-turn: true
+
+  # Fae-turned vampires can be staked to death at their locked stage, ignoring
+  # combat.permadeath-minimum-stage. This is what makes a high-stage bargain a real risk.
+  staking-ignores-minimum-stage: true
+
+  # Announce to the server when a fae's death unravels their bargains.
+  broadcast-on-break: true
+
+  # Whether /pow faedeal deaths|hearts|canturn|canbeturned|turnlocks may target anyone,
+  # or only players the fae has an active bargain with.
+  subcommands-target-any-player: true
+
+
+# ============================================================================
 # CHAT SYSTEM
 # ============================================================================
 chat:
@@ -396,6 +462,39 @@ abilities:
       shield-ticks: 120
       vampire-weaken-ticks: 100
       knockback: 1.2
+    # Fading: ease your own opacity between solid and gone.
+    #   /pow tome fading          - toggle between 100 and minimum-opacity
+    #   /pow tome fading <0-100>  - ease to a specific opacity
+    # Requires the compatibility mod to render; the server only applies real invisibility.
+    fading:
+      enabled: true
+      # Deliberately 0 — Fading has no cooldown, no time limit, and nothing interrupts it.
+      cooldown: 0
+      # Opacity units per second while easing toward the target. 100 = effectively instant.
+      fade-speed: 25
+      # At or below this opacity the player also gets real INVISIBILITY (mobs lose them).
+      invisible-at: 0
+      # Floor on how far anyone may thin out. Raise above 0 to forbid vanishing completely.
+      minimum-opacity: 0
+      # Snap back to fully visible on login, so a crash mid-fade cannot strand someone invisible.
+      reset-on-join: true
+      # Block use outside an active session.
+      require-session: true
+    # Scrying: point the vampire indicator arrow at another player for a while.
+    # A target name is required: /pow tome scrying <player>
+    # (To keep it out of chest/vault loot, comment it out of tome-chest-items.tomes-available.)
+    scrying:
+      enabled: true
+      cooldown: 180
+      # How long the arrow stays on the action bar.
+      duration-seconds: 20
+      # Furthest the target may be when the ability is cast. 0 = no limit.
+      # The arrow itself keeps working past this once it has started.
+      max-range: 0
+      # Restrict scrying to vampires only. false lets a hunter track any player by name.
+      vampires-only: false
+      # Tell the target they are being scryed, so it is not a free one-sided wallhack.
+      notify-target: true
     # Hunter's Mark: make a looked-at vampire glow for everyone.
     huntersmark:
       enabled: true
@@ -419,8 +518,8 @@ abilities:
       particles-per-tick: 28    # particles sprayed per tick
       damage: 4.0               # damage dealt every 4 ticks to targets in cone
       fire-ticks: 100           # ticks targets are set on fire (100 = 5 seconds)
-    # Blue Fire Breath: soul flame variant, longer range and tighter cone.
-    bluefirebreath:
+    # Magic Fire Breath: magic-flame variant, longer range and tighter cone.
+    magicfirebreath:
       cooldown: 900             # seconds (default: 15 minutes)
       range: 12.0               # length of the cone in blocks
       cone-angle: 28.0          # half-angle of the cone in degrees
@@ -564,6 +663,8 @@ tome-chest-items:
   - CleansingSmoke
   - HuntersMark
   - LastVigil
+  - Scrying
+  - Fading
 
   # Which enchantments and their level will spawn in the tome chests.
   # If this list is empty, the default is used.
@@ -665,6 +766,21 @@ combat:
   # HP penalty subtracted per death for humans under beacon majority bonus.
   # Default: 2.0 (1 heart per death)
   human-death-hp-penalty: 2.0
+
+  # Death count at or above which being killed by a vampire is PERMANENT, regardless of the
+  # victim's own /pow permadeath setting.
+  # Admins can move a player toward or away from this line with:
+  #   /pow admin deaths <player> <add|remove> <n>   (or the hearts alias)
+  # Keep this at or below human-death-score-cap, or it can never be reached.
+  # Default: 5
+  vampire-kill-permadeath-threshold: 5
+
+  # Whether the threshold above applies to EVERY vampire kill.
+  # true  - 5+ deaths means a vampire kill is always permanent.
+  # false - legacy behaviour: the threshold is only checked when the killing vampire has
+  #         turning switched off; with turning on, the victim is turned into a vampire instead.
+  # Default: true
+  vampire-kill-permadeath-always: true
 
   # Maximum vampire stage that can be staked for permadeath
   # Vampires at this stage or BELOW can be perma-killed by wooden stakes

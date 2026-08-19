@@ -95,6 +95,12 @@ public class TomeVampireRestrictionListener implements Listener {
    }
 
    private boolean isRestrictedVampire(Player player) {
+      // allow.use.after.turned.allow-tome-items lets turned players carry the books as well as
+      // use the abilities; without it they keep the ability but the tome still burns them.
+      if (this.plugin.getConfigManager().isAllowUseAfterTurned()
+            && this.plugin.getConfigManager().isAllowTomeItemsAfterTurned()) {
+         return false;
+      }
       return this.vampireManager.isVampireStage2(player) || this.vampireManager.isVampireStage3(player);
    }
 

@@ -42,6 +42,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
    private final TomeManager tomeManager;
    private final pow.crimson2.config.ConfigEditor configEditor;
    private final PermakillCommand permakillCommand;
+   private final TurnLockCommand turnLockCommand;
+   private final DeathCounterCommand deathCounterCommand;
+   private final FaeCommand faeCommand;
 
    public CommandHandler(VampireSMPPlugin plugin, SessionManager sessionManager, VampireManager vampireManager) {
       this.plugin = plugin;
@@ -52,6 +55,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       this.tomeManager = plugin.getTomeManager();
       this.configEditor = new pow.crimson2.config.ConfigEditor(plugin);
       this.permakillCommand = new PermakillCommand(plugin);
+      this.turnLockCommand = new TurnLockCommand(plugin);
+      this.deathCounterCommand = new DeathCounterCommand(plugin);
+      this.faeCommand = new FaeCommand(plugin);
    }
 
    public pow.crimson2.config.ConfigEditor getConfigEditor() {
@@ -134,6 +140,25 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          return this.handleReloadConfig(sender, args);
       } else if (command.getName().equalsIgnoreCase("config")) {
          return this.configEditor.handle(sender, args);
+      } else if (command.getName().equalsIgnoreCase("fadestatus")) {
+         if (this.plugin.getFadeManager() == null) {
+            sender.sendMessage("§cFade manager is not available.");
+            return true;
+         }
+         this.plugin.getFadeManager().printStatus(sender);
+         return true;
+      } else if (command.getName().equalsIgnoreCase("fae")) {
+         return this.faeCommand.handle(sender, args);
+      } else if (command.getName().equalsIgnoreCase("canturn")) {
+         return this.turnLockCommand.handle(sender, args, true);
+      } else if (command.getName().equalsIgnoreCase("canbeturned")) {
+         return this.turnLockCommand.handle(sender, args, false);
+      } else if (command.getName().equalsIgnoreCase("turnlocks")) {
+         return this.turnLockCommand.handleStatus(sender, args);
+      } else if (command.getName().equalsIgnoreCase("deaths")) {
+         return this.deathCounterCommand.handle(sender, args, false);
+      } else if (command.getName().equalsIgnoreCase("hearts")) {
+         return this.deathCounterCommand.handle(sender, args, true);
       } else if (command.getName().equalsIgnoreCase("permakill")) {
          this.permakillCommand.adminPermakill(sender, args.length > 0 ? args[0] : null);
          return true;
@@ -1201,6 +1226,20 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             sender.sendMessage("§c" + turner.getName() + " is not a vampire. Only vampires can turn humans.");
             return true;
          }
+      }
+
+      // Respect the admin turn locks rather than silently overriding them — an admin who really
+      // wants this can clear the lock first.
+      TurnLockManager locks = this.plugin.getTurnLockManager();
+      if (!locks.canBeTurned(target, TurnLockManager.Species.VAMPIRE)) {
+         sender.sendMessage("§c" + target.getName() + " is locked against being turned into a vampire.");
+         sender.sendMessage("§7Clear it with §e/pow admin canbeturned " + target.getName() + " vampire allow");
+         return true;
+      }
+      if (turner != null && !locks.canTurn(turner, TurnLockManager.Species.VAMPIRE)) {
+         sender.sendMessage("§c" + turner.getName() + " is locked against turning others into vampires.");
+         sender.sendMessage("§7Clear it with §e/pow admin canturn " + turner.getName() + " vampire allow");
+         return true;
       }
 
       this.plugin.getVampireManager().performVampireTurning(target, turner);

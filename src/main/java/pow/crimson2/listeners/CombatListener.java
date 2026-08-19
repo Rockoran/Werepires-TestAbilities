@@ -28,6 +28,7 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import pow.crimson2.VampireSMPPlugin;
 import pow.crimson2.managers.BeetrootManager;
+import pow.crimson2.managers.TurnLockManager;
 import pow.crimson2.managers.VampireAbilityManager;
 import pow.crimson2.managers.VampireManager;
 
@@ -273,7 +274,28 @@ public class CombatListener implements Listener {
                               return;
                            }
 
-                           if (!this.plugin.getVampireTurningManager().isTurningEnabled(attacker)) {
+                           // Death-count rule: at or above the threshold, a vampire kill is permanent
+                           // regardless of the victim's own permadeath preference AND regardless of
+                           // whether the attacker has turning enabled. Set
+                           // combat.vampire-kill-permadeath-always to false for the old behaviour,
+                           // where this was only reached when the attacker had turning switched off.
+                           if (this.plugin.getConfigManager().isVampireKillPermadeathAlways()
+                                 && this.isAtPermadeathThreshold(victim)) {
+                              event.setCancelled(true);
+                              attacker.sendMessage("§4You watch the light of " + victim.getName() + "'s eyes fade, and extinguish. Lost forever.");
+                              victim.sendMessage(
+                                 "§7The world grows dim, blurry, you feel a darkness reach out, offering you one last chance to live, as a creature of the night... But you refuse... And slip under the veil of the afterlife."
+                              );
+                              victim.addScoreboardTag("PermadeathChosen");
+                              int killThirst = this.plugin.getThirstManager().getKillThirstReward(attacker, victim);
+                              this.plugin.getThirstManager().modifyQuench(attacker, killThirst, true);
+                              Player finalVictim = victim;
+                              this.plugin.getServer().getScheduler().runTask(this.plugin, () -> finalVictim.setHealth(0.0));
+                              return;
+                           }
+
+                           if (!this.plugin.getVampireTurningManager().isTurningEnabled(attacker)
+                                 || this.plugin.getTurnLockManager().isTurnBlocked(attacker, victim, TurnLockManager.Species.VAMPIRE)) {
                               event.setCancelled(true);
 
                               try {
@@ -281,7 +303,7 @@ public class CombatListener implements Listener {
                                  Objective deathObjective = mainScoreboard.getObjective("vsmp_death");
                                  if (deathObjective != null) {
                                     int currentDeaths = deathObjective.getScore(victim.getName()).getScore();
-                                    if (currentDeaths >= 5) {
+                                    if (currentDeaths >= this.plugin.getConfigManager().getVampireKillPermadeathThreshold()) {
                                        attacker.sendMessage("§4You watch the light of " + victim.getName() + "'s eyes fade, and extinguish. Lost forever.");
                                        victim.sendMessage(
                                           "§7The world grows dim, blurry, you feel a darkness reach out, offering you one last chance to live, as a creature of the night... But you refuse... And slip under the veil of the afterlife."
@@ -377,7 +399,11 @@ public class CombatListener implements Listener {
                         if (victim.getHealth() - finalDamage <= 0.0) {
                            int vampireStage = this.vampireManager.getVampireStage(victim);
                            int maximumStakeableStage = this.plugin.getConfigManager().getPermadeathMinimumStage();
-                           boolean canBeStaked = killedWithWoodenSword && vampireStage <= maximumStakeableStage;
+                           // Fae-bargain vampires are stakeable at their locked stage.
+                           boolean faeStakeable = this.plugin.getFaeManager() != null
+                              && this.plugin.getFaeManager().hasDeal(victim)
+                              && this.plugin.getConfigManager().isFaeStakingIgnoresMinimumStage();
+                           boolean canBeStaked = killedWithWoodenSword && (vampireStage <= maximumStakeableStage || faeStakeable);
                            if (!killedWithIronWeapon && !canBeStaked) {
                               event.setCancelled(true);
                               victim.setHealth(1.0);
@@ -474,6 +500,22 @@ public class CombatListener implements Listener {
 
    private boolean isBareFist(ItemStack item) {
       return item == null || item.getType() == Material.AIR;
+   }
+
+   /** True if the player's recorded deaths have reached the vampire-kill permadeath threshold. */
+   private boolean isAtPermadeathThreshold(Player player) {
+      try {
+         Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+         Objective deathObjective = mainScoreboard.getObjective("vsmp_death");
+         if (deathObjective != null) {
+            int deaths = deathObjective.getScore(player.getName()).getScore();
+            return deaths >= this.plugin.getConfigManager().getVampireKillPermadeathThreshold();
+         }
+      } catch (Exception e) {
+         this.plugin.getLogger().warning("Failed to check death count for " + player.getName() + ": " + e.getMessage());
+      }
+
+      return false;
    }
 
    private boolean isSwordOrAxe(ItemStack item) {
