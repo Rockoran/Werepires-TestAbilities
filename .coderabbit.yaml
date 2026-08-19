@@ -1,0 +1,78 @@
+# CodeRabbit configuration — Werepires-TestAbilities
+# Docs: https://docs.coderabbit.ai/guides/configure-coderabbit
+
+language: en-US
+early_access: false
+
+reviews:
+  profile: chill              # assertive produces a lot of noise on decompiled sources
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: false
+  poem: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - breaking
+
+  # Keep review focused on hand-written source. Everything below is either generated,
+  # vendored, binary, or a duplicate tree — reviewing it wastes budget and buries real findings.
+  path_filters:
+    # Duplicated source snapshot committed 2026-07-31 — a second copy of ~138 java files.
+    # Without this, every finding appears twice.
+    - "!_source-backup_2026-06-05_015244/**"
+
+    # Reference copy of the compat mod's patched files. The real project lives in
+    # Rockoran/WerePires-SkinShuffle-Compat; this folder is not buildable.
+    - "!skinshuffle-compat/**"
+
+    # Generated / build output
+    - "!graphify-out/**"
+    - "!target/**"
+    - "!testbuilds/**"
+    - "!.idea/**"
+
+    # Binaries and assets
+    - "!**/*.jar"
+    - "!**/*.zip"
+    - "!**/*.class"
+    - "!**/*.png"
+    - "!**/*.mcmeta"
+    - "!Important Jar Files/**"
+    - "!CustomPowTextures/**"
+    - "!WerewolfCustomPowTextures/**"
+    - "!textures/**"
+
+    # Machine-generated world configs (~28 KB each, no hand-written logic)
+    - "!src/main/resources/worlds/**"
+
+  path_instructions:
+    - path: "src/main/java/**/*.java"
+      instructions: >
+        Paper plugin targeting Java 21 at runtime (pom says source/target 17, but
+        paper-api 1.21.10 ships Java 21 bytecode, so 17 cannot actually build it).
+
+        Large parts of this tree are DECOMPILED, not hand-written — leftover names like
+        `var11`/`var13`, redundant `this.` qualifiers, and unusual formatting are artifacts.
+        Do not raise style, naming or formatting comments on them. Focus on real defects:
+        null-safety, concurrency, resource leaks, incorrect control flow, and Bukkit API
+        misuse (main-thread violations, unregistered listeners/channels, scheduler misuse).
+
+        Adding a `/pow` subcommand requires TWO files: the handler in PowCommand or
+        CommandHandler, AND a Brigadier literal in BrigadierCommands. A subcommand present
+        in only one of them is unreachable — flag it.
+
+        Player state is stored in scoreboard tags. Note that some manager state (e.g.
+        VampireManager.stageCaps) is an in-memory map that does NOT survive a restart;
+        flag anything that assumes such state persists.
+
+    - path: "src/main/resources/config.yml"
+      instructions: >
+        Every key here should have a matching getter in ConfigManager and an explanatory
+        comment. Flag new keys added without either. Coordinates and world-specific values
+        belong in a server's own config, not in shipped defaults.
+chat:
+  auto_reply: true
