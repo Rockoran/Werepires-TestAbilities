@@ -14,7 +14,7 @@ import pow.crimson2.VampireSMPPlugin;
 /**
  * Simple Voice Chat add-on for the ghost/haunt voice mechanic.
  *
- * <p>When a haunting ghost speaks while {@link GhostModeManager#getHauntTarget(UUID)} is set,
+ * <p>When a haunting ghost speaks while {@link GhostModeManager#getHauntTargets(UUID)} is set,
  * we <b>cancel</b> the normal proximity broadcast (so nobody hears the ghost) and instead
  * <b>relay</b> the audio as a static (non-positional) sound to <i>only</i> the haunt target.
  * The target's own voice is untouched, so they stay fully open to everyone else.</p>
@@ -49,17 +49,20 @@ public class GhostVoicechatPlugin implements VoicechatPlugin {
         if (sender == null || sender.getPlayer() == null) return;
 
         UUID ghostId = sender.getPlayer().getUuid();
-        UUID targetId = ghost.getHauntTarget(ghostId);
-        if (targetId == null) return; // this speaker isn't haunting anyone — normal voice
+        java.util.Set<UUID> targetIds = ghost.getHauntTargets(ghostId);
+        if (targetIds.isEmpty()) return; // this speaker isn't haunting anyone — normal voice
 
-        // The ghost is voice-haunting someone: never let the world hear them.
+        // The ghost is voice-haunting: never let the world hear them.
         if (event.isCancellable()) event.cancel();
 
-        VoicechatConnection target = event.getVoicechat().getConnectionOf(targetId);
-        if (target == null) return; // target offline / not connected to voice chat
-
-        // Relay the exact audio to the target only, as a static (global) sound.
+        // Build the static packet once and relay the same audio to every target, so a ghost can
+        // speak to a group instead of one person at a time. Targets who are offline or not
+        // connected to voice chat are skipped individually rather than aborting the whole relay.
         StaticSoundPacket relay = event.getPacket().toStaticSoundPacket();
-        event.getVoicechat().sendStaticSoundPacketTo(target, relay);
+        for (UUID targetId : targetIds) {
+            VoicechatConnection target = event.getVoicechat().getConnectionOf(targetId);
+            if (target == null) continue;
+            event.getVoicechat().sendStaticSoundPacketTo(target, relay);
+        }
     }
 }

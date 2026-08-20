@@ -64,8 +64,12 @@ public class GhostModeManager implements Listener {
     /** Ghost UUID -> set of player UUIDs they have revealed themselves to. */
     private final Map<UUID, Set<UUID>> revealedTo = new ConcurrentHashMap<>();
 
-    /** Ghost UUID -> the player they are voice-haunting (their speech is relayed only to that player). */
-    private final Map<UUID, UUID> hauntTargets = new ConcurrentHashMap<>();
+    /**
+     * Ghost UUID -> the players they are voice-haunting. Their speech is relayed to every one of
+     * them and to nobody else, so a ghost can hold a conversation with a group rather than being
+     * limited to whispering at one person at a time.
+     */
+    private final Map<UUID, Set<UUID>> hauntTargets = new ConcurrentHashMap<>();
 
     /** Ghost UUID -> saved [viewDistance, simulationDistance] to restore when un-ghosted. */
     private final Map<UUID, int[]> savedDistances = new ConcurrentHashMap<>();
@@ -76,18 +80,38 @@ public class GhostModeManager implements Listener {
 
     // ── Voice haunt target (used by GhostVoicechatPlugin) ───────────────────────
 
-    /** The player this ghost is voice-haunting, or null. */
-    public UUID getHauntTarget(UUID ghostId) {
-        return hauntTargets.get(ghostId);
+    /** Everyone this ghost is voice-haunting. Empty set when they are haunting nobody. */
+    public Set<UUID> getHauntTargets(UUID ghostId) {
+        Set<UUID> targets = hauntTargets.get(ghostId);
+        return targets == null ? java.util.Collections.emptySet() : new java.util.HashSet<>(targets);
     }
 
-    public void setHauntTarget(java.util.UUID ghostId, java.util.UUID targetId) {
-        if (targetId == null) hauntTargets.remove(ghostId);
-        else hauntTargets.put(ghostId, targetId);
+    public boolean isHaunting(UUID ghostId) {
+        Set<UUID> targets = hauntTargets.get(ghostId);
+        return targets != null && !targets.isEmpty();
     }
 
-    public void clearHauntTarget(UUID ghostId) {
-        hauntTargets.remove(ghostId);
+    /** @return true if the target was newly added, false if this ghost already haunted them. */
+    public boolean addHauntTarget(UUID ghostId, UUID targetId) {
+        if (ghostId == null || targetId == null || ghostId.equals(targetId)) return false;
+        return hauntTargets
+                .computeIfAbsent(ghostId, id -> java.util.concurrent.ConcurrentHashMap.newKeySet())
+                .add(targetId);
+    }
+
+    /** @return true if the target was actually being haunted. */
+    public boolean removeHauntTarget(UUID ghostId, UUID targetId) {
+        Set<UUID> targets = hauntTargets.get(ghostId);
+        if (targets == null) return false;
+        boolean removed = targets.remove(targetId);
+        if (targets.isEmpty()) hauntTargets.remove(ghostId);
+        return removed;
+    }
+
+    /** Stop haunting everyone. @return how many targets were released. */
+    public int clearHauntTarget(UUID ghostId) {
+        Set<UUID> targets = hauntTargets.remove(ghostId);
+        return targets == null ? 0 : targets.size();
     }
 
     // ── State ─────────────────────────────────────────────────────────────────
@@ -375,8 +399,9 @@ public class GhostModeManager implements Listener {
         // revealedTo is only cleared in clearGhostState() when ghost mode fully ends.
         hauntTargets.remove(quitId);
         savedDistances.remove(quitId); // distances reset on disconnect; drop the stale entry
-        // Also stop anyone haunting the player who just left.
-        hauntTargets.values().removeIf(quitId::equals);
+        // Also stop anyone haunting the player who just left, and prune ghosts left with nobody.
+        hauntTargets.values().forEach(targets -> targets.remove(quitId));
+        hauntTargets.entrySet().removeIf(e -> e.getValue().isEmpty());
     }
 
     // ── Restrictions (only while ghost) ──────────────────────────────────────────
