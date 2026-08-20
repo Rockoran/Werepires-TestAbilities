@@ -90,18 +90,73 @@ public class GhostCommand implements CommandExecutor, TabCompleter {
                 break;
             }
             case "haunt": {
-                if (args.length < 2) { p.sendMessage("§7/ghost haunt <player> §8— whisper to them in voice chat"); return true; }
+                if (args.length < 2) {
+                    p.sendMessage("§7/ghost haunt <player> §8— add them to who hears you");
+                    p.sendMessage("§7/ghost haunt all §8— haunt everyone online");
+                    p.sendMessage("§7/ghost haunt list §8— who you are haunting");
+                    return true;
+                }
+
+                if (args[1].equalsIgnoreCase("list")) {
+                    Set<UUID> haunted = ghost.getHauntTargets(p.getUniqueId());
+                    if (haunted.isEmpty()) {
+                        p.sendMessage("§7You are haunting no one.");
+                    } else {
+                        StringBuilder sb = new StringBuilder("§5Haunting §f");
+                        boolean first = true;
+                        for (UUID id : haunted) {
+                            Player hp = Bukkit.getPlayer(id);
+                            if (hp == null) continue;
+                            if (!first) sb.append("§7, §f");
+                            sb.append(hp.getName());
+                            first = false;
+                        }
+                        p.sendMessage(sb.toString());
+                    }
+                    return true;
+                }
+
+                if (args[1].equalsIgnoreCase("all")) {
+                    int added = 0;
+                    for (Player t2 : Bukkit.getOnlinePlayers()) {
+                        if (t2.equals(p)) continue;
+                        if (ghost.addHauntTarget(p.getUniqueId(), t2.getUniqueId())) {
+                            t2.sendMessage("§5A voice you cannot place whispers at the edge of hearing...");
+                            added++;
+                        }
+                    }
+                    p.sendMessage(added == 0
+                        ? "§7You already haunt everyone here."
+                        : "§5You haunt §f" + added + "§5 more — your voice reaches them all.");
+                    return true;
+                }
+
                 Player t = Bukkit.getPlayerExact(args[1]);
                 if (t == null || t.equals(p)) { p.sendMessage("§7Player not found."); return true; }
-                ghost.setHauntTarget(p.getUniqueId(), t.getUniqueId());
-                p.sendMessage("§5You haunt §f" + t.getName() + "§5 — your voice reaches only them.");
+                if (!ghost.addHauntTarget(p.getUniqueId(), t.getUniqueId())) {
+                    p.sendMessage("§7You already haunt §f" + t.getName() + "§7.");
+                    return true;
+                }
+                int count = ghost.getHauntTargets(p.getUniqueId()).size();
+                p.sendMessage("§5You haunt §f" + t.getName() + "§5 — your voice reaches "
+                    + (count == 1 ? "only them." : "them and §f" + (count - 1) + "§5 other(s)."));
                 t.sendMessage("§5A voice you cannot place whispers at the edge of hearing...");
                 break;
             }
             case "unhaunt":
             case "stop": {
-                ghost.clearHauntTarget(p.getUniqueId());
-                p.sendMessage("§7You release your voice from its target.");
+                if (args.length >= 2) {
+                    Player t = Bukkit.getPlayerExact(args[1]);
+                    if (t == null) { p.sendMessage("§7Player not found."); return true; }
+                    p.sendMessage(ghost.removeHauntTarget(p.getUniqueId(), t.getUniqueId())
+                        ? "§7You release §f" + t.getName() + "§7 from your voice."
+                        : "§7You were not haunting " + t.getName() + ".");
+                    return true;
+                }
+                int released = ghost.clearHauntTarget(p.getUniqueId());
+                p.sendMessage(released == 0
+                    ? "§7You were haunting no one."
+                    : "§7You release your voice from §f" + released + "§7 listener(s).");
                 break;
             }
             case "list": {
@@ -145,11 +200,28 @@ public class GhostCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             out.add("show"); out.add("hide"); out.add("showall"); out.add("hideall");
             out.add("list"); out.add("haunt"); out.add("unhaunt"); out.add("setfree");
-        } else if (args.length == 2
-                && (args[0].equalsIgnoreCase("show") || args[0].equalsIgnoreCase("hide")
-                    || args[0].equalsIgnoreCase("haunt") || args[0].equalsIgnoreCase("setfree"))) {
-            for (Player pl : Bukkit.getOnlinePlayers()) out.add(pl.getName());
+        } else if (args.length == 2) {
+            String sub = args[0].toLowerCase();
+            if (sub.equals("haunt")) {
+                // haunt takes a player, or the two bulk/read verbs
+                out.add("all");
+                out.add("list");
+                for (Player pl : Bukkit.getOnlinePlayers()) if (!pl.equals(sender)) out.add(pl.getName());
+            } else if (sub.equals("unhaunt") || sub.equals("stop")) {
+                // only suggest people this ghost is actually haunting
+                if (sender instanceof Player p) {
+                    for (java.util.UUID id : ghost.getHauntTargets(p.getUniqueId())) {
+                        Player hp = Bukkit.getPlayer(id);
+                        if (hp != null) out.add(hp.getName());
+                    }
+                }
+            } else if (sub.equals("show") || sub.equals("hide") || sub.equals("setfree")) {
+                for (Player pl : Bukkit.getOnlinePlayers()) out.add(pl.getName());
+            }
         }
+
+        String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase();
+        out.removeIf(o -> !o.toLowerCase().startsWith(prefix));
         return out;
     }
 }

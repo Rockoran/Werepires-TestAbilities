@@ -1,5 +1,5 @@
 name: WerePires
-version: 1.15.15
+version: 1.15.16
 main: pow.crimson2.VampireSMPPlugin
 api-version: 1.21.5
 author: PowCreations
@@ -96,8 +96,8 @@ commands:
     usage: /stash_fourth_book <x> <y> <z>
     permission: vampiresmp.admin
   ghost:
-    description: Reveal/conceal yourself, voice-haunt a player, or stop haunting
-    usage: /ghost <show|hide|showall|hideall|list|haunt|unhaunt|stop|setfree> [player]
+    description: Reveal/conceal yourself, voice-haunt one or more players, or stop haunting
+    usage: /ghost <show|hide|showall|hideall|list|haunt|unhaunt|stop|setfree> [player|all|list]
   cellphone:
     description: Open or administer the native cell phone system
     usage: /cellphone [give <player>|open <player>|reload]
