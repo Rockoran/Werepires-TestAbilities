@@ -164,6 +164,15 @@ public class VampireTrackingManager {
       this.activeIndicators.put(viewerId, task);
    }
 
+   /**
+    * True while a directional arrow is running for this viewer (scrying, thrall locate,
+    * findmaster). The session status action bar checks this so it does not stomp the arrow —
+    * both write to the same one-line action bar, and the status task wins by being last.
+    */
+   public boolean hasActiveIndicator(Player viewer) {
+      return viewer != null && this.activeIndicators.containsKey(viewer.getUniqueId());
+   }
+
    private void stopIndicator(UUID viewerId) {
       BukkitTask task = this.activeIndicators.remove(viewerId);
       if (task != null) task.cancel();
