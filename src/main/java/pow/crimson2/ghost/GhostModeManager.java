@@ -249,6 +249,16 @@ public class GhostModeManager implements Listener {
     }
 
     /** Send the ghost toggle to the compat mod over the {@code vsmp:ghost} channel. */
+    /**
+     * Toggle client-side noclip WITHOUT entering full ghost mode — used by the Fading tome's
+     * bypass perk. Real ghosts are skipped: their ghost state owns this channel, and stomping it
+     * here would drop them out of noclip mid-haunt.
+     */
+    public void setExternalNoclip(Player player, boolean active) {
+        if (player == null || isGhost(player)) return;
+        sendGhostState(player, active);
+    }
+
     private void sendGhostState(Player player, boolean active) {
         if (player == null || !player.isOnline()) return;
         try {
