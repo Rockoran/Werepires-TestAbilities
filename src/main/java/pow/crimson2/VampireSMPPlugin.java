@@ -133,6 +133,7 @@ public class VampireSMPPlugin extends JavaPlugin {
    private FaeManager faeManager;
    private FadeManager fadeManager;
    private CooldownBoonManager cooldownBoonManager;
+   private com.tom.cpm.paper.CPMPaperPlugin cpm;
    private VampireSireManager sireManager;
    private ForcedCureChoiceManager forcedCureChoiceManager;
    private InitGameManager initGameManager;
@@ -210,6 +211,16 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.faeManager = new FaeManager(this);
       this.fadeManager = new FadeManager(this);
       this.cooldownBoonManager = new CooldownBoonManager(this);
+
+      // CustomPlayerModels (MIT, tom5454) runs as a component rather than its own plugin —
+      // a jar can only declare one main class. Failure here must not take WerePires down.
+      try {
+         this.cpm = new com.tom.cpm.paper.CPMPaperPlugin(this);
+         this.cpm.onEnable();
+      } catch (Throwable t) {
+         this.cpm = null;
+         this.getLogger().severe("CustomPlayerModels failed to start: " + t);
+      }
       this.sireManager = new VampireSireManager(this);
       this.forcedCureChoiceManager = new ForcedCureChoiceManager(this);
       this.initGameManager = new InitGameManager(this);
@@ -500,6 +511,15 @@ public class VampireSMPPlugin extends JavaPlugin {
 
       if (this.faeManager != null) {
          this.faeManager.shutdown();
+      }
+
+      if (this.cpm != null) {
+         try {
+            this.cpm.onDisable();
+         } catch (Throwable t) {
+            this.getLogger().warning("CustomPlayerModels failed to shut down cleanly: " + t);
+         }
+         this.cpm = null;
       }
 
       if (this.fadeManager != null) {
@@ -844,6 +864,11 @@ public class VampireSMPPlugin extends JavaPlugin {
 
    public CooldownBoonManager getCooldownBoonManager() {
       return this.cooldownBoonManager;
+   }
+
+   /** The embedded CustomPlayerModels instance, or null if it failed to start. */
+   public com.tom.cpm.paper.CPMPaperPlugin getCpm() {
+      return this.cpm;
    }
 
    public VampireSireManager getSireManager() {
