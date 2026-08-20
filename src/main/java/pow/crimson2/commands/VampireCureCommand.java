@@ -180,12 +180,11 @@ public class VampireCureCommand implements CommandExecutor {
       if (this.plugin.getSkinShuffleManager() != null) {
          this.plugin.getSkinShuffleManager().applyCuredSkin(player);
       }
-      holyBeacon.setState(BeaconSite.BeaconState.PERMANENTLY_DESECRATED);
-      this.beaconManager.updateBeaconDisplay(holyBeacon);
-      this.beaconManager.saveBeacons();
-      this.plugin.getBeaconMajorityManager().updateBeaconMajorityBonuses();
-      this.beaconManager.checkAndBroadcastCompleteControl();
-      this.checkIfAllBeaconsEvil();
+      // Shared with the revival ritual so the two rituals cannot drift apart: this also updates
+      // the display, saves, refreshes majority bonuses, and fires Eternal Night if that was the
+      // last holy site.
+      this.beaconManager.setBeaconPermanentlyDesecrated(
+         holyBeacon.getName(), "Cured by " + player.getName());
       if (this.plugin.getVampireTurningManager() != null) {
          this.plugin.getVampireTurningManager().disableAllVampireTurning();
       }
@@ -194,29 +193,4 @@ public class VampireCureCommand implements CommandExecutor {
       DeathHandler.checkAndAnnounceTeamElimination(this.plugin, false, true);
    }
 
-   private void checkIfAllBeaconsEvil() {
-      int evilCount = this.beaconManager.getAllEvilBeacons().size();
-      int totalBeacons = this.beaconManager.getAllBeacons().size();
-      if (evilCount >= totalBeacons && totalBeacons > 0 && !this.plugin.getSessionManager().isVampiresEternalNightActive()) {
-         this.triggerVampiresEternalNight();
-      }
-   }
-
-   private void triggerVampiresEternalNight() {
-      this.plugin.logInfo("VAMPIRES ETERNAL NIGHT TRIGGERED - All beacons are now evil!");
-
-      for (Player player : this.plugin.getServer().getOnlinePlayers()) {
-         player.sendTitle("§4§lETERNAL NIGHT FALLS", "§cThe darkness consumes all hope", 20, 100, 40);
-         player.sendMessage("§c All beacons now pulse with unholy energy.");
-         player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, SoundCategory.MASTER, 1.0F, 0.5F);
-      }
-
-      for (Player player : this.plugin.getServer().getOnlinePlayers()) {
-         if (this.vampireManager.isHuman(player)) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, -1, 0, false, false, true));
-         }
-      }
-
-      this.plugin.getSessionManager().setVampiresEternalNightActive(true);
-   }
 }

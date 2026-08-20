@@ -20,7 +20,7 @@ import pow.crimson2.thralls.BloodBottleManager;
 /**
  * The Rite of Return — a living player who has read all four revival books calls a ghost back to
  * life. Requires: night, a vial of vampire blood (consumed), and a desecrated beacon nearby (which
- * is consumed → reset to neutral). The target ghost must linger within range. The revived soul
+ * is consumed → permanently corrupted). The target ghost must linger within range. The revived soul
  * returns as the configured outcome (revival.outcome: vampire | human | thrall | ghoul).
  */
 public class RevivalCommand implements CommandExecutor {
@@ -105,8 +105,11 @@ public class RevivalCommand implements CommandExecutor {
       if (blood.getAmount() > 1) blood.setAmount(blood.getAmount() - 1);
       else blood.setAmount(0);
 
-      // Consume the desecrated beacon — its corruption is spent.
-      plugin.getBeaconManager().setBeaconNeutral(beacon.getName());
+      // Consume the beacon: the ritual burns it out for good rather than freeing it. Resetting to
+      // neutral handed the site back as contestable ground, which let a single desecrated beacon
+      // be recycled for revival after revival.
+      plugin.getBeaconManager().setBeaconPermanentlyDesecrated(
+         beacon.getName(), "Revival ritual by " + reviver.getName());
 
       // Pull the soul back into the living world.
       plugin.getGhostModeManager().clearGhostState(target);
