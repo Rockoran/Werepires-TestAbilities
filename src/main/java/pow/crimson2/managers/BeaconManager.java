@@ -590,6 +590,37 @@ public class BeaconManager {
       }
    }
 
+   /**
+    * Fire Eternal Night if corrupting this beacon left every site evil.
+    *
+    * <p>The symmetric counterpart to {@link #checkAndDisableEternalNight()}, which lifts it again.
+    * Darkness is applied with infinite duration deliberately: the lift is what removes it, so a
+    * timed effect would expire on its own and leave the two halves out of step.
+    */
+   private void checkAndTriggerEternalNight() {
+      if (this.plugin.getSessionManager().isVampiresEternalNightActive()) return;
+
+      int evilCount = this.getAllEvilBeacons().size();
+      int totalBeacons = this.getAllBeacons().size();
+      if (totalBeacons <= 0 || evilCount < totalBeacons) return;
+
+      this.plugin.logInfo("VAMPIRES ETERNAL NIGHT TRIGGERED - All beacons are now evil!");
+
+      for (Player player : Bukkit.getOnlinePlayers()) {
+         player.sendTitle("§4§lETERNAL NIGHT FALLS", "§cThe darkness consumes all hope", 20, 100, 40);
+         player.sendMessage("§c All beacons now pulse with unholy energy.");
+         player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, SoundCategory.MASTER, 1.0F, 0.5F);
+      }
+
+      for (Player player : Bukkit.getOnlinePlayers()) {
+         if (this.plugin.getVampireManager().isHuman(player)) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, -1, 0, false, false, true));
+         }
+      }
+
+      this.plugin.getSessionManager().setVampiresEternalNightActive(true);
+   }
+
    private void checkAndDisableEternalNight() {
       if (this.plugin.getSessionManager().isVampiresEternalNightActive()) {
          int evilCount = this.getAllEvilBeacons().size();
@@ -659,6 +690,36 @@ public class BeaconManager {
       } else {
          return false;
       }
+   }
+
+   /**
+    * Corrupt a beacon permanently ({@code PERMANENTLY_DESECRATED}).
+    *
+    * <p>Unlike {@link #setBeaconDesecrated(String)} this is a one-way door: humans can never
+    * reclaim it. Used when a ritual consumes a beacon outright — reviving a ghost, or curing a
+    * vampire — rather than merely flipping who currently holds it.
+    *
+    * @param reason recorded as the last change, so the beacon list shows what corrupted it
+    */
+   public boolean setBeaconPermanentlyDesecrated(String name, String reason) {
+      BeaconSite beacon = this.beacons.get(name.toLowerCase());
+      if (beacon == null) {
+         return false;
+      }
+
+      this.cancelPendingNeutralBroadcast(name.toLowerCase());
+      beacon.setState(BeaconSite.BeaconState.PERMANENTLY_DESECRATED);
+      beacon.setLastChangedBy(reason);
+      beacon.setConversionCooldownUntil(0L);
+      this.updateBeaconDisplay(beacon);
+      this.saveBeacons();
+      this.plugin.logInfo("Beacon '" + name + "' permanently desecrated (" + reason + ")");
+      this.plugin.getBeaconMajorityManager().updateBeaconMajorityBonuses();
+      this.broadcastBeaconGainToTeam(beacon, BeaconSite.BeaconState.PERMANENTLY_DESECRATED);
+      this.checkAndBroadcastCompleteControl();
+      this.checkAndDisableHumansFinalStand();
+      this.checkAndTriggerEternalNight();
+      return true;
    }
 
    public boolean setBeaconPrimal(String name) {
