@@ -85,6 +85,7 @@ import pow.crimson2.managers.VampireManager;
 import pow.crimson2.managers.VampireSireManager;
 import pow.crimson2.managers.VampireTexturePackManager;
 import pow.crimson2.managers.VampireTrackingManager;
+import pow.crimson2.managers.CooldownBoonManager;
 import pow.crimson2.managers.FadeManager;
 import pow.crimson2.managers.FaeManager;
 import pow.crimson2.managers.TurnLockManager;
@@ -131,6 +132,7 @@ public class VampireSMPPlugin extends JavaPlugin {
    private TurnLockManager turnLockManager;
    private FaeManager faeManager;
    private FadeManager fadeManager;
+   private CooldownBoonManager cooldownBoonManager;
    private VampireSireManager sireManager;
    private ForcedCureChoiceManager forcedCureChoiceManager;
    private InitGameManager initGameManager;
@@ -207,6 +209,7 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.turnLockManager = new TurnLockManager(this);
       this.faeManager = new FaeManager(this);
       this.fadeManager = new FadeManager(this);
+      this.cooldownBoonManager = new CooldownBoonManager(this);
       this.sireManager = new VampireSireManager(this);
       this.forcedCureChoiceManager = new ForcedCureChoiceManager(this);
       this.initGameManager = new InitGameManager(this);
@@ -837,6 +840,10 @@ public class VampireSMPPlugin extends JavaPlugin {
 
    public FadeManager getFadeManager() {
       return this.fadeManager;
+   }
+
+   public CooldownBoonManager getCooldownBoonManager() {
+      return this.cooldownBoonManager;
    }
 
    public VampireSireManager getSireManager() {

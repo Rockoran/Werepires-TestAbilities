@@ -132,9 +132,13 @@ public abstract class TomeAbility {
    protected void setCooldown(Player player) {
       UUID playerId = player.getUniqueId();
       Map<String, Long> cooldowns = playerCooldowns.computeIfAbsent(playerId, k -> new HashMap<>());
-      long cooldownEnd = System.currentTimeMillis() + this.cooldownSeconds * 1000L;
+      // A fae bargain can shorten this specific player's cooldown on this specific ability.
+      int effective = this.plugin.getCooldownBoonManager() == null
+         ? this.cooldownSeconds
+         : this.plugin.getCooldownBoonManager().applyTo(player, this.name, this.cooldownSeconds);
+      long cooldownEnd = System.currentTimeMillis() + effective * 1000L;
       cooldowns.put(this.getCooldownKey(), cooldownEnd);
-      this.scheduleCooldownNotification(player, this.cooldownSeconds);
+      this.scheduleCooldownNotification(player, effective);
    }
 
    private void scheduleCooldownNotification(Player player, int cooldownSeconds) {

@@ -72,6 +72,10 @@ public class FaeDealCommand implements CommandExecutor {
          case "bargains":
          case "list":
             return this.handleBargains(fae);
+         case "cooldown":
+         case "cooldowns":
+            if (this.gated(fae, rest)) this.handleCooldown(fae, rest);
+            return true;
          case "release":
          case "free":
             return this.handleRelease(fae, rest);
@@ -209,6 +213,118 @@ public class FaeDealCommand implements CommandExecutor {
       return true;
    }
 
+   /**
+    * {@code /pow faedeal cooldown <player> <ability> <percent>} — grant one player a permanent
+    * reduction on one ability's cooldown. {@code <percent> 0} or {@code clear} revokes it.
+    *
+    * <p>The fae picks both the target and the ability, so a bargain can be tailored: a hunter
+    * might trade for faster Blessing, a vampire for a shorter Lunge.
+    */
+   private boolean handleCooldown(Player fae, String[] args) {
+      pow.crimson2.managers.CooldownBoonManager boons = this.plugin.getCooldownBoonManager();
+      if (boons == null) {
+         fae.sendMessage("§cCooldown bargains are unavailable.");
+         return true;
+      }
+
+      if (args.length < 1) {
+         fae.sendMessage("§cUsage: §e/pow faedeal cooldown <player> <ability> <percent>");
+         fae.sendMessage("§7       §e/pow faedeal cooldown <player> list");
+         fae.sendMessage("§7       §e/pow faedeal cooldown <player> clear [ability]");
+         return true;
+      }
+
+      Player target = Bukkit.getPlayerExact(args[0]);
+      if (target == null) {
+         fae.sendMessage("§cPlayer '" + args[0] + "' is not online.");
+         return true;
+      }
+
+      String action = args.length >= 2 ? args[1].toLowerCase() : "list";
+
+      if (action.equals("list")) {
+         java.util.Map<String, Integer> owned = boons.getBoons(target);
+         fae.sendMessage("§6§l=== Cooldown bargains: " + target.getName() + " ===");
+         if (owned.isEmpty()) {
+            fae.sendMessage("§7None.");
+         } else {
+            for (java.util.Map.Entry<String, Integer> e : owned.entrySet()) {
+               fae.sendMessage("§d  " + e.getKey() + " §7— §f-" + e.getValue() + "%");
+            }
+         }
+         return true;
+      }
+
+      if (action.equals("clear")) {
+         if (args.length >= 3) {
+            String resolved = boons.resolve(args[2]);
+            String name = resolved != null ? resolved : args[2];
+            if (boons.revoke(target, name)) {
+               fae.sendMessage("§dRevoked " + target.getName() + "'s bargain on §f" + name + "§d.");
+               target.sendMessage("§7The ease you felt using " + name + " drains away.");
+            } else {
+               fae.sendMessage("§7" + target.getName() + " has no bargain on '" + args[2] + "'.");
+            }
+         } else {
+            int n = boons.revokeAll(target);
+            fae.sendMessage(n == 0
+               ? "§7" + target.getName() + " holds no cooldown bargains."
+               : "§dRevoked all §f" + n + "§d cooldown bargain(s) from " + target.getName() + ".");
+            if (n > 0) target.sendMessage("§7Every bargain you struck for haste is undone.");
+         }
+         return true;
+      }
+
+      // grant: <player> <ability> <percent>
+      if (args.length < 3) {
+         fae.sendMessage("§cUsage: §e/pow faedeal cooldown <player> <ability> <percent>");
+         return true;
+      }
+
+      String ability = boons.resolve(args[1]);
+      if (ability == null) {
+         fae.sendMessage("§cUnknown ability '" + args[1] + "'. Tab-complete for the full list.");
+         return true;
+      }
+
+      int percent;
+      try {
+         percent = Integer.parseInt(args[2]);
+      } catch (NumberFormatException e) {
+         fae.sendMessage("§c'" + args[2] + "' is not a percentage.");
+         return true;
+      }
+
+      if (percent <= 0) {
+         if (boons.revoke(target, ability)) {
+            fae.sendMessage("§dRevoked " + target.getName() + "'s bargain on §f" + ability + "§d.");
+         } else {
+            fae.sendMessage("§7" + target.getName() + " has no bargain on " + ability + ".");
+         }
+         return true;
+      }
+
+      if (percent > pow.crimson2.managers.CooldownBoonManager.MAX_PERCENT) {
+         fae.sendMessage("§7A bargain can shorten a cooldown, never erase it — capping at §f"
+            + pow.crimson2.managers.CooldownBoonManager.MAX_PERCENT + "%§7.");
+      }
+
+      boons.grant(target, ability, percent);
+      int applied = boons.getReduction(target, ability);
+
+      fae.sendMessage("§d§lTHE BARGAIN IS STRUCK");
+      fae.sendMessage("§7" + target.getName() + "'s §f" + ability + "§7 cooldown is cut by §f" + applied + "%§7.");
+      fae.playSound(fae.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.MASTER, 1.0F, 0.6F);
+
+      target.sendMessage("§d§lA BARGAIN IS STRUCK");
+      target.sendMessage("§7" + fae.getName() + " has quickened your §f" + ability + "§7 by §f" + applied + "%§7.");
+      target.playSound(target.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.MASTER, 1.0F, 1.4F);
+
+      this.plugin.logInfo("FAE COOLDOWN: " + fae.getName() + " -> " + target.getName()
+         + " " + ability + " -" + applied + "%");
+      return true;
+   }
+
    private boolean handleRelease(Player fae, String[] args) {
       if (args.length < 1) {
          fae.sendMessage("§cUsage: §e/pow faedeal release <player>");
@@ -247,6 +363,7 @@ public class FaeDealCommand implements CommandExecutor {
       fae.sendMessage("§e/pow faedeal vampire <player> <stage> [true|false] §7- Bind at a stage; true makes your permadeath break it");
       fae.sendMessage("§e/pow faedeal bargains §7- List the bargains you hold");
       fae.sendMessage("§e/pow faedeal release <player> §7- Break one of your own bargains");
+      fae.sendMessage("§e/pow faedeal cooldown <player> <ability> <percent> §7- Cut one ability's cooldown for them");
       fae.sendMessage("§e/pow faedeal deaths <player> <get|set|add|remove> [n] §7- Adjust their death counter");
       fae.sendMessage("§e/pow faedeal hearts <player> <get|give|take> [n] §7- The same, in hearts");
       fae.sendMessage("§e/pow faedeal canturn <player> <vampire|werewolf> <allow|deny|status>");
@@ -260,7 +377,7 @@ public class FaeDealCommand implements CommandExecutor {
    public List<String> tabComplete(String[] args) {
       if (args.length == 1) {
          return filter(Arrays.asList(
-            "vampire", "bargains", "release", "deaths", "hearts",
+            "vampire", "bargains", "release", "cooldown", "deaths", "hearts",
             "canturn", "canbeturned", "turnlocks", "help"), args[0]);
       }
 
@@ -286,6 +403,18 @@ public class FaeDealCommand implements CommandExecutor {
          case "release":
          case "turnlocks":
             if (args.length == 2) return onlineNames(args[1]);
+            return new ArrayList<>();
+         case "cooldown":
+         case "cooldowns":
+            if (args.length == 2) return onlineNames(args[1]);
+            if (args.length == 3) {
+               List<String> opts = new ArrayList<>(java.util.Arrays.asList("list", "clear"));
+               if (this.plugin.getCooldownBoonManager() != null) {
+                  opts.addAll(this.plugin.getCooldownBoonManager().knownAbilities());
+               }
+               return filter(opts, args[2]);
+            }
+            if (args.length == 4) return filter(java.util.Arrays.asList("10", "25", "50", "75", "90"), args[3]);
             return new ArrayList<>();
          default:
             return new ArrayList<>();
