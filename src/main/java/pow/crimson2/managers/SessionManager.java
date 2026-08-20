@@ -126,6 +126,13 @@ public class SessionManager {
       String message = this.getSessionStatusMessage();
 
       for (Player player : Bukkit.getOnlinePlayers()) {
+         // Don't stomp a directional arrow (scrying / thrall locate / findmaster). Both write to
+         // the same single-line action bar; this task fires every second and would otherwise
+         // overwrite an arrow that redraws every 4 ticks, making it flicker and look broken.
+         if (this.plugin.getVampireTrackingManager() != null
+               && this.plugin.getVampireTrackingManager().hasActiveIndicator(player)) {
+            continue;
+         }
          this.sendActionBar(player, message);
       }
    }
