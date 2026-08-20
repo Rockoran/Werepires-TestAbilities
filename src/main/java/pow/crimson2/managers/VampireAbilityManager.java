@@ -346,7 +346,11 @@ public class VampireAbilityManager {
 
    private void setCooldown(Player player, String abilityName, int cooldownSeconds) {
       UUID playerId = player.getUniqueId();
-      long cooldownEnd = this.sessionManager.getSessionTimeSeconds() + cooldownSeconds;
+      // A fae bargain can shorten this player's cooldown on this specific ability.
+      int effective = this.plugin.getCooldownBoonManager() == null
+         ? cooldownSeconds
+         : this.plugin.getCooldownBoonManager().applyTo(player, abilityName, cooldownSeconds);
+      long cooldownEnd = this.sessionManager.getSessionTimeSeconds() + effective;
       this.abilityCooldowns.computeIfAbsent(playerId, k -> new HashMap<>()).put(abilityName.toLowerCase(), cooldownEnd);
    }
 
@@ -589,5 +593,10 @@ public class VampireAbilityManager {
          this.lastUserName = lastUserName;
          this.lastUserUUID = lastUserUUID;
       }
+   }
+
+   /** Registered ability names — used by CooldownBoonManager to validate fae boons. */
+   public java.util.Set<String> getAllAbilityNames() {
+      return new java.util.HashSet<>(this.abilities.keySet());
    }
 }

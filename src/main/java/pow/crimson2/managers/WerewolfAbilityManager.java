@@ -146,7 +146,11 @@ public class WerewolfAbilityManager {
    }
 
    private void setCooldown(Player player, String abilityName, int seconds) {
-      long end = this.sessionManager.getSessionTimeSeconds() + seconds;
+      // A fae bargain can shorten this player's cooldown on this specific ability.
+      int effective = this.plugin.getCooldownBoonManager() == null
+         ? seconds
+         : this.plugin.getCooldownBoonManager().applyTo(player, abilityName, seconds);
+      long end = this.sessionManager.getSessionTimeSeconds() + effective;
       this.cooldowns.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>()).put(abilityName.toLowerCase(), end);
    }
 
@@ -189,5 +193,10 @@ public class WerewolfAbilityManager {
       if (this.cooldownTask != null) {
          this.cooldownTask.cancel();
       }
+   }
+
+   /** Registered ability names — used by CooldownBoonManager to validate fae boons. */
+   public java.util.Set<String> getAllAbilityNames() {
+      return new java.util.HashSet<>(this.abilities.keySet());
    }
 }

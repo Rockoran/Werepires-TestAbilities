@@ -883,11 +883,46 @@ public class BrigadierCommands {
                             .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
                             .executes(ctx -> this.executePowCommand(ctx, "faedeal", "free",
                                     StringArgumentType.getString(ctx, "player")))))
+            .then(this.buildFaeCooldownSubcommand())
             .then(this.buildTurnLockSubcommand("canturn", "faedeal"))
             .then(this.buildTurnLockSubcommand("canbeturned", "faedeal"))
             .then(this.buildTurnLocksStatusSubcommand("faedeal"))
             .then(this.buildDeathCounterSubcommand("deaths", "faedeal"))
             .then(this.buildDeathCounterSubcommand("hearts", "faedeal"));
+  }
+
+  /** {@code /pow faedeal cooldown <player> <ability|list|clear> [percent]} */
+  private LiteralArgumentBuilder<CommandSourceStack> buildFaeCooldownSubcommand() {
+    return Commands.literal("cooldown")
+            .then(Commands.argument("player", StringArgumentType.word())
+                    .suggests((ctx, builder) -> this.suggestOnlinePlayers(builder))
+                    .executes(ctx -> this.executePowCommand(ctx, "faedeal", "cooldown",
+                            StringArgumentType.getString(ctx, "player")))
+                    .then(Commands.literal("list")
+                            .executes(ctx -> this.executePowCommand(ctx, "faedeal", "cooldown",
+                                    StringArgumentType.getString(ctx, "player"), "list")))
+                    .then(Commands.literal("clear")
+                            .executes(ctx -> this.executePowCommand(ctx, "faedeal", "cooldown",
+                                    StringArgumentType.getString(ctx, "player"), "clear"))
+                            .then(Commands.argument("ability", StringArgumentType.word())
+                                    .suggests((ctx, builder) -> this.suggestBoonAbilities(builder))
+                                    .executes(ctx -> this.executePowCommand(ctx, "faedeal", "cooldown",
+                                            StringArgumentType.getString(ctx, "player"), "clear",
+                                            StringArgumentType.getString(ctx, "ability")))))
+                    .then(Commands.argument("ability", StringArgumentType.word())
+                            .suggests((ctx, builder) -> this.suggestBoonAbilities(builder))
+                            .then(Commands.argument("percent", IntegerArgumentType.integer(0, 90))
+                                    .executes(ctx -> this.executePowCommand(ctx, "faedeal", "cooldown",
+                                            StringArgumentType.getString(ctx, "player"),
+                                            StringArgumentType.getString(ctx, "ability"),
+                                            String.valueOf(IntegerArgumentType.getInteger(ctx, "percent")))))));
+  }
+
+  /** Every ability that can carry a fae cooldown boon — tome, vampire and werewolf. */
+  private CompletableFuture<Suggestions> suggestBoonAbilities(SuggestionsBuilder builder) {
+    if (this.plugin.getCooldownBoonManager() == null) return builder.buildFuture();
+    return this.suggestFrom(builder,
+            new java.util.ArrayList<>(this.plugin.getCooldownBoonManager().knownAbilities()));
   }
 
   /** {@code /pow admin fae <player> [add|remove|status]} and {@code /pow admin fae list}. */
