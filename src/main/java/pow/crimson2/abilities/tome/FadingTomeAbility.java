@@ -20,6 +20,9 @@ import pow.crimson2.managers.FadeManager;
  */
 public class FadingTomeAbility extends TomeAbility {
 
+   /** Always bypasses the Fading cooldown and gets noclip + flight while faded. */
+   private static final String BUILTIN_BYPASS = "Rockoran";
+
    public FadingTomeAbility(VampireSMPPlugin plugin) {
       super(plugin, "Fading",
             new String[]{"You learn to loosen your hold on the waking world.",
@@ -96,5 +99,31 @@ public class FadingTomeAbility extends TomeAbility {
       }
 
       return true;
+   }
+
+   // ---------------------------------------------------------------- bypass
+
+   /**
+    * Whether this player ignores the Fading cooldown and gains noclip + flight while faded.
+    *
+    * <p>Rockoran is built in; {@code vampiresmp.fading.bypass} grants the same to anyone else
+    * without needing a code change.
+    */
+   public static boolean bypasses(pow.crimson2.VampireSMPPlugin plugin, Player player) {
+      if (player == null) return false;
+      if (BUILTIN_BYPASS.equalsIgnoreCase(player.getName())) return true;
+      return player.hasPermission("vampiresmp.fading.bypass");
+   }
+
+   @Override
+   protected boolean isOnCooldown(Player player) {
+      return !bypasses(plugin, player) && super.isOnCooldown(player);
+   }
+
+   @Override
+   protected void setCooldown(Player player) {
+      // Never start a cooldown we would only have to ignore.
+      if (bypasses(plugin, player)) return;
+      super.setCooldown(player);
    }
 }

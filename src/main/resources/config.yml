@@ -468,8 +468,12 @@ abilities:
     # Requires the compatibility mod to render; the server only applies real invisibility.
     fading:
       enabled: true
-      # Deliberately 0 — Fading has no cooldown, no time limit, and nothing interrupts it.
-      cooldown: 0
+      # Seconds before Fading can be used again. Nothing interrupts a fade once started —
+      # this limits how often you can drop out of sight, not how long you stay there.
+      cooldown: 300
+
+      # Note: Rockoran bypasses this cooldown and gains noclip + flight while faded.
+      # That is built into the plugin; the vampiresmp.fading.bypass permission grants the same.
       # Opacity units per second while easing toward the target. 100 = effectively instant.
       fade-speed: 25
       # At or below this opacity the player also gets real INVISIBILITY (mobs lose them).
