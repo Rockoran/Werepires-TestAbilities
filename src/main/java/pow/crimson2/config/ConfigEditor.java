@@ -42,6 +42,17 @@ public class ConfigEditor {
 
     private static final int PAGE_SIZE = 7;
 
+    /**
+     * Dialog layout. {@code multiAction} defaults to TWO columns, which paired a 320-wide setting
+     * button with a 150-wide nav button on the same row and made the menu look ragged at every GUI
+     * scale. One column with a single uniform width keeps rows aligned and gives long
+     * "key = value" labels room to breathe.
+     */
+    private static final int COLUMNS = 1;
+    private static final int BUTTON_WIDTH = 400;
+    /** Max label length before "key = value" is truncated. Scales with BUTTON_WIDTH. */
+    private static final int VALUE_CHARS = 40;
+
     private final VampireSMPPlugin plugin;
 
     public ConfigEditor(VampireSMPPlugin plugin) {
@@ -234,7 +245,7 @@ public class ConfigEditor {
                 buttons.add(ActionButton.create(
                         Component.text(prettify(key) + "  ▸", NamedTextColor.AQUA),
                         Component.text(count + " setting" + (count == 1 ? "" : "s")),
-                        320,
+                        BUTTON_WIDTH,
                         DialogAction.customClick((v, a) -> sync(() -> openConfigMenu(p, full, 0)),
                                 ClickCallback.Options.builder().build())));
             } else {
@@ -244,7 +255,7 @@ public class ConfigEditor {
                 buttons.add(ActionButton.create(
                         label,
                         Component.text(full + " (" + typeName(val) + ")"),
-                        320,
+                        BUTTON_WIDTH,
                         DialogAction.customClick((v, a) -> sync(() -> openEditDialog(p, full)),
                                 ClickCallback.Options.builder().build())));
             }
@@ -253,22 +264,22 @@ public class ConfigEditor {
         final int pg = page, tp = totalPages;
         final String base = basePath;
         if (page > 0) {
-            buttons.add(ActionButton.create(Component.text("◀ Previous page"), null, 150,
+            buttons.add(ActionButton.create(Component.text("◀ Previous page"), null, BUTTON_WIDTH,
                     DialogAction.customClick((v, a) -> sync(() -> openConfigMenu(p, base, pg - 1)),
                             ClickCallback.Options.builder().build())));
         }
         if (page < totalPages - 1) {
-            buttons.add(ActionButton.create(Component.text("Next page ▶"), null, 150,
+            buttons.add(ActionButton.create(Component.text("Next page ▶"), null, BUTTON_WIDTH,
                     DialogAction.customClick((v, a) -> sync(() -> openConfigMenu(p, base, pg + 1)),
                             ClickCallback.Options.builder().build())));
         }
         if (!basePath.isEmpty()) {
-            buttons.add(ActionButton.create(Component.text("⤴ Back", NamedTextColor.GRAY), null, 150,
+            buttons.add(ActionButton.create(Component.text("⤴ Back", NamedTextColor.GRAY), null, BUTTON_WIDTH,
                     DialogAction.customClick((v, a) -> sync(() -> openConfigMenu(p, parentPath(base), 0)),
                             ClickCallback.Options.builder().build())));
         }
         buttons.add(ActionButton.create(
-                Component.text("⟳ Reload from disk", NamedTextColor.AQUA), null, 200,
+                Component.text("⟳ Reload from disk", NamedTextColor.AQUA), null, BUTTON_WIDTH,
                 DialogAction.customClick((v, a) -> sync(() -> {
                     reload();
                     p.sendMessage(Component.text("Config reloaded from disk.", NamedTextColor.AQUA));
@@ -282,7 +293,7 @@ public class ConfigEditor {
                 .base(DialogBase.builder(Component.text(title, NamedTextColor.GOLD))
                         .body(List.of(DialogBody.plainMessage(Component.text(bodyText))))
                         .build())
-                .type(DialogType.multiAction(buttons).build()));
+                .type(DialogType.multiAction(buttons).columns(COLUMNS).build()));
         p.showDialog(d);
     }
 
@@ -305,7 +316,7 @@ public class ConfigEditor {
 
         List<ActionButton> buttons = new ArrayList<>();
         buttons.add(ActionButton.create(
-                Component.text("Save", NamedTextColor.GREEN), null, 150,
+                Component.text("Save", NamedTextColor.GREEN), null, BUTTON_WIDTH,
                 DialogAction.customClick((view, aud) -> {
                     String raw = isBool ? String.valueOf(view.getBoolean("value")) : view.getText("value");
                     sync(() -> {
@@ -314,7 +325,7 @@ public class ConfigEditor {
                     });
                 }, ClickCallback.Options.builder().build())));
         buttons.add(ActionButton.create(
-                Component.text("⤴ Back"), null, 150,
+                Component.text("⤴ Back"), null, BUTTON_WIDTH,
                 DialogAction.customClick((v, a) -> sync(() -> openConfigMenu(p, parentPath(path), 0)),
                         ClickCallback.Options.builder().build())));
 
@@ -326,7 +337,7 @@ public class ConfigEditor {
                                         + (isBool ? "" : "\n(For lists, separate items with commas.)")))))
                         .inputs(inputs)
                         .build())
-                .type(DialogType.multiAction(buttons).build()));
+                .type(DialogType.multiAction(buttons).columns(COLUMNS).build()));
         p.showDialog(d);
     }
 
@@ -391,7 +402,7 @@ public class ConfigEditor {
     }
 
     private static String shorten(String s) {
-        return s.length() <= 24 ? s : s.substring(0, 21) + "…";
+        return s.length() <= VALUE_CHARS ? s : s.substring(0, VALUE_CHARS - 3) + "…";
     }
 
     private static String typeName(Object v) {
