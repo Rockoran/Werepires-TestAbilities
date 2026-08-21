@@ -6,7 +6,7 @@
 
     <groupId>pow.crimson2</groupId>
     <artifactId>WerePires</artifactId>
-    <version>1.16.2</version>
+    <version>1.16.3</version>
     <packaging>jar</packaging>
 
     <name>WerePires</name>
@@ -20,7 +20,7 @@
         <!-- Output jar name. The -TESTBUILD suffix marks a build with the WerePiresNetwork
              kill switch (PROTOCOL_ENABLED) flipped to false — dev only, never ship it.
              Remove the TESTBUILD suffix together with that constant for a release build. -->
-        <jar.name>WerePires-1.16.2-TESTBUILD</jar.name>
+        <jar.name>WerePires-1.16.3-TESTBUILD</jar.name>
     </properties>
 
     <repositories>

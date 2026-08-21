@@ -134,12 +134,27 @@ public class BrigadierCommands {
                                                     .executes(ctx -> this.executePowCommand(ctx, "tome", "list"))
                                     ))
                                     .then(
-                                            Commands.argument("ability", StringArgumentType.word())
+                                            ((RequiredArgumentBuilder) Commands.argument("ability", StringArgumentType.word())
                                                     .suggests((ctx, builder) -> this.suggestTomeAbilities(ctx, builder))
                                                     .executes(ctx -> {
                                                       String ability = StringArgumentType.getString(ctx, "ability");
                                                       return this.executePowCommand(ctx, "tome", ability);
-                                                    })
+                                                    }))
+                                                    // Tomes that take a target (Scrying needs one, Fading takes an
+                                                    // optional opacity). Without this node Brigadier ends the command
+                                                    // at the ability name, so there is nothing to tab-complete and a
+                                                    // trailing argument is rejected as bad syntax - TomeAbilityCommand
+                                                    // forwards it happily, but its Bukkit completer never runs while
+                                                    // /pow is served by Brigadier.
+                                                    .then(
+                                                            Commands.argument("target", StringArgumentType.word())
+                                                                    .suggests((ctx, builder) -> this.suggestTomeAbilityTargets(ctx, builder))
+                                                                    .executes(ctx -> {
+                                                                      String ability = StringArgumentType.getString(ctx, "ability");
+                                                                      String target = StringArgumentType.getString(ctx, "target");
+                                                                      return this.executePowCommand(ctx, "tome", ability, target);
+                                                                    })
+                                                    )
                                     )
                     )
                     .then(Commands.literal("beaconstatus").executes(ctx -> this.executePowCommand(ctx, "beaconstatus"))))
@@ -1198,6 +1213,44 @@ public class BrigadierCommands {
     };
     this.powCommand.onCommand(sender, dummyCommand, "pow", args);
     return 1;
+  }
+
+  /**
+   * Second argument of {@code /pow tome <ability> <arg>}, which means different things per
+   * tome: Scrying names a player to point at, Fading takes an opacity. Anything else has no
+   * second argument, so nothing is suggested rather than offering a misleading player list.
+   */
+  private CompletableFuture<Suggestions> suggestTomeAbilityTargets(
+          CommandContext<CommandSourceStack> ctx, SuggestionsBuilder builder) {
+    String ability;
+    try {
+      ability = StringArgumentType.getString(ctx, "ability").toLowerCase();
+    } catch (IllegalArgumentException e) {
+      return builder.buildFuture();
+    }
+
+    if (ability.equals("scrying")) {
+      CommandSender sender = ((CommandSourceStack) ctx.getSource()).getSender();
+      String remaining = builder.getRemainingLowerCase();
+      for (Player player : Bukkit.getOnlinePlayers()) {
+        // Pointing an arrow at yourself is not useful, so leave the caller out.
+        if (sender instanceof Player self && player.getUniqueId().equals(self.getUniqueId())) continue;
+        if (player.getName().toLowerCase().startsWith(remaining)) {
+          builder.suggest(player.getName());
+        }
+      }
+      return builder.buildFuture();
+    }
+
+    if (ability.equals("fading")) {
+      String remaining = builder.getRemainingLowerCase();
+      for (String opacity : new String[] { "0", "25", "50", "75", "100" }) {
+        if (opacity.startsWith(remaining)) builder.suggest(opacity);
+      }
+      return builder.buildFuture();
+    }
+
+    return builder.buildFuture();
   }
 
   private CompletableFuture<Suggestions> suggestOnlinePlayers(SuggestionsBuilder builder) {
