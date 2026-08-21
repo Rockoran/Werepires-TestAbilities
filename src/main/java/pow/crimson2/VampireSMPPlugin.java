@@ -161,6 +161,31 @@ public class VampireSMPPlugin extends JavaPlugin {
    private pow.crimson2.phone.PhoneManager phoneManager;
    private org.bukkit.configuration.file.YamlConfiguration stateConfig;
    private java.io.File stateConfigFile;
+
+   /**
+    * Mutable game state that must live in state.yml, never config.yml, mapped from the
+    * key an older build (or a world template) uses to its path in state.yml.
+    *
+    * <p>Two things consult this: the startup migration, which lifts any of these out of
+    * config.yml, and {@code WorldManager.applyWorldConfig}, which must route them to
+    * state.yml rather than writing them back. The world templates all ship these keys,
+    * so without that second check every world swap re-polluted config.yml — and saving
+    * config.yml strips its comments.
+    */
+   public static final java.util.Map<String, String> STATE_KEYS;
+   static {
+      java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+      m.put("first_beacon_converted", "first_beacon_converted");
+      m.put("humans_own_all_beacons", "humans_own_all_beacons");
+      m.put("vampires_own_all_beacons", "vampires_own_all_beacons");
+      m.put("one_human_left", "one_human_left");
+      m.put("fourth_book_has_spawned", "fourth_book_has_spawned");
+      m.put("fourth_book_spawn_enabled", "fourth_book_spawn_enabled");
+      m.put("active-world", "world.active-world");
+      m.put("active-template", "world.active-template");
+      m.put("revival.fourth-book-spawn-enabled", "revival.fourth-book-spawn-enabled");
+      STATE_KEYS = java.util.Collections.unmodifiableMap(m);
+   }
    private Team castTeam;
    private Team vampireCastTeam;
    private Location vampireRespawnLocation;
@@ -950,16 +975,7 @@ public class VampireSMPPlugin extends JavaPlugin {
       // Migrate mutable values even when state.yml already exists. Older builds
       // wrote the world selection and revival unlock back into config.yml,
       // which could strip its comments during normal play.
-      java.util.Map<String, String> stateKeys = new java.util.LinkedHashMap<>();
-      stateKeys.put("first_beacon_converted", "first_beacon_converted");
-      stateKeys.put("humans_own_all_beacons", "humans_own_all_beacons");
-      stateKeys.put("vampires_own_all_beacons", "vampires_own_all_beacons");
-      stateKeys.put("one_human_left", "one_human_left");
-      stateKeys.put("fourth_book_has_spawned", "fourth_book_has_spawned");
-      stateKeys.put("fourth_book_spawn_enabled", "fourth_book_spawn_enabled");
-      stateKeys.put("active-world", "world.active-world");
-      stateKeys.put("active-template", "world.active-template");
-      stateKeys.put("revival.fourth-book-spawn-enabled", "revival.fourth-book-spawn-enabled");
+      java.util.Map<String, String> stateKeys = STATE_KEYS;
 
       boolean migrated = false;
       for (java.util.Map.Entry<String, String> entry : stateKeys.entrySet()) {
