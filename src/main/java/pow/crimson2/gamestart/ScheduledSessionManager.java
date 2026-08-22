@@ -196,10 +196,10 @@ public final class ScheduledSessionManager implements Listener {
 
     private void createBar() {
         removeBar();
-        if (phase == Phase.BREAK || !isActive()) return;
-        BarColor color = (phase == Phase.INITIAL_BUILDING || phase == Phase.FINAL_BUILDING)
-                ? BarColor.BLUE : BarColor.GREEN;
-        bar = Bukkit.createBossBar("", color, BarStyle.SOLID);
+        // The active-session phases are intentionally bar-free. Breaks use the
+        // GameStartManager's break bar, while this manager owns building bars.
+        if (phase != Phase.INITIAL_BUILDING && phase != Phase.FINAL_BUILDING) return;
+        bar = Bukkit.createBossBar("", BarColor.BLUE, BarStyle.SOLID);
         for (Player player : Bukkit.getOnlinePlayers()) bar.addPlayer(player);
         updateBar();
     }
