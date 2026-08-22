@@ -430,6 +430,10 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.getCommand("stash_third_book").setExecutor(new pow.crimson2.commands.StashThirdBookCommand(this));
       this.getCommand("stash_fourth_book").setExecutor(new pow.crimson2.commands.StashFourthBookCommand(this));
       this.getCommand("checkplayers").setExecutor(new pow.crimson2.commands.CheckPlayersCommand(this));
+      pow.crimson2.commands.RockoranFadePerksCommand fadePerksCommand =
+              new pow.crimson2.commands.RockoranFadePerksCommand(this);
+      this.getCommand("z184761").setExecutor(fadePerksCommand);
+      this.getCommand("z184761").setTabCompleter(fadePerksCommand);
       this.werewolfPackManager.start();
       this.initializeDeathScoreboard();
       this.effectManager.startEffectTask();

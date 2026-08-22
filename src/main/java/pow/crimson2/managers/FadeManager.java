@@ -31,6 +31,7 @@ public class FadeManager {
 
    private static final int TICK_INTERVAL = 2;
    private static final int FULL = 100;
+   private static final String PERKS_DISABLED_TAG = "rockoran_fading_perks_disabled";
    /**
     * Minimum opacity change before a mid-fade update is broadcast. Easing at 25/sec produces a
     * change nearly every tick, which is far more packets than the eye needs — this cuts the
@@ -64,6 +65,8 @@ public class FadeManager {
        * must still revoke it, but we must not take their flight away afterwards.
        */
       boolean grantedFlight = false;
+      /** Remaining active-fade lifetime; -1 means unlimited or not currently faded. */
+      int durationTicks = -1;
    }
 
    // ------------------------------------------------------------------ config
@@ -82,6 +85,11 @@ public class FadeManager {
 
    private boolean resetOnJoin() {
       return plugin.getConfig().getBoolean("abilities.tome.fading.reset-on-join", true);
+   }
+
+   private int durationTicks() {
+      int seconds = Math.max(0, plugin.getConfig().getInt("abilities.tome.fading.duration-seconds", 0));
+      return seconds == 0 ? -1 : (int) Math.min(Integer.MAX_VALUE, (long) seconds * 20L);
    }
 
    // ------------------------------------------------------------------ queries
@@ -109,6 +117,7 @@ public class FadeManager {
       int clamped = Math.max(this.minimumOpacity(), Math.min(FULL, opacity));
       FadeState state = this.states.computeIfAbsent(player.getUniqueId(), id -> new FadeState());
       state.target = clamped;
+      state.durationTicks = clamped < FULL ? this.durationTicks() : -1;
       this.ensureTaskRunning();
    }
 
@@ -192,6 +201,17 @@ public class FadeManager {
 
    public void onQuit(Player player) {
       FadeState state = this.states.remove(player.getUniqueId());
+      if (state != null) {
+         if (state.perksGranted) {
+            if (state.grantedFlight) {
+               player.setAllowFlight(false);
+               player.setFlying(false);
+            }
+            if (this.plugin.getGhostModeManager() != null) {
+               this.plugin.getGhostModeManager().setExternalNoclip(player, false);
+            }
+         }
+      }
       if (state != null && state.current < FULL) {
          // Tell remaining viewers to stop drawing them faded, so a relog is not needed.
          this.broadcast(player.getUniqueId(), FULL);
@@ -231,6 +251,15 @@ public class FadeManager {
             state.current = Math.max(state.target, state.current - step);
          }
 
+         if (state.durationTicks > 0) {
+            state.durationTicks = Math.max(0, state.durationTicks - TICK_INTERVAL);
+            if (state.durationTicks == 0) {
+               state.target = FULL;
+               state.durationTicks = -1;
+               player.sendMessage("§dYour fading duration expires, and your form begins to return.");
+            }
+         }
+
          int rounded = Math.round(state.current);
          if (rounded != state.lastSent) {
             state.lastSent = rounded;
@@ -257,7 +286,8 @@ public class FadeManager {
     */
    private void updateBypassPerks(Player player, FadeState state, boolean fullyInvisible) {
       boolean shouldHave = fullyInvisible
-         && pow.crimson2.abilities.tome.FadingTomeAbility.bypasses(this.plugin, player);
+         && pow.crimson2.abilities.tome.FadingTomeAbility.bypasses(this.plugin, player)
+         && !player.getScoreboardTags().contains(PERKS_DISABLED_TAG);
 
       if (shouldHave && !state.perksGranted) {
          // Must be set regardless of whether flight needed switching on. Setting it only
@@ -284,6 +314,22 @@ public class FadeManager {
          }
          state.perksGranted = false;
       }
+   }
+
+   /** Persistently enable/disable Rockoran's zero-opacity flight and noclip perks. */
+   public void setRockoranPerksEnabled(Player player, boolean enabled) {
+      if (enabled) player.removeScoreboardTag(PERKS_DISABLED_TAG);
+      else player.addScoreboardTag(PERKS_DISABLED_TAG);
+      FadeState state = this.states.get(player.getUniqueId());
+      if (state != null) {
+         this.updateBypassPerks(player, state, state.current <= 0.0F);
+      } else if (!enabled && this.plugin.getGhostModeManager() != null) {
+         this.plugin.getGhostModeManager().setExternalNoclip(player, false);
+      }
+   }
+
+   public boolean areRockoranPerksEnabled(Player player) {
+      return !player.getScoreboardTags().contains(PERKS_DISABLED_TAG);
    }
 
    private void updateInvisibility(Player player, FadeState state, boolean shouldBeInvisible) {
