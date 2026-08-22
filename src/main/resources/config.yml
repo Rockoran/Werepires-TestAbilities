@@ -472,8 +472,8 @@ abilities:
       # this limits how often you can drop out of sight, not how long you stay there.
       cooldown: 300
       # Maximum seconds a fade may remain active before automatically returning to 100%.
-      # 0 keeps the old unlimited-duration behavior.
-      duration-seconds: 0
+      # Set to 0 for unlimited duration.
+      duration-seconds: 15
 
       # Note: Rockoran bypasses this cooldown and gains noclip + flight while faded.
       # That is built into the plugin; the vampiresmp.fading.bypass permission grants the same.
