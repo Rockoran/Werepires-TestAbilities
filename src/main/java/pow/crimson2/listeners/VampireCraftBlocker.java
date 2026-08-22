@@ -43,6 +43,9 @@ public class VampireCraftBlocker implements Listener {
       if (this.plugin.getSessionManager().isOutOfSession() && !this.plugin.getSessionManager().isPreSession()) {
          event.setCancelled(true);
          event.getWhoClicked().sendMessage("§cYou cannot craft while the session is inactive.");
+         // Without this, execution falls through to the blocked-weapon check below and a
+         // vampire crafting iron out of session receives a second, contradictory message.
+         return;
       }
 
       Material craftedMaterial = event.getRecipe().getResult().getType();

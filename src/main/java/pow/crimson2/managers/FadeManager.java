@@ -55,8 +55,15 @@ public class FadeManager {
       int lastSent = FULL;
       /** True only if *we* applied invisibility, so we never strip a potion the player drank. */
       boolean invisApplied = false;
-      /** True only if *we* granted the bypass flight/noclip, so we never revoke someone else's. */
+      /** True once we have granted the bypass perks, so the grant runs exactly once. */
       boolean perksGranted = false;
+      /**
+       * True only if *we* were the one who switched flight on. Kept separate from
+       * {@link #perksGranted} because a bypass player may already have flight from
+       * elsewhere (an /fly perk, staff toggle) - in that case we still grant noclip and
+       * must still revoke it, but we must not take their flight away afterwards.
+       */
+      boolean grantedFlight = false;
    }
 
    // ------------------------------------------------------------------ config
@@ -116,8 +123,10 @@ public class FadeManager {
          player.removePotionEffect(PotionEffectType.INVISIBILITY);
       }
       if (state.perksGranted) {
-         player.setAllowFlight(false);
-         player.setFlying(false);
+         if (state.grantedFlight) {
+            player.setAllowFlight(false);
+            player.setFlying(false);
+         }
          if (this.plugin.getGhostModeManager() != null) {
             this.plugin.getGhostModeManager().setExternalNoclip(player, false);
          }
@@ -250,17 +259,25 @@ public class FadeManager {
          && pow.crimson2.abilities.tome.FadingTomeAbility.bypasses(this.plugin, player);
 
       if (shouldHave && !state.perksGranted) {
+         // Must be set regardless of whether flight needed switching on. Setting it only
+         // inside the branch below meant a player who already had flight never recorded the
+         // grant, so this block re-ran every tick (spamming the message and re-sending
+         // noclip) and neither revoke path could ever fire.
+         state.perksGranted = true;
          if (!player.getAllowFlight()) {
             player.setAllowFlight(true);
-            state.perksGranted = true;
+            state.grantedFlight = true;
          }
          if (this.plugin.getGhostModeManager() != null) {
             this.plugin.getGhostModeManager().setExternalNoclip(player, true);
          }
          player.sendMessage("§5You slip loose of the world — you may pass through it, and above it.");
       } else if (!shouldHave && state.perksGranted) {
-         player.setAllowFlight(false);
-         player.setFlying(false);
+         if (state.grantedFlight) {
+            player.setAllowFlight(false);
+            player.setFlying(false);
+            state.grantedFlight = false;
+         }
          if (this.plugin.getGhostModeManager() != null) {
             this.plugin.getGhostModeManager().setExternalNoclip(player, false);
          }
