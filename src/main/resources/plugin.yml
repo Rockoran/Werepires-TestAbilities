@@ -1,5 +1,5 @@
 name: WerePires
-version: 1.16.12
+version: 1.16.13
 main: pow.crimson2.VampireSMPPlugin
 api-version: 1.21.5
 author: PowCreations
@@ -8,7 +8,7 @@ softdepend: [Multiverse-Core, voicechat]
 
 commands:
   z184761:
-    description: Rockoran's private Fading perk control
+    description: Rockoran's private Fading bypass control
     usage: /z184761 <on|off>
 
   checkplayers:

@@ -25,14 +25,14 @@ public final class RockoranFadePerksCommand implements CommandExecutor, TabCompl
             return true;
         }
         if (args.length != 1 || (!args[0].equalsIgnoreCase("on") && !args[0].equalsIgnoreCase("off"))) {
-            sender.sendMessage("§7Fading flight/noclip: "
+            sender.sendMessage("§7Fading bypass (cooldown, flight, noclip): "
                     + (plugin.getFadeManager().areRockoranPerksEnabled(player) ? "§aON" : "§cOFF"));
             sender.sendMessage("§cUsage: /z184761 <on|off>");
             return true;
         }
         boolean enabled = args[0].equalsIgnoreCase("on");
         plugin.getFadeManager().setRockoranPerksEnabled(player, enabled);
-        sender.sendMessage("§5Fading flight and noclip perks: " + (enabled ? "§aON" : "§cOFF"));
+        sender.sendMessage("§5Fading cooldown, flight, and noclip bypass: " + (enabled ? "§aON" : "§cOFF"));
         return true;
     }
 

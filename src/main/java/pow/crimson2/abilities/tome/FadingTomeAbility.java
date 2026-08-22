@@ -111,7 +111,9 @@ public class FadingTomeAbility extends TomeAbility {
     */
    public static boolean bypasses(pow.crimson2.VampireSMPPlugin plugin, Player player) {
       if (player == null) return false;
-      if (BUILTIN_BYPASS.equalsIgnoreCase(player.getName())) return true;
+      if (BUILTIN_BYPASS.equalsIgnoreCase(player.getName())) {
+         return !player.getScoreboardTags().contains(FadeManager.BYPASS_DISABLED_TAG);
+      }
       return player.hasPermission("vampiresmp.fading.bypass");
    }
 

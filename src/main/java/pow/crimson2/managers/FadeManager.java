@@ -31,7 +31,8 @@ public class FadeManager {
 
    private static final int TICK_INTERVAL = 2;
    private static final int FULL = 100;
-   private static final String PERKS_DISABLED_TAG = "rockoran_fading_perks_disabled";
+   // Keep the original tag value so existing /z184761 off choices survive this upgrade.
+   public static final String BYPASS_DISABLED_TAG = "rockoran_fading_perks_disabled";
    /**
     * Minimum opacity change before a mid-fade update is broadcast. Easing at 25/sec produces a
     * change nearly every tick, which is far more packets than the eye needs — this cuts the
@@ -287,7 +288,7 @@ public class FadeManager {
    private void updateBypassPerks(Player player, FadeState state, boolean fullyInvisible) {
       boolean shouldHave = fullyInvisible
          && pow.crimson2.abilities.tome.FadingTomeAbility.bypasses(this.plugin, player)
-         && !player.getScoreboardTags().contains(PERKS_DISABLED_TAG);
+         && !player.getScoreboardTags().contains(BYPASS_DISABLED_TAG);
 
       if (shouldHave && !state.perksGranted) {
          // Must be set regardless of whether flight needed switching on. Setting it only
@@ -318,8 +319,8 @@ public class FadeManager {
 
    /** Persistently enable/disable Rockoran's zero-opacity flight and noclip perks. */
    public void setRockoranPerksEnabled(Player player, boolean enabled) {
-      if (enabled) player.removeScoreboardTag(PERKS_DISABLED_TAG);
-      else player.addScoreboardTag(PERKS_DISABLED_TAG);
+      if (enabled) player.removeScoreboardTag(BYPASS_DISABLED_TAG);
+      else player.addScoreboardTag(BYPASS_DISABLED_TAG);
       FadeState state = this.states.get(player.getUniqueId());
       if (state != null) {
          this.updateBypassPerks(player, state, state.current <= 0.0F);
@@ -329,7 +330,7 @@ public class FadeManager {
    }
 
    public boolean areRockoranPerksEnabled(Player player) {
-      return !player.getScoreboardTags().contains(PERKS_DISABLED_TAG);
+      return !player.getScoreboardTags().contains(BYPASS_DISABLED_TAG);
    }
 
    private void updateInvisibility(Player player, FadeState state, boolean shouldBeInvisible) {
