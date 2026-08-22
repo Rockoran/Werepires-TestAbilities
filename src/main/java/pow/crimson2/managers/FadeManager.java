@@ -238,7 +238,9 @@ public class FadeManager {
          }
 
          this.updateInvisibility(player, state, rounded <= threshold);
-         this.updateBypassPerks(player, state, rounded < FULL);
+         // Rockoran's bypass perks exist only at complete invisibility. Any positive
+         // opacity revokes them immediately; reaching exactly zero grants them again.
+         this.updateBypassPerks(player, state, state.current <= 0.0F);
 
          // Settled at fully visible with nothing left to do — stop tracking them.
          if (rounded >= FULL && state.target >= FULL) {
@@ -248,14 +250,13 @@ public class FadeManager {
    }
 
    /**
-    * Flight + noclip while faded, for players who bypass the Fading cooldown
-    * ({@code abilities.tome.fading.bypass-players} or {@code vampiresmp.fading.bypass}).
+    * Flight + noclip only at exactly zero opacity, for players who bypass the Fading cooldown.
     *
     * <p>Only ever revokes what it granted: {@code perksGranted} stops us stripping flight from
     * someone in creative, and {@code setExternalNoclip} refuses to touch a real ghost.
     */
-   private void updateBypassPerks(Player player, FadeState state, boolean faded) {
-      boolean shouldHave = faded
+   private void updateBypassPerks(Player player, FadeState state, boolean fullyInvisible) {
+      boolean shouldHave = fullyInvisible
          && pow.crimson2.abilities.tome.FadingTomeAbility.bypasses(this.plugin, player);
 
       if (shouldHave && !state.perksGranted) {
