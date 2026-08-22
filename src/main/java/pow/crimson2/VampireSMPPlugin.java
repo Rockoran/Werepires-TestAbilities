@@ -414,6 +414,10 @@ public class VampireSMPPlugin extends JavaPlugin {
       // Per-player opacity for the Fading tome (see FadeManager).
       this.getServer().getMessenger().registerOutgoingPluginChannel(
               this, FadeManager.FADE_CHANNEL);
+      this.getServer().getMessenger().registerOutgoingPluginChannel(
+              this, pow.crimson2.managers.KeyProfileManager.CHANNEL);
+      this.getServer().getPluginManager().registerEvents(
+              new pow.crimson2.managers.KeyProfileManager(this), this);
       SkinCommand skinCommand = new SkinCommand(this);
       this.getCommand("skin").setExecutor(skinCommand);
       this.getCommand("skin").setTabCompleter(skinCommand);
@@ -605,6 +609,8 @@ public class VampireSMPPlugin extends JavaPlugin {
                  this, SkinShuffleManager.FORCE_SKIN_CHANNEL);
          this.skinShuffleManager.shutdown();
       }
+      this.getServer().getMessenger().unregisterOutgoingPluginChannel(
+              this, pow.crimson2.managers.KeyProfileManager.CHANNEL);
 
       if (this.silverArrowManager != null) {
          this.silverArrowManager.shutdown();
