@@ -281,6 +281,26 @@ public class BrigadierCommands {
                                                     )
                                     ))
                                     .then(
+                                            ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal("sessionsetup")
+                                                    .executes(ctx -> this.executePowCommand(ctx, "admin", "sessionsetup")))
+                                                    .then(Commands.literal("status").executes(
+                                                            ctx -> this.executePowCommand(ctx, "admin", "sessionsetup", "status")))
+                                                    .then(Commands.literal("cancel").executes(
+                                                            ctx -> this.executePowCommand(ctx, "admin", "sessionsetup", "cancel")))
+                                    ))
+                                    .then(
+                                            Commands.literal("extendbreak")
+                                                    .then(Commands.argument("minutes", IntegerArgumentType.integer(1, 10080))
+                                                            .executes(ctx -> this.executePowCommand(ctx, "admin", "extendbreak",
+                                                                    String.valueOf(IntegerArgumentType.getInteger(ctx, "minutes")))))
+                                    )
+                                    .then(
+                                            Commands.literal("extendsession")
+                                                    .then(Commands.argument("minutes", IntegerArgumentType.integer(1, 10080))
+                                                            .executes(ctx -> this.executePowCommand(ctx, "admin", "extendsession",
+                                                                    String.valueOf(IntegerArgumentType.getInteger(ctx, "minutes")))))
+                                    )
+                                    .then(
                                             Commands.literal("vampire")
                                                     .then(
                                                             ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) Commands.argument(

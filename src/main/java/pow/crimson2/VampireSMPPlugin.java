@@ -150,6 +150,7 @@ public class VampireSMPPlugin extends JavaPlugin {
    private StarterKitCommand starterKitCommand;
    private PlayerSetupManager playerSetupManager;
    private GameStartManager gameStartManager;
+   private pow.crimson2.gamestart.ScheduledSessionManager scheduledSessionManager;
    private GameStartCommand gameStartCommand;
    private WorldManager worldManager;
    private SkinShuffleManager skinShuffleManager;
@@ -396,6 +397,8 @@ public class VampireSMPPlugin extends JavaPlugin {
 
       // ── Game Start ─────────────────────────────────────────────────────────
       this.gameStartManager = new GameStartManager(this);
+      this.scheduledSessionManager = new pow.crimson2.gamestart.ScheduledSessionManager(this);
+      this.getServer().getPluginManager().registerEvents(this.scheduledSessionManager, this);
       this.gameStartCommand = new GameStartCommand(this);
       this.getServer().getPluginManager().registerEvents(this.gameStartCommand, this);
       this.getCommand("gamestart").setExecutor(this.gameStartCommand);
@@ -599,6 +602,9 @@ public class VampireSMPPlugin extends JavaPlugin {
 
       if (this.gameStartManager != null) {
          this.gameStartManager.shutdown();
+      }
+      if (this.scheduledSessionManager != null) {
+         this.scheduledSessionManager.shutdown();
       }
 
       if (this.skinShuffleManager != null) {
@@ -969,6 +975,10 @@ public class VampireSMPPlugin extends JavaPlugin {
 
    public GameStartManager getGameStartManager() {
       return this.gameStartManager;
+   }
+
+   public pow.crimson2.gamestart.ScheduledSessionManager getScheduledSessionManager() {
+      return this.scheduledSessionManager;
    }
 
    private void loadStateConfig() {

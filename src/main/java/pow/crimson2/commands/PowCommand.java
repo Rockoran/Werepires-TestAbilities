@@ -160,6 +160,9 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage("§6§l=== VampireSMP Admin Commands ===");
       sender.sendMessage("§e/pow admin init §7- Initialize a new game (full reset)");
       sender.sendMessage("§e/pow admin session <start|pause|end|prime|resume|building> §7- Manage session state");
+      sender.sendMessage("§e/pow admin sessionsetup [status|cancel] §7- Configure an automatic session timeline");
+      sender.sendMessage("§e/pow admin extendbreak <minutes> §7- Extend the active scheduled break");
+      sender.sendMessage("§e/pow admin extendsession <minutes> §7- Extend the active scheduled gameplay phase");
       sender.sendMessage("§e/pow admin vampire <player> <human|1|2|3|turn> §7- Manage vampire status");
       sender.sendMessage("§e/pow admin werewolf <player> <human|1|2|3> §7- Manage werewolf status");
       sender.sendMessage("§e/pow admin beacon <subcommand> §7- Manage beacon sites (use tab for options)");
@@ -247,6 +250,9 @@ public class PowCommand implements CommandExecutor, TabCompleter {
                List<String> adminCommands = Arrays.asList(
                   "init",
                   "session",
+                  "sessionsetup",
+                  "extendbreak",
+                  "extendsession",
                   "vampire",
                   "werewolf",
                   "beacon",
@@ -319,6 +325,17 @@ public class PowCommand implements CommandExecutor, TabCompleter {
             if (args.length == 3 && args[1].equalsIgnoreCase("session")) {
                List<String> sessionOptions = Arrays.asList("start", "pause", "end", "prime", "resume", "building");
                return sessionOptions.stream().filter(s -> s.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+            }
+
+            if (args.length == 3 && args[1].equalsIgnoreCase("sessionsetup")) {
+               return Arrays.asList("status", "cancel").stream()
+                  .filter(s -> s.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+            }
+
+            if (args.length == 3 && (args[1].equalsIgnoreCase("extendbreak")
+                  || args[1].equalsIgnoreCase("extendsession"))) {
+               return Arrays.asList("5", "10", "15", "30").stream()
+                  .filter(s -> s.startsWith(args[2])).collect(Collectors.toList());
             }
 
             if (args.length == 3 && args[1].equalsIgnoreCase("vampire")) {
