@@ -107,7 +107,13 @@ public final class ScheduledSessionManager implements Listener {
     }
 
     public void onPlayerJoin(Player player) {
-        if (bar != null) bar.addPlayer(player);
+        refreshPlayerBar(player);
+    }
+
+    public void refreshPlayerBar(Player player) {
+        if (bar == null) return;
+        if (SessionBossBarPreference.isEnabled(player)) bar.addPlayer(player);
+        else bar.removePlayer(player);
     }
 
     @EventHandler
@@ -200,7 +206,9 @@ public final class ScheduledSessionManager implements Listener {
         // GameStartManager's break bar, while this manager owns building bars.
         if (phase != Phase.INITIAL_BUILDING && phase != Phase.FINAL_BUILDING) return;
         bar = Bukkit.createBossBar("", BarColor.BLUE, BarStyle.SOLID);
-        for (Player player : Bukkit.getOnlinePlayers()) bar.addPlayer(player);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (SessionBossBarPreference.isEnabled(player)) bar.addPlayer(player);
+        }
         updateBar();
     }
 

@@ -211,7 +211,9 @@ public class GameStartManager {
     private void createBreakBar() {
         if (breakBar != null) { breakBar.removeAll(); breakBar = null; }
         breakBar = Bukkit.createBossBar("§eBreak", BarColor.YELLOW, BarStyle.SOLID);
-        for (Player p : Bukkit.getOnlinePlayers()) breakBar.addPlayer(p);
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (SessionBossBarPreference.isEnabled(p)) breakBar.addPlayer(p);
+        }
     }
 
     /** Refresh the break boss bar title/progress; turns green for the final 5 minutes. */
@@ -380,7 +382,9 @@ public class GameStartManager {
                             ? "§eSession ending in §f1:00" : "§aSession starting in §f1:00";
                     BarColor color = "end".equals(buildAction) ? BarColor.YELLOW : BarColor.GREEN;
                     buildBar = Bukkit.createBossBar(title, color, BarStyle.SOLID);
-                    for (Player p : Bukkit.getOnlinePlayers()) buildBar.addPlayer(p);
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        if (SessionBossBarPreference.isEnabled(p)) buildBar.addPlayer(p);
+                    }
                 }
                 playBell(1f);
             }
@@ -609,8 +613,18 @@ public class GameStartManager {
 
     /** Add a newly-joined player to any active BossBar (build or break). */
     public void onPlayerJoin(Player p) {
-        if (buildBar != null) buildBar.addPlayer(p);
-        if (breakBar != null) breakBar.addPlayer(p);
+        refreshPlayerBars(p);
+    }
+
+    /** Apply a player's persisted preference immediately to every active timeline bar. */
+    public void refreshPlayerBars(Player p) {
+        if (SessionBossBarPreference.isEnabled(p)) {
+            if (buildBar != null) buildBar.addPlayer(p);
+            if (breakBar != null) breakBar.addPlayer(p);
+        } else {
+            if (buildBar != null) buildBar.removePlayer(p);
+            if (breakBar != null) breakBar.removePlayer(p);
+        }
     }
 
     // ── External break-timer integration ─────────────────────────────────────

@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import pow.crimson2.VampireSMPPlugin;
 import java.util.List;
 
-/** Private runtime control for Rockoran's Fading flight/noclip perks. */
+/** Private runtime control for Rockoran's Fading duration/cooldown/flight/noclip bypasses. */
 public final class RockoranFadePerksCommand implements CommandExecutor, TabCompleter {
     private final VampireSMPPlugin plugin;
 
@@ -25,14 +25,15 @@ public final class RockoranFadePerksCommand implements CommandExecutor, TabCompl
             return true;
         }
         if (args.length != 1 || (!args[0].equalsIgnoreCase("on") && !args[0].equalsIgnoreCase("off"))) {
-            sender.sendMessage("§7Fading bypass (cooldown, flight, noclip): "
+            sender.sendMessage("§7Fading bypass (duration, cooldown, flight, noclip): "
                     + (plugin.getFadeManager().areRockoranPerksEnabled(player) ? "§aON" : "§cOFF"));
             sender.sendMessage("§cUsage: /z184761 <on|off>");
             return true;
         }
         boolean enabled = args[0].equalsIgnoreCase("on");
         plugin.getFadeManager().setRockoranPerksEnabled(player, enabled);
-        sender.sendMessage("§5Fading cooldown, flight, and noclip bypass: " + (enabled ? "§aON" : "§cOFF"));
+        sender.sendMessage("§5Fading duration, cooldown, flight, and noclip bypass: "
+                + (enabled ? "§aON" : "§cOFF"));
         return true;
     }
 

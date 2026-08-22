@@ -118,7 +118,10 @@ public class FadeManager {
       int clamped = Math.max(this.minimumOpacity(), Math.min(FULL, opacity));
       FadeState state = this.states.computeIfAbsent(player.getUniqueId(), id -> new FadeState());
       state.target = clamped;
-      state.durationTicks = clamped < FULL ? this.durationTicks() : -1;
+      // Rockoran's runtime-controlled bypass covers the active fade duration too. Turning
+      // /z184761 off makes the configured duration apply again, alongside cooldown/perk rules.
+      boolean bypassDuration = pow.crimson2.abilities.tome.FadingTomeAbility.bypasses(this.plugin, player);
+      state.durationTicks = clamped < FULL && !bypassDuration ? this.durationTicks() : -1;
       this.ensureTaskRunning();
    }
 
@@ -317,12 +320,14 @@ public class FadeManager {
       }
    }
 
-   /** Persistently enable/disable Rockoran's zero-opacity flight and noclip perks. */
+   /** Persistently enable/disable all of Rockoran's Fading bypasses. */
    public void setRockoranPerksEnabled(Player player, boolean enabled) {
       if (enabled) player.removeScoreboardTag(BYPASS_DISABLED_TAG);
       else player.addScoreboardTag(BYPASS_DISABLED_TAG);
       FadeState state = this.states.get(player.getUniqueId());
       if (state != null) {
+         boolean activelyFaded = state.current < FULL || state.target < FULL;
+         state.durationTicks = enabled || !activelyFaded ? -1 : this.durationTicks();
          this.updateBypassPerks(player, state, state.current <= 0.0F);
       } else if (!enabled && this.plugin.getGhostModeManager() != null) {
          this.plugin.getGhostModeManager().setExternalNoclip(player, false);

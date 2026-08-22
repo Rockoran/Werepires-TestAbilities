@@ -205,6 +205,11 @@ public class BrigadierCommands {
                     .then(Commands.literal("sendpendingmessage").executes(ctx -> this.executePowCommand(ctx, "sendmessage")))
                     .then(Commands.literal("reopen").executes(ctx -> this.executePowCommand(ctx, "reopen"))))
                     .then(Commands.literal("forcedcure-reopen").executes(ctx -> this.executePowCommand(ctx, "reopen")))
+                    .then(Commands.literal("bossbar")
+                            .executes(ctx -> this.executePowCommand(ctx, "bossbar", "status"))
+                            .then(Commands.literal("on").executes(ctx -> this.executePowCommand(ctx, "bossbar", "on")))
+                            .then(Commands.literal("off").executes(ctx -> this.executePowCommand(ctx, "bossbar", "off")))
+                            .then(Commands.literal("status").executes(ctx -> this.executePowCommand(ctx, "bossbar", "status"))))
                     .then(
                             ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal(
                                             "admin"

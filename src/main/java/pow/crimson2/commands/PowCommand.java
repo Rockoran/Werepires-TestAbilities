@@ -12,6 +12,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.entity.Player;
 import pow.crimson2.VampireSMPPlugin;
+import pow.crimson2.gamestart.SessionBossBarPreference;
 
 public class PowCommand implements CommandExecutor, TabCompleter {
    private final VampireSMPPlugin plugin;
@@ -95,6 +96,8 @@ public class PowCommand implements CommandExecutor, TabCompleter {
          case "ability":
          case "abilities":
             return this.abilityRulesCommand.onCommand(sender, command, label, subArgs);
+         case "bossbar":
+            return this.handleBossBar(sender, subArgs);
          case "faedeal":
          case "fae":
             return this.faeDealCommand.onCommand(sender, command, label, subArgs);
@@ -115,6 +118,31 @@ public class PowCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§7Use §e/pow help §7for a list of commands");
             return true;
       }
+   }
+
+   private boolean handleBossBar(CommandSender sender, String[] args) {
+      if (!(sender instanceof Player player)) {
+         sender.sendMessage("§cOnly players can set a personal boss-bar preference.");
+         return true;
+      }
+      if (args.length == 0 || args[0].equalsIgnoreCase("status")) {
+         player.sendMessage("§7Building/break boss bar: "
+               + (SessionBossBarPreference.isEnabled(player) ? "§aON" : "§cOFF"));
+         player.sendMessage("§7Use §e/pow bossbar <on|off>§7.");
+         return true;
+      }
+      if (!args[0].equalsIgnoreCase("on") && !args[0].equalsIgnoreCase("off")) {
+         player.sendMessage("§cUsage: /pow bossbar <on|off|status>");
+         return true;
+      }
+      boolean enabled = args[0].equalsIgnoreCase("on");
+      SessionBossBarPreference.setEnabled(player, enabled);
+      if (this.plugin.getScheduledSessionManager() != null) {
+         this.plugin.getScheduledSessionManager().refreshPlayerBar(player);
+      }
+      this.plugin.getGameStartManager().refreshPlayerBars(player);
+      player.sendMessage("§7Building/break boss bar: " + (enabled ? "§aON" : "§cOFF"));
+      return true;
    }
 
    private boolean handleAdminCommand(CommandSender sender, String[] args) {
@@ -143,6 +171,7 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage("§e/pow wability <name> §7- Use werewolf abilities");
       sender.sendMessage("§e/pow tome <name> §7- Use tome abilities (humans)");
       sender.sendMessage("§e/pow ability §7- Which abilities survive being turned");
+      sender.sendMessage("§e/pow bossbar <on|off> §7- Toggle building/break boss bars for yourself");
       sender.sendMessage("§e/voluntate-mea-hoc-nefandum-vinculum-abicio §7- Cure yourself from vampirism");
       sender.sendMessage("§e/hoc-vinculum-tibi-dirumpo-mala-creatura <player> §7- Force cure a vampire");
       sender.sendMessage("§e/pow beaconstatus §7- Check beacon spiritual influence");
@@ -215,7 +244,7 @@ public class PowCommand implements CommandExecutor, TabCompleter {
    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
       List<String> completions = new ArrayList<>();
       if (args.length == 1) {
-         List<String> subCommands = new ArrayList<>(Arrays.asList("vability", "wability", "tome", "ability", "beaconstatus", "permadeath", "toggle-turning", "help"));
+         List<String> subCommands = new ArrayList<>(Arrays.asList("vability", "wability", "tome", "ability", "bossbar", "beaconstatus", "permadeath", "toggle-turning", "help"));
          if (sender instanceof Player p && this.plugin.getFaeManager() != null && this.plugin.getFaeManager().isFae(p)) {
             subCommands.add(0, "faedeal");
          }
@@ -240,6 +269,11 @@ public class PowCommand implements CommandExecutor, TabCompleter {
          if (args.length == 2 && args[0].equalsIgnoreCase("permadeath")) {
             List<String> permadeathOptions = Arrays.asList("on", "off", "absolute");
             return permadeathOptions.stream().filter(s -> s.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
+         }
+
+         if (args.length == 2 && args[0].equalsIgnoreCase("bossbar")) {
+            return Arrays.asList("on", "off", "status").stream()
+                  .filter(s -> s.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
          }
 
          if (args.length >= 2 && args[0].equalsIgnoreCase("admin")) {
