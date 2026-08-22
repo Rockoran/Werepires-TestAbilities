@@ -185,7 +185,7 @@ public class GameStartManager {
 
         if ("restart".equals(breakMode)) {
             // pow session end → wait → pow session start
-            plugin.getSessionManager().endSession();
+            plugin.getSessionManager().endSession(false);
             Bukkit.getScheduler().runTaskLater(plugin,
                     () -> plugin.getSessionManager().startSession(), 60L);
         } else {
@@ -211,7 +211,9 @@ public class GameStartManager {
     private void createBreakBar() {
         if (breakBar != null) { breakBar.removeAll(); breakBar = null; }
         breakBar = Bukkit.createBossBar("§eBreak", BarColor.YELLOW, BarStyle.SOLID);
-        for (Player p : Bukkit.getOnlinePlayers()) breakBar.addPlayer(p);
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (SessionBossBarPreference.isEnabled(p)) breakBar.addPlayer(p);
+        }
     }
 
     /** Refresh the break boss bar title/progress; turns green for the final 5 minutes. */
@@ -345,7 +347,7 @@ public class GameStartManager {
         playBell(2f);
         // Resume or restart based on how the series was configured
         if ("restart".equals(lastBreakMode)) {
-            plugin.getSessionManager().endSession();
+            plugin.getSessionManager().endSession(false);
             Bukkit.getScheduler().runTaskLater(plugin, () ->
                     plugin.getSessionManager().startSession(), 2L);
         } else {
@@ -380,7 +382,9 @@ public class GameStartManager {
                             ? "§eSession ending in §f1:00" : "§aSession starting in §f1:00";
                     BarColor color = "end".equals(buildAction) ? BarColor.YELLOW : BarColor.GREEN;
                     buildBar = Bukkit.createBossBar(title, color, BarStyle.SOLID);
-                    for (Player p : Bukkit.getOnlinePlayers()) buildBar.addPlayer(p);
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        if (SessionBossBarPreference.isEnabled(p)) buildBar.addPlayer(p);
+                    }
                 }
                 playBell(1f);
             }
@@ -609,8 +613,18 @@ public class GameStartManager {
 
     /** Add a newly-joined player to any active BossBar (build or break). */
     public void onPlayerJoin(Player p) {
-        if (buildBar != null) buildBar.addPlayer(p);
-        if (breakBar != null) breakBar.addPlayer(p);
+        refreshPlayerBars(p);
+    }
+
+    /** Apply a player's persisted preference immediately to every active timeline bar. */
+    public void refreshPlayerBars(Player p) {
+        if (SessionBossBarPreference.isEnabled(p)) {
+            if (buildBar != null) buildBar.addPlayer(p);
+            if (breakBar != null) breakBar.addPlayer(p);
+        } else {
+            if (buildBar != null) buildBar.removePlayer(p);
+            if (breakBar != null) breakBar.removePlayer(p);
+        }
     }
 
     // ── External break-timer integration ─────────────────────────────────────
@@ -632,6 +646,57 @@ public class GameStartManager {
     public int     getBreakDurMins()    { return breakDurMins; }
     public boolean isWaitingForBreak()  { return waitingForBreak; }
     public int     getBreakTimeRemaining() { return waitingForBreak ? breakTimerRemain : 0; }
+
+    /** Start an immediate, non-looping break for the scheduled-session controller. */
+    public boolean beginScheduledBreak(int durationMinutes) {
+        if (durationMinutes < 1 || waitingForBreak || breakCountdown >= 0) return false;
+        clearBreakState();
+        this.breakDurMins = durationMinutes;
+        this.breakMode = "resume";
+        startBreak();
+        return true;
+    }
+
+    /** Restore an interrupted scheduled break using its exact saved remaining time. */
+    public boolean restoreScheduledBreak(int remainingSeconds, int totalMinutes) {
+        if (remainingSeconds < 1) return false;
+        clearBreakState();
+        this.breakDurMins = Math.max(1, totalMinutes);
+        this.breakMode = "resume";
+        startBreak();
+        this.breakTimerRemain = remainingSeconds;
+        updateBreakBar(this.breakTimerRemain, this.breakDurMins * 60);
+        return true;
+    }
+
+    /** Add time to the currently active break. */
+    public boolean extendScheduledBreak(int minutes) {
+        if (minutes < 1 || !waitingForBreak || !breakTimerActive) return false;
+        this.breakTimerRemain += minutes * 60;
+        this.breakDurMins += minutes;
+        updateBreakBar(this.breakTimerRemain, this.breakDurMins * 60);
+        return true;
+    }
+
+    /** Stop a scheduled break without allowing its normal timer to resume it later. */
+    public boolean cancelScheduledBreak() {
+        if (!waitingForBreak && !breakTimerActive) return false;
+        clearBreakState();
+        return true;
+    }
+
+    /** Clear legacy /gamestart automation before the new scheduler takes ownership. */
+    public void cancelAutomationTimers() {
+        clearBreakState();
+        seriesActive = false;
+        seriesPhase = null;
+        seriesCountdown = 0;
+        seriesBreakStarted = false;
+        seriesBreakCountdown = 0;
+        buildCountdown = -1;
+        buildAction = null;
+        if (buildBar != null) { buildBar.removeAll(); buildBar = null; }
+    }
     public int     getLastHalfMins()    { return lastHalfMins; }
     public int     getLastBuildMins()   { return lastBuildMins; }
     public boolean hasBuildCountdown()  { return buildCountdown >= 0; }

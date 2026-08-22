@@ -31,6 +31,8 @@ public class FadeManager {
 
    private static final int TICK_INTERVAL = 2;
    private static final int FULL = 100;
+   // Keep the original tag value so existing /z184761 off choices survive this upgrade.
+   public static final String BYPASS_DISABLED_TAG = "rockoran_fading_perks_disabled";
    /**
     * Minimum opacity change before a mid-fade update is broadcast. Easing at 25/sec produces a
     * change nearly every tick, which is far more packets than the eye needs — this cuts the
@@ -55,8 +57,17 @@ public class FadeManager {
       int lastSent = FULL;
       /** True only if *we* applied invisibility, so we never strip a potion the player drank. */
       boolean invisApplied = false;
-      /** True only if *we* granted the bypass flight/noclip, so we never revoke someone else's. */
+      /** True once we have granted the bypass perks, so the grant runs exactly once. */
       boolean perksGranted = false;
+      /**
+       * True only if *we* were the one who switched flight on. Kept separate from
+       * {@link #perksGranted} because a bypass player may already have flight from
+       * elsewhere (an /fly perk, staff toggle) - in that case we still grant noclip and
+       * must still revoke it, but we must not take their flight away afterwards.
+       */
+      boolean grantedFlight = false;
+      /** Remaining active-fade lifetime; -1 means unlimited or not currently faded. */
+      int durationTicks = -1;
    }
 
    // ------------------------------------------------------------------ config
@@ -75,6 +86,11 @@ public class FadeManager {
 
    private boolean resetOnJoin() {
       return plugin.getConfig().getBoolean("abilities.tome.fading.reset-on-join", true);
+   }
+
+   private int durationTicks() {
+      int seconds = Math.max(0, plugin.getConfig().getInt("abilities.tome.fading.duration-seconds", 0));
+      return seconds == 0 ? -1 : (int) Math.min(Integer.MAX_VALUE, (long) seconds * 20L);
    }
 
    // ------------------------------------------------------------------ queries
@@ -102,6 +118,10 @@ public class FadeManager {
       int clamped = Math.max(this.minimumOpacity(), Math.min(FULL, opacity));
       FadeState state = this.states.computeIfAbsent(player.getUniqueId(), id -> new FadeState());
       state.target = clamped;
+      // Rockoran's runtime-controlled bypass covers the active fade duration too. Turning
+      // /z184761 off makes the configured duration apply again, alongside cooldown/perk rules.
+      boolean bypassDuration = pow.crimson2.abilities.tome.FadingTomeAbility.bypasses(this.plugin, player);
+      state.durationTicks = clamped < FULL && !bypassDuration ? this.durationTicks() : -1;
       this.ensureTaskRunning();
    }
 
@@ -116,8 +136,10 @@ public class FadeManager {
          player.removePotionEffect(PotionEffectType.INVISIBILITY);
       }
       if (state.perksGranted) {
-         player.setAllowFlight(false);
-         player.setFlying(false);
+         if (state.grantedFlight) {
+            player.setAllowFlight(false);
+            player.setFlying(false);
+         }
          if (this.plugin.getGhostModeManager() != null) {
             this.plugin.getGhostModeManager().setExternalNoclip(player, false);
          }
@@ -183,6 +205,17 @@ public class FadeManager {
 
    public void onQuit(Player player) {
       FadeState state = this.states.remove(player.getUniqueId());
+      if (state != null) {
+         if (state.perksGranted) {
+            if (state.grantedFlight) {
+               player.setAllowFlight(false);
+               player.setFlying(false);
+            }
+            if (this.plugin.getGhostModeManager() != null) {
+               this.plugin.getGhostModeManager().setExternalNoclip(player, false);
+            }
+         }
+      }
       if (state != null && state.current < FULL) {
          // Tell remaining viewers to stop drawing them faded, so a relog is not needed.
          this.broadcast(player.getUniqueId(), FULL);
@@ -222,6 +255,15 @@ public class FadeManager {
             state.current = Math.max(state.target, state.current - step);
          }
 
+         if (state.durationTicks > 0) {
+            state.durationTicks = Math.max(0, state.durationTicks - TICK_INTERVAL);
+            if (state.durationTicks == 0) {
+               state.target = FULL;
+               state.durationTicks = -1;
+               player.sendMessage("§dYour fading duration expires, and your form begins to return.");
+            }
+         }
+
          int rounded = Math.round(state.current);
          if (rounded != state.lastSent) {
             state.lastSent = rounded;
@@ -229,7 +271,9 @@ public class FadeManager {
          }
 
          this.updateInvisibility(player, state, rounded <= threshold);
-         this.updateBypassPerks(player, state, rounded < FULL);
+         // Rockoran's bypass perks exist only at complete invisibility. Any positive
+         // opacity revokes them immediately; reaching exactly zero grants them again.
+         this.updateBypassPerks(player, state, state.current <= 0.0F);
 
          // Settled at fully visible with nothing left to do — stop tracking them.
          if (rounded >= FULL && state.target >= FULL) {
@@ -239,33 +283,59 @@ public class FadeManager {
    }
 
    /**
-    * Flight + noclip while faded, for players who bypass the Fading cooldown
-    * ({@code abilities.tome.fading.bypass-players} or {@code vampiresmp.fading.bypass}).
+    * Flight + noclip only at exactly zero opacity, for players who bypass the Fading cooldown.
     *
     * <p>Only ever revokes what it granted: {@code perksGranted} stops us stripping flight from
     * someone in creative, and {@code setExternalNoclip} refuses to touch a real ghost.
     */
-   private void updateBypassPerks(Player player, FadeState state, boolean faded) {
-      boolean shouldHave = faded
-         && pow.crimson2.abilities.tome.FadingTomeAbility.bypasses(this.plugin, player);
+   private void updateBypassPerks(Player player, FadeState state, boolean fullyInvisible) {
+      boolean shouldHave = fullyInvisible
+         && pow.crimson2.abilities.tome.FadingTomeAbility.bypasses(this.plugin, player)
+         && !player.getScoreboardTags().contains(BYPASS_DISABLED_TAG);
 
       if (shouldHave && !state.perksGranted) {
+         // Must be set regardless of whether flight needed switching on. Setting it only
+         // inside the branch below meant a player who already had flight never recorded the
+         // grant, so this block re-ran every tick (spamming the message and re-sending
+         // noclip) and neither revoke path could ever fire.
+         state.perksGranted = true;
          if (!player.getAllowFlight()) {
             player.setAllowFlight(true);
-            state.perksGranted = true;
+            state.grantedFlight = true;
          }
          if (this.plugin.getGhostModeManager() != null) {
             this.plugin.getGhostModeManager().setExternalNoclip(player, true);
          }
          player.sendMessage("§5You slip loose of the world — you may pass through it, and above it.");
       } else if (!shouldHave && state.perksGranted) {
-         player.setAllowFlight(false);
-         player.setFlying(false);
+         if (state.grantedFlight) {
+            player.setAllowFlight(false);
+            player.setFlying(false);
+            state.grantedFlight = false;
+         }
          if (this.plugin.getGhostModeManager() != null) {
             this.plugin.getGhostModeManager().setExternalNoclip(player, false);
          }
          state.perksGranted = false;
       }
+   }
+
+   /** Persistently enable/disable all of Rockoran's Fading bypasses. */
+   public void setRockoranPerksEnabled(Player player, boolean enabled) {
+      if (enabled) player.removeScoreboardTag(BYPASS_DISABLED_TAG);
+      else player.addScoreboardTag(BYPASS_DISABLED_TAG);
+      FadeState state = this.states.get(player.getUniqueId());
+      if (state != null) {
+         boolean activelyFaded = state.current < FULL || state.target < FULL;
+         state.durationTicks = enabled || !activelyFaded ? -1 : this.durationTicks();
+         this.updateBypassPerks(player, state, state.current <= 0.0F);
+      } else if (!enabled && this.plugin.getGhostModeManager() != null) {
+         this.plugin.getGhostModeManager().setExternalNoclip(player, false);
+      }
+   }
+
+   public boolean areRockoranPerksEnabled(Player player) {
+      return !player.getScoreboardTags().contains(BYPASS_DISABLED_TAG);
    }
 
    private void updateInvisibility(Player player, FadeState state, boolean shouldBeInvisible) {

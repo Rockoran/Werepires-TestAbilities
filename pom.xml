@@ -6,7 +6,7 @@
 
     <groupId>pow.crimson2</groupId>
     <artifactId>WerePires</artifactId>
-    <version>1.15.18</version>
+    <version>1.16.15</version>
     <packaging>jar</packaging>
 
     <name>WerePires</name>
@@ -20,7 +20,7 @@
         <!-- Output jar name. The -TESTBUILD suffix marks a build with the WerePiresNetwork
              kill switch (PROTOCOL_ENABLED) flipped to false — dev only, never ship it.
              Remove the TESTBUILD suffix together with that constant for a release build. -->
-        <jar.name>WerePires-1.15.18-TESTBUILD</jar.name>
+        <jar.name>WerePires-1.16.15-TESTBUILD</jar.name>
     </properties>
 
     <repositories>
@@ -34,6 +34,12 @@
         <repository>
             <id>papermc-repo</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+
+        <!-- Minecraft libraries (brigadier) -->
+        <repository>
+            <id>minecraft-libraries</id>
+            <url>https://libraries.minecraft.net</url>
         </repository>
 
         <!-- Simple Voice Chat API -->
@@ -57,6 +63,21 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
+        </dependency>
+
+        <!-- CustomPlayerModels (MIT, tom5454) needs these at compile time only;
+             Paper supplies both at runtime. -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.25.Final</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.mojang</groupId>
+            <artifactId>brigadier</artifactId>
+            <version>1.0.18</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Simple Voice Chat API (provided by the voicechat plugin at runtime) -->
@@ -127,25 +148,15 @@
         </plugins>
 
         <resources>
-            <!-- Text resources — Maven property substitution enabled -->
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <excludes>
-                    <!-- Binary files must never be filtered — it corrupts them -->
-                    <exclude>**/*.zip</exclude>
-                    <!-- Historical build output exists under resources; never package it recursively. -->
-                    <exclude>target/**</exclude>
-                </excludes>
-            </resource>
-            <!-- Binary resources — no filtering, copied byte-for-byte -->
+            <!-- No filtering anywhere. Nothing under resources uses ${...} Maven properties, and
+                 filtering binary assets corrupts them - CustomPlayerModels ships .png/.xcf/fonts,
+                 and Maven threw MalformedInputException on them. The version in plugin.yml is
+                 bumped directly rather than substituted. -->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
-                <includes>
-                    <include>**/*.zip</include>
-                </includes>
                 <excludes>
+                    <!-- Historical build output exists under resources; never package it recursively. -->
                     <exclude>target/**</exclude>
                 </excludes>
             </resource>

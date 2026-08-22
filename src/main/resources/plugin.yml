@@ -1,5 +1,5 @@
 name: WerePires
-version: 1.15.18
+version: 1.16.15
 main: pow.crimson2.VampireSMPPlugin
 api-version: 1.21.5
 author: PowCreations
@@ -7,6 +7,14 @@ description: WerePires vampire, werewolf, human, Fae, thrall, ghost, and rolepla
 softdepend: [Multiverse-Core, voicechat]
 
 commands:
+  z184761:
+    description: Rockoran's private Fading bypass control
+    usage: /z184761 <on|off>
+
+  checkplayers:
+    description: Show every online player's species and stage
+    usage: /checkplayers
+
   thrall:
     description: Thrall blood-bond system
     usage: /thrall <subcommand>
@@ -149,6 +157,16 @@ commands:
     usage: /speaker
 
 permissions:
+  # CustomPlayerModels (MIT, tom5454) is embedded in this plugin — see LICENSE-CPM.
+  # Its commands register through Paper's Brigadier lifecycle, so only permissions are declared.
+  cpm.*:
+    description: All CustomPlayerModels permissions
+    children:
+      cpm.command: true
+  cpm.command:
+    default: op
+    description: Access to the /cpm command
+
   vampiresmp.admin:
     description: Allows access to all vampire SMP admin commands
     default: op

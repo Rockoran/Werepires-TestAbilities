@@ -72,6 +72,14 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          return this.handleInitCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("session")) {
          return this.handleSessionCommand(sender, args);
+      } else if (command.getName().equalsIgnoreCase("sessionsetup")) {
+         return new pow.crimson2.gamestart.SessionSetupCommand(this.plugin).handle(sender, args);
+      } else if (command.getName().equalsIgnoreCase("extendbreak")) {
+         return this.handleScheduleExtension(sender, args, true);
+      } else if (command.getName().equalsIgnoreCase("extendsession")) {
+         return this.handleScheduleExtension(sender, args, false);
+      } else if (command.getName().equalsIgnoreCase("sessionturns")) {
+         return this.handleSessionTurns(sender, args);
       } else if (command.getName().equalsIgnoreCase("vampire")) {
          return this.handleVampireCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("werewolf")) {
@@ -171,6 +179,56 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       } else {
          return false;
       }
+   }
+
+   private boolean handleScheduleExtension(CommandSender sender, String[] args, boolean breakExtension) {
+      if (args.length != 1) {
+         sender.sendMessage("§cUsage: /pow admin " + (breakExtension ? "extendbreak" : "extendsession") + " <minutes>");
+         return true;
+      }
+      int minutes;
+      try { minutes = Integer.parseInt(args[0]); }
+      catch (NumberFormatException ex) { sender.sendMessage("§cMinutes must be a whole number."); return true; }
+      if (!pow.crimson2.gamestart.ScheduledSessionManager.validMinutes(minutes)) {
+         sender.sendMessage("§cMinutes must be from 1 to 10080.");
+         return true;
+      }
+      boolean changed = breakExtension
+              ? this.plugin.getScheduledSessionManager().extendBreak(minutes)
+              : this.plugin.getScheduledSessionManager().extendSession(minutes);
+      if (!changed) sender.sendMessage(breakExtension
+              ? "§cThere is no active scheduled break to extend."
+              : "§cThere is no active scheduled gameplay phase to extend.");
+      return true;
+   }
+
+   private boolean handleSessionTurns(CommandSender sender, String[] args) {
+      SessionTurnManager turns = this.plugin.getSessionTurnManager();
+      if (args.length == 0 || args[0].equalsIgnoreCase("status")) {
+         turns.status(sender);
+         return true;
+      }
+      if (args.length != 2) {
+         sender.sendMessage("§cUsage: /pow admin sessionturns <limit|extend> <number>");
+         return true;
+      }
+      int amount;
+      try { amount = Integer.parseInt(args[1]); }
+      catch (NumberFormatException ex) { sender.sendMessage("§cNumber must be a whole number."); return true; }
+      if (!SessionTurnManager.validAmount(amount)) {
+         sender.sendMessage("§cNumber must be from 0 to 100000.");
+         return true;
+      }
+      if (args[0].equalsIgnoreCase("limit")) {
+         turns.setLimit(amount, sender);
+      } else if (args[0].equalsIgnoreCase("extend")) {
+         if (amount < 1 || !turns.extend(amount, sender)) {
+            sender.sendMessage("§cSet a session turn limit first; extension must keep the total at or below 100000.");
+         }
+      } else {
+         sender.sendMessage("§cUsage: /pow admin sessionturns <limit|extend> <number>");
+      }
+      return true;
    }
 
    private boolean handleSire(CommandSender sender, String[] args) {
@@ -579,6 +637,11 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
    }
 
    private boolean handleSessionCommand(CommandSender sender, String[] args) {
+      if (this.plugin.getScheduledSessionManager() != null
+            && this.plugin.getScheduledSessionManager().isActive()) {
+         sender.sendMessage("§cAn automatic session schedule is active. Cancel it first with '/pow admin sessionsetup cancel'.");
+         return true;
+      }
       if (args.length != 1) {
          sender.sendMessage("§cUsage: /pow admin session <start|pause|end|prime|resume|building>");
          return true;

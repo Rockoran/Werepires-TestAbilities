@@ -12,6 +12,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.entity.Player;
 import pow.crimson2.VampireSMPPlugin;
+import pow.crimson2.gamestart.SessionBossBarPreference;
 
 public class PowCommand implements CommandExecutor, TabCompleter {
    private final VampireSMPPlugin plugin;
@@ -95,6 +96,8 @@ public class PowCommand implements CommandExecutor, TabCompleter {
          case "ability":
          case "abilities":
             return this.abilityRulesCommand.onCommand(sender, command, label, subArgs);
+         case "bossbar":
+            return this.handleBossBar(sender, subArgs);
          case "faedeal":
          case "fae":
             return this.faeDealCommand.onCommand(sender, command, label, subArgs);
@@ -115,6 +118,31 @@ public class PowCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§7Use §e/pow help §7for a list of commands");
             return true;
       }
+   }
+
+   private boolean handleBossBar(CommandSender sender, String[] args) {
+      if (!(sender instanceof Player player)) {
+         sender.sendMessage("§cOnly players can set a personal boss-bar preference.");
+         return true;
+      }
+      if (args.length == 0 || args[0].equalsIgnoreCase("status")) {
+         player.sendMessage("§7Building/break boss bar: "
+               + (SessionBossBarPreference.isEnabled(player) ? "§aON" : "§cOFF"));
+         player.sendMessage("§7Use §e/pow bossbar <on|off>§7.");
+         return true;
+      }
+      if (!args[0].equalsIgnoreCase("on") && !args[0].equalsIgnoreCase("off")) {
+         player.sendMessage("§cUsage: /pow bossbar <on|off|status>");
+         return true;
+      }
+      boolean enabled = args[0].equalsIgnoreCase("on");
+      SessionBossBarPreference.setEnabled(player, enabled);
+      if (this.plugin.getScheduledSessionManager() != null) {
+         this.plugin.getScheduledSessionManager().refreshPlayerBar(player);
+      }
+      this.plugin.getGameStartManager().refreshPlayerBars(player);
+      player.sendMessage("§7Building/break boss bar: " + (enabled ? "§aON" : "§cOFF"));
+      return true;
    }
 
    private boolean handleAdminCommand(CommandSender sender, String[] args) {
@@ -143,6 +171,7 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage("§e/pow wability <name> §7- Use werewolf abilities");
       sender.sendMessage("§e/pow tome <name> §7- Use tome abilities (humans)");
       sender.sendMessage("§e/pow ability §7- Which abilities survive being turned");
+      sender.sendMessage("§e/pow bossbar <on|off> §7- Toggle building/break boss bars for yourself");
       sender.sendMessage("§e/voluntate-mea-hoc-nefandum-vinculum-abicio §7- Cure yourself from vampirism");
       sender.sendMessage("§e/hoc-vinculum-tibi-dirumpo-mala-creatura <player> §7- Force cure a vampire");
       sender.sendMessage("§e/pow beaconstatus §7- Check beacon spiritual influence");
@@ -160,6 +189,10 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage("§6§l=== VampireSMP Admin Commands ===");
       sender.sendMessage("§e/pow admin init §7- Initialize a new game (full reset)");
       sender.sendMessage("§e/pow admin session <start|pause|end|prime|resume|building> §7- Manage session state");
+      sender.sendMessage("§e/pow admin sessionsetup [status|cancel] §7- Configure an automatic session timeline");
+      sender.sendMessage("§e/pow admin extendbreak <minutes> §7- Extend the active scheduled break");
+      sender.sendMessage("§e/pow admin extendsession <minutes> §7- Extend the active scheduled gameplay phase");
+      sender.sendMessage("§e/pow admin sessionturns <limit|extend> <number> §7- Manage the shared session turn allowance");
       sender.sendMessage("§e/pow admin vampire <player> <human|1|2|3|turn> §7- Manage vampire status");
       sender.sendMessage("§e/pow admin werewolf <player> <human|1|2|3> §7- Manage werewolf status");
       sender.sendMessage("§e/pow admin beacon <subcommand> §7- Manage beacon sites (use tab for options)");
@@ -211,7 +244,7 @@ public class PowCommand implements CommandExecutor, TabCompleter {
    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
       List<String> completions = new ArrayList<>();
       if (args.length == 1) {
-         List<String> subCommands = new ArrayList<>(Arrays.asList("vability", "wability", "tome", "ability", "beaconstatus", "permadeath", "toggle-turning", "help"));
+         List<String> subCommands = new ArrayList<>(Arrays.asList("vability", "wability", "tome", "ability", "bossbar", "beaconstatus", "permadeath", "toggle-turning", "help"));
          if (sender instanceof Player p && this.plugin.getFaeManager() != null && this.plugin.getFaeManager().isFae(p)) {
             subCommands.add(0, "faedeal");
          }
@@ -238,6 +271,11 @@ public class PowCommand implements CommandExecutor, TabCompleter {
             return permadeathOptions.stream().filter(s -> s.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
          }
 
+         if (args.length == 2 && args[0].equalsIgnoreCase("bossbar")) {
+            return Arrays.asList("on", "off", "status").stream()
+                  .filter(s -> s.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
+         }
+
          if (args.length >= 2 && args[0].equalsIgnoreCase("admin")) {
             if (!sender.hasPermission("vampiresmp.admin")) {
                return new ArrayList<>();
@@ -247,6 +285,10 @@ public class PowCommand implements CommandExecutor, TabCompleter {
                List<String> adminCommands = Arrays.asList(
                   "init",
                   "session",
+                  "sessionsetup",
+                  "extendbreak",
+                  "extendsession",
+                  "sessionturns",
                   "vampire",
                   "werewolf",
                   "beacon",
@@ -319,6 +361,27 @@ public class PowCommand implements CommandExecutor, TabCompleter {
             if (args.length == 3 && args[1].equalsIgnoreCase("session")) {
                List<String> sessionOptions = Arrays.asList("start", "pause", "end", "prime", "resume", "building");
                return sessionOptions.stream().filter(s -> s.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+            }
+
+            if (args.length == 3 && args[1].equalsIgnoreCase("sessionsetup")) {
+               return Arrays.asList("status", "cancel").stream()
+                  .filter(s -> s.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+            }
+
+            if (args.length == 3 && (args[1].equalsIgnoreCase("extendbreak")
+                  || args[1].equalsIgnoreCase("extendsession"))) {
+               return Arrays.asList("5", "10", "15", "30").stream()
+                  .filter(s -> s.startsWith(args[2])).collect(Collectors.toList());
+            }
+
+            if (args.length == 3 && args[1].equalsIgnoreCase("sessionturns")) {
+               return Arrays.asList("limit", "extend", "status").stream()
+                  .filter(s -> s.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+            }
+
+            if (args.length == 4 && args[1].equalsIgnoreCase("sessionturns")) {
+               return Arrays.asList("0", "1", "2", "3", "5", "10").stream()
+                  .filter(s -> s.startsWith(args[3])).collect(Collectors.toList());
             }
 
             if (args.length == 3 && args[1].equalsIgnoreCase("vampire")) {

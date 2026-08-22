@@ -196,6 +196,23 @@ public abstract class TomeAbility {
       });
    }
 
+   /**
+    * Wipes every tome cooldown and its pending "ability ready" task.
+    *
+    * <p>Session resets previously only cleared {@code VampireAbilityManager}'s own maps, so
+    * tome cooldowns survived into the next session - with Fading at 300s that meant a fresh
+    * session could open with someone locked out for five minutes over the previous one.
+    * Fae bargains are deliberately left alone: they are earned, not per-session.
+    */
+   public static void clearAllForNewSession() {
+      int cleared = playerCooldowns.size();
+      playerCooldowns.clear();
+      cancelAllNotificationTasks();
+      if (cleared > 0) {
+         Bukkit.getLogger().info("[WerePires] NEW SESSION: cleared tome cooldowns for " + cleared + " player(s)");
+      }
+   }
+
    public static void cancelAllNotificationTasks() {
       for (BukkitTask task : cooldownNotificationTasks.values()) {
          if (task != null && !task.isCancelled()) {

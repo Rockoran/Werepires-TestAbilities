@@ -380,6 +380,9 @@ public class SessionManager {
       this.plugin.getVampireManager().clearAllStageCaps();
       this.plugin.getVampireFeedingManager().resetSessionFeedingThirst();
       this.plugin.getVampireAbilityManager().clearAllCooldownsForNewSession();
+      // Tome cooldowns live in TomeAbility's own static map, which the call above
+      // does not touch - without this they cross the session boundary.
+      pow.crimson2.abilities.tome.TomeAbility.clearAllForNewSession();
       this.plugin.getBeaconManager().clearAllBeaconCooldownsForNewSession();
       if (this.plugin.getVampireTurningManager() != null) {
          this.plugin.getVampireTurningManager().enableAllVampireTurning();
@@ -415,14 +418,25 @@ public class SessionManager {
    }
 
    public void endSession() {
+      this.endSession(true);
+   }
+
+   /** @param clearSessionTurns false only for a technical restart used to finish a break. */
+   public void endSession(boolean clearSessionTurns) {
       this.stopTrackingSessionTime();
       Score sessionScore = this.sessionObjective.getScore("state");
       sessionScore.setScore(3);
       this.setOutOfSessionRules();
       this.setAllPlayersMaxFood();
       this.plugin.getVampireAbilityManager().clearAllCooldownsForNewSession();
+      // Tome cooldowns live in TomeAbility's own static map, which the call above
+      // does not touch - without this they cross the session boundary.
+      pow.crimson2.abilities.tome.TomeAbility.clearAllForNewSession();
       this.freezeTick();
       this.plugin.getTomeDistributionManager().stopDistributionTask();
+      if (clearSessionTurns && this.plugin.getSessionTurnManager() != null) {
+         this.plugin.getSessionTurnManager().clearAtSessionEnd();
+      }
       if (this.plugin.getFadeManager() != null) {
          this.plugin.getFadeManager().resetAll();
       }
@@ -440,6 +454,9 @@ public class SessionManager {
       this.plugin.getVampireManager().clearAllPromotionBans();
       this.plugin.getVampireManager().clearAllStageCaps();
       this.plugin.getVampireAbilityManager().clearAllCooldownsForNewSession();
+      // Tome cooldowns live in TomeAbility's own static map, which the call above
+      // does not touch - without this they cross the session boundary.
+      pow.crimson2.abilities.tome.TomeAbility.clearAllForNewSession();
       this.plugin.getBeaconManager().clearAllBeaconCooldownsForNewSession();
       this.setAllPlayersMaxFood();
       this.freezeTick();

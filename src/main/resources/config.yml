@@ -471,8 +471,11 @@ abilities:
       # Seconds before Fading can be used again. Nothing interrupts a fade once started —
       # this limits how often you can drop out of sight, not how long you stay there.
       cooldown: 300
+      # Maximum seconds a fade may remain active before automatically returning to 100%.
+      # Set to 0 for unlimited duration.
+      duration-seconds: 15
 
-      # Note: Rockoran bypasses this cooldown and gains noclip + flight while faded.
+      # Rockoran bypasses cooldown and gains noclip + flight at 0% while /z184761 is on.
       # That is built into the plugin; the vampiresmp.fading.bypass permission grants the same.
       # Opacity units per second while easing toward the target. 100 = effectively instant.
       fade-speed: 25
@@ -484,6 +487,7 @@ abilities:
       reset-on-join: true
       # Block use outside an active session.
       require-session: true
+
     # Scrying: point the vampire indicator arrow at another player for a while.
     # A target name is required: /pow tome scrying <player>
     # (To keep it out of chest/vault loot, comment it out of tome-chest-items.tomes-available.)

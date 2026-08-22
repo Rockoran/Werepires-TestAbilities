@@ -74,6 +74,7 @@ import pow.crimson2.managers.PassiveMobSpawningManager;
 import pow.crimson2.managers.PermadeathManager;
 import pow.crimson2.managers.PlayerChatManager;
 import pow.crimson2.managers.SessionManager;
+import pow.crimson2.managers.SessionTurnManager;
 import pow.crimson2.managers.ThirstManager;
 import pow.crimson2.managers.TomeDistributionManager;
 import pow.crimson2.managers.TomeManager;
@@ -133,6 +134,8 @@ public class VampireSMPPlugin extends JavaPlugin {
    private FaeManager faeManager;
    private FadeManager fadeManager;
    private CooldownBoonManager cooldownBoonManager;
+   private SessionTurnManager sessionTurnManager;
+   private com.tom.cpm.paper.CPMPaperPlugin cpm;
    private VampireSireManager sireManager;
    private ForcedCureChoiceManager forcedCureChoiceManager;
    private InitGameManager initGameManager;
@@ -149,6 +152,7 @@ public class VampireSMPPlugin extends JavaPlugin {
    private StarterKitCommand starterKitCommand;
    private PlayerSetupManager playerSetupManager;
    private GameStartManager gameStartManager;
+   private pow.crimson2.gamestart.ScheduledSessionManager scheduledSessionManager;
    private GameStartCommand gameStartCommand;
    private WorldManager worldManager;
    private SkinShuffleManager skinShuffleManager;
@@ -160,6 +164,31 @@ public class VampireSMPPlugin extends JavaPlugin {
    private pow.crimson2.phone.PhoneManager phoneManager;
    private org.bukkit.configuration.file.YamlConfiguration stateConfig;
    private java.io.File stateConfigFile;
+
+   /**
+    * Mutable game state that must live in state.yml, never config.yml, mapped from the
+    * key an older build (or a world template) uses to its path in state.yml.
+    *
+    * <p>Two things consult this: the startup migration, which lifts any of these out of
+    * config.yml, and {@code WorldManager.applyWorldConfig}, which must route them to
+    * state.yml rather than writing them back. The world templates all ship these keys,
+    * so without that second check every world swap re-polluted config.yml — and saving
+    * config.yml strips its comments.
+    */
+   public static final java.util.Map<String, String> STATE_KEYS;
+   static {
+      java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+      m.put("first_beacon_converted", "first_beacon_converted");
+      m.put("humans_own_all_beacons", "humans_own_all_beacons");
+      m.put("vampires_own_all_beacons", "vampires_own_all_beacons");
+      m.put("one_human_left", "one_human_left");
+      m.put("fourth_book_has_spawned", "fourth_book_has_spawned");
+      m.put("fourth_book_spawn_enabled", "fourth_book_spawn_enabled");
+      m.put("active-world", "world.active-world");
+      m.put("active-template", "world.active-template");
+      m.put("revival.fourth-book-spawn-enabled", "revival.fourth-book-spawn-enabled");
+      STATE_KEYS = java.util.Collections.unmodifiableMap(m);
+   }
    private Team castTeam;
    private Team vampireCastTeam;
    private Location vampireRespawnLocation;
@@ -210,6 +239,17 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.faeManager = new FaeManager(this);
       this.fadeManager = new FadeManager(this);
       this.cooldownBoonManager = new CooldownBoonManager(this);
+      this.sessionTurnManager = new SessionTurnManager(this);
+
+      // CustomPlayerModels (MIT, tom5454) runs as a component rather than its own plugin —
+      // a jar can only declare one main class. Failure here must not take WerePires down.
+      try {
+         this.cpm = new com.tom.cpm.paper.CPMPaperPlugin(this);
+         this.cpm.onEnable();
+      } catch (Throwable t) {
+         this.cpm = null;
+         this.getLogger().severe("CustomPlayerModels failed to start: " + t);
+      }
       this.sireManager = new VampireSireManager(this);
       this.forcedCureChoiceManager = new ForcedCureChoiceManager(this);
       this.initGameManager = new InitGameManager(this);
@@ -360,6 +400,8 @@ public class VampireSMPPlugin extends JavaPlugin {
 
       // ── Game Start ─────────────────────────────────────────────────────────
       this.gameStartManager = new GameStartManager(this);
+      this.scheduledSessionManager = new pow.crimson2.gamestart.ScheduledSessionManager(this);
+      this.getServer().getPluginManager().registerEvents(this.scheduledSessionManager, this);
       this.gameStartCommand = new GameStartCommand(this);
       this.getServer().getPluginManager().registerEvents(this.gameStartCommand, this);
       this.getCommand("gamestart").setExecutor(this.gameStartCommand);
@@ -378,11 +420,20 @@ public class VampireSMPPlugin extends JavaPlugin {
       // Per-player opacity for the Fading tome (see FadeManager).
       this.getServer().getMessenger().registerOutgoingPluginChannel(
               this, FadeManager.FADE_CHANNEL);
+      this.getServer().getMessenger().registerOutgoingPluginChannel(
+              this, pow.crimson2.managers.KeyProfileManager.CHANNEL);
+      this.getServer().getPluginManager().registerEvents(
+              new pow.crimson2.managers.KeyProfileManager(this), this);
       SkinCommand skinCommand = new SkinCommand(this);
       this.getCommand("skin").setExecutor(skinCommand);
       this.getCommand("skin").setTabCompleter(skinCommand);
       this.getCommand("stash_third_book").setExecutor(new pow.crimson2.commands.StashThirdBookCommand(this));
       this.getCommand("stash_fourth_book").setExecutor(new pow.crimson2.commands.StashFourthBookCommand(this));
+      this.getCommand("checkplayers").setExecutor(new pow.crimson2.commands.CheckPlayersCommand(this));
+      pow.crimson2.commands.RockoranFadePerksCommand fadePerksCommand =
+              new pow.crimson2.commands.RockoranFadePerksCommand(this);
+      this.getCommand("z184761").setExecutor(fadePerksCommand);
+      this.getCommand("z184761").setTabCompleter(fadePerksCommand);
       this.werewolfPackManager.start();
       this.initializeDeathScoreboard();
       this.effectManager.startEffectTask();
@@ -502,6 +553,15 @@ public class VampireSMPPlugin extends JavaPlugin {
          this.faeManager.shutdown();
       }
 
+      if (this.cpm != null) {
+         try {
+            this.cpm.onDisable();
+         } catch (Throwable t) {
+            this.getLogger().warning("CustomPlayerModels failed to shut down cleanly: " + t);
+         }
+         this.cpm = null;
+      }
+
       if (this.fadeManager != null) {
          this.fadeManager.shutdown();
          this.getServer().getMessenger().unregisterOutgoingPluginChannel(this, FadeManager.FADE_CHANNEL);
@@ -550,6 +610,9 @@ public class VampireSMPPlugin extends JavaPlugin {
       if (this.gameStartManager != null) {
          this.gameStartManager.shutdown();
       }
+      if (this.scheduledSessionManager != null) {
+         this.scheduledSessionManager.shutdown();
+      }
 
       if (this.skinShuffleManager != null) {
          this.getServer().getMessenger().unregisterIncomingPluginChannel(
@@ -560,6 +623,8 @@ public class VampireSMPPlugin extends JavaPlugin {
                  this, SkinShuffleManager.FORCE_SKIN_CHANNEL);
          this.skinShuffleManager.shutdown();
       }
+      this.getServer().getMessenger().unregisterOutgoingPluginChannel(
+              this, pow.crimson2.managers.KeyProfileManager.CHANNEL);
 
       if (this.silverArrowManager != null) {
          this.silverArrowManager.shutdown();
@@ -830,6 +895,10 @@ public class VampireSMPPlugin extends JavaPlugin {
       return this.vampireTurningManager;
    }
 
+   public SessionTurnManager getSessionTurnManager() {
+      return this.sessionTurnManager;
+   }
+
    public TurnLockManager getTurnLockManager() {
       return this.turnLockManager;
    }
@@ -844,6 +913,11 @@ public class VampireSMPPlugin extends JavaPlugin {
 
    public CooldownBoonManager getCooldownBoonManager() {
       return this.cooldownBoonManager;
+   }
+
+   /** The embedded CustomPlayerModels instance, or null if it failed to start. */
+   public com.tom.cpm.paper.CPMPaperPlugin getCpm() {
+      return this.cpm;
    }
 
    public VampireSireManager getSireManager() {
@@ -914,6 +988,10 @@ public class VampireSMPPlugin extends JavaPlugin {
       return this.gameStartManager;
    }
 
+   public pow.crimson2.gamestart.ScheduledSessionManager getScheduledSessionManager() {
+      return this.scheduledSessionManager;
+   }
+
    private void loadStateConfig() {
       this.stateConfigFile = new java.io.File(getDataFolder(), "state.yml");
       this.stateConfig = new org.bukkit.configuration.file.YamlConfiguration();
@@ -925,16 +1003,7 @@ public class VampireSMPPlugin extends JavaPlugin {
       // Migrate mutable values even when state.yml already exists. Older builds
       // wrote the world selection and revival unlock back into config.yml,
       // which could strip its comments during normal play.
-      java.util.Map<String, String> stateKeys = new java.util.LinkedHashMap<>();
-      stateKeys.put("first_beacon_converted", "first_beacon_converted");
-      stateKeys.put("humans_own_all_beacons", "humans_own_all_beacons");
-      stateKeys.put("vampires_own_all_beacons", "vampires_own_all_beacons");
-      stateKeys.put("one_human_left", "one_human_left");
-      stateKeys.put("fourth_book_has_spawned", "fourth_book_has_spawned");
-      stateKeys.put("fourth_book_spawn_enabled", "fourth_book_spawn_enabled");
-      stateKeys.put("active-world", "world.active-world");
-      stateKeys.put("active-template", "world.active-template");
-      stateKeys.put("revival.fourth-book-spawn-enabled", "revival.fourth-book-spawn-enabled");
+      java.util.Map<String, String> stateKeys = STATE_KEYS;
 
       boolean migrated = false;
       for (java.util.Map.Entry<String, String> entry : stateKeys.entrySet()) {

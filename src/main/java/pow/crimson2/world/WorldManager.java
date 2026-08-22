@@ -534,20 +534,36 @@ public class WorldManager {
         YamlConfiguration worldCfg = YamlConfiguration.loadConfiguration(cfgFile);
         int applied = 0;
 
+        int toState = 0;
         for (Map.Entry<String, Object> entry : worldCfg.getValues(true).entrySet()) {
             if (entry.getValue() instanceof ConfigurationSection) continue;
             // Never let a world config overwrite network credentials or GitHub repo
             String key = entry.getKey();
             if (key.startsWith("werepires-network.")) continue;
+
+            // Mutable game state belongs in state.yml. Every world template ships these
+            // keys, so writing them here would undo the startup migration on each swap
+            // and strip config.yml's comments along the way.
+            String statePath = pow.crimson2.VampireSMPPlugin.STATE_KEYS.get(key);
+            if (statePath != null) {
+                plugin.getStateConfig().set(statePath, entry.getValue());
+                toState++;
+                continue;
+            }
+
             plugin.getConfig().set(key, entry.getValue());
             applied++;
         }
 
         plugin.saveConfig();
+        if (toState > 0) {
+            plugin.saveStateConfig();
+        }
         plugin.getConfigManager().loadConfig();
         plugin.getTomeDistributionManager().reloadConfig();
         plugin.getLogger().info("[WorldSwap] Applied " + applied + " config values from "
-                + cfgFile.getParentFile().getName() + "/" + cfgFile.getName());
+                + cfgFile.getParentFile().getName() + "/" + cfgFile.getName()
+                + (toState > 0 ? " (" + toState + " game-state values routed to state.yml)" : ""));
         return applied;
     }
 

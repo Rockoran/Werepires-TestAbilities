@@ -66,6 +66,10 @@ public class InitGameManager {
         int              seriesHalf       = 60;
         int              seriesBrk        = 15;
         int              seriesBld        = 45;
+        int              seriesInitialBuild = 15;
+        int              seriesPreBreak     = 60;
+        int              seriesPostBreak    = 60;
+        int              seriesFinalBuild   = 15;
         int              breakMins        = 0;
         int              breakDur         = 15;
         boolean          breakLoop        = false;
@@ -415,11 +419,11 @@ public class InitGameManager {
                     }), ClickCallback.Options.builder().build())),
                 ActionButton.create(
                     Component.text("Series", NamedTextColor.LIGHT_PURPLE),
-                    Component.text("Two halves with a break and build phase."),
+                    Component.text("Automatic building → session → break → session → building timeline."),
                     150,
                     DialogAction.customClick((view, aud) -> sync(() -> {
                         state.sessionMode = "series";
-                        showSeriesHalf(p, state);
+                        showSeriesSchedule(p, state);
                     }), ClickCallback.Options.builder().build())),
                 ActionButton.create(
                     Component.text("Cancel", NamedTextColor.RED), null, 100,
@@ -434,6 +438,57 @@ public class InitGameManager {
     // =========================================================================
     // Series screens
     // =========================================================================
+
+    private void showSeriesSchedule(Player p, WizardState state) {
+        Dialog d = Dialog.create(b -> b.empty()
+            .base(DialogBase.builder(Component.text("Init — Series Schedule", NamedTextColor.RED))
+                .body(List.of(DialogBody.plainMessage(Component.text(
+                    "Configure the automatic timeline. All values are whole minutes."
+                ))))
+                .inputs(List.of(
+                    DialogInput.text("initial_build", Component.text("Beginning building time"))
+                        .initial(String.valueOf(state.seriesInitialBuild)).maxLength(5).build(),
+                    DialogInput.text("before_break", Component.text("Session time until break"))
+                        .initial(String.valueOf(state.seriesPreBreak)).maxLength(5).build(),
+                    DialogInput.text("break_time", Component.text("Break duration"))
+                        .initial(String.valueOf(state.seriesBrk)).maxLength(5).build(),
+                    DialogInput.text("after_break", Component.text("Session time after break"))
+                        .initial(String.valueOf(state.seriesPostBreak)).maxLength(5).build(),
+                    DialogInput.text("final_build", Component.text("Building time after session end"))
+                        .initial(String.valueOf(state.seriesFinalBuild)).maxLength(5).build()
+                )).build())
+            .type(DialogType.multiAction(List.of(
+                ActionButton.create(Component.text("Continue →", NamedTextColor.GREEN),
+                    Component.text("Continue to role selection."), 170,
+                    DialogAction.customClick((view, aud) -> {
+                        String[] raw = { view.getText("initial_build"), view.getText("before_break"),
+                            view.getText("break_time"), view.getText("after_break"), view.getText("final_build") };
+                        sync(() -> {
+                            int[] values = new int[5];
+                            for (int i = 0; i < raw.length; i++) values[i] = parseIntSafe(raw[i], -1);
+                            for (int value : values) {
+                                if (!pow.crimson2.gamestart.ScheduledSessionManager.validMinutes(value)) {
+                                    p.sendMessage(Component.text("Every value must be from 1 to 10080 minutes.", NamedTextColor.RED));
+                                    showSeriesSchedule(p, state);
+                                    return;
+                                }
+                            }
+                            state.seriesInitialBuild = values[0];
+                            state.seriesPreBreak = values[1];
+                            state.seriesBrk = values[2];
+                            state.seriesPostBreak = values[3];
+                            state.seriesFinalBuild = values[4];
+                            showRoles(p, state);
+                        });
+                    }, ClickCallback.Options.builder().build())),
+                ActionButton.create(Component.text("Cancel", NamedTextColor.RED), null, 100,
+                    DialogAction.customClick((view, aud) -> sync(() ->
+                        p.sendMessage(Component.text("Initialization cancelled.", NamedTextColor.RED))),
+                        ClickCallback.Options.builder().build()))
+            )).build())
+        );
+        p.showDialog(d);
+    }
 
     private void showSeriesHalf(Player p, WizardState state) {
         Dialog d = Dialog.create(b -> b.empty()
@@ -807,9 +862,11 @@ public class InitGameManager {
         sb.append("\n§7Session: §f").append(state.sessionMode);
 
         if ("series".equals(state.sessionMode)) {
-            sb.append("\n§7Half: §f").append(state.seriesHalf).append(" min")
+            sb.append("\n§7Initial building: §f").append(state.seriesInitialBuild).append(" min")
+              .append("\n§7Session before break: §f").append(state.seriesPreBreak).append(" min")
               .append("\n§7Break: §f").append(state.seriesBrk).append(" min")
-              .append("\n§7Build: §f").append(state.seriesBld).append(" min");
+              .append("\n§7Session after break: §f").append(state.seriesPostBreak).append(" min")
+              .append("\n§7Final building: §f").append(state.seriesFinalBuild).append(" min");
         } else {
             if (state.breakMins > 0) {
                 int bh = state.breakMins / 60, bm = state.breakMins % 60;
@@ -867,6 +924,9 @@ public class InitGameManager {
         if (world == null) {
             admin.sendMessage("§cError: No active world found. Use §f/pow admin loadworld §cor ensure 'world' is loaded.");
             return;
+        }
+        if (plugin.getScheduledSessionManager() != null && plugin.getScheduledSessionManager().isActive()) {
+            plugin.getScheduledSessionManager().cancel(admin);
         }
         admin.sendMessage("§7World: §e" + world.getName());
 
@@ -931,6 +991,9 @@ public class InitGameManager {
 
         admin.sendMessage("§7[4/9] Priming new session and incrementing game ID...");
         plugin.getSessionManager().primeNewSession();
+        if (plugin.getSessionTurnManager() != null) {
+            plugin.getSessionTurnManager().clearAtSessionEnd();
+        }
         plugin.getSessionManager().incrementGameID();
 
         admin.sendMessage("§7[4.5/9] Resetting game state flags...");
@@ -1030,8 +1093,12 @@ public class InitGameManager {
             }
         }
 
-        admin.sendMessage("§7[9/11] Starting session...");
-        plugin.getSessionManager().startSession();
+        if ("series".equals(state.sessionMode)) {
+            admin.sendMessage("§7[9/11] Preparing scheduled building phase...");
+        } else {
+            admin.sendMessage("§7[9/11] Starting session...");
+            plugin.getSessionManager().startSession();
+        }
 
         admin.sendMessage("§7[10/11] Distributing tomes to chests...");
         if (plugin.getTomeDistributionManager().getTomeLocations().isEmpty()) {
@@ -1067,7 +1134,13 @@ public class InitGameManager {
         // Setup timers
         GameStartManager gsm = plugin.getGameStartManager();
         if ("series".equals(state.sessionMode)) {
-            gsm.startSeriesOnly(state.seriesHalf, state.seriesBrk, state.seriesBld, state.roleCounts);
+            plugin.getScheduledSessionManager().start(
+                state.seriesInitialBuild,
+                state.seriesPreBreak,
+                state.seriesBrk,
+                state.seriesPostBreak,
+                state.seriesFinalBuild
+            );
         } else if (state.breakMins > 0) {
             gsm.setupBreakOnly(state.breakMins, state.breakDur, state.breakLoop, state.breakMode);
         }

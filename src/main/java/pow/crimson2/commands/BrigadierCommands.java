@@ -134,12 +134,27 @@ public class BrigadierCommands {
                                                     .executes(ctx -> this.executePowCommand(ctx, "tome", "list"))
                                     ))
                                     .then(
-                                            Commands.argument("ability", StringArgumentType.word())
+                                            ((RequiredArgumentBuilder) Commands.argument("ability", StringArgumentType.word())
                                                     .suggests((ctx, builder) -> this.suggestTomeAbilities(ctx, builder))
                                                     .executes(ctx -> {
                                                       String ability = StringArgumentType.getString(ctx, "ability");
                                                       return this.executePowCommand(ctx, "tome", ability);
-                                                    })
+                                                    }))
+                                                    // Tomes that take a target (Scrying needs one, Fading takes an
+                                                    // optional opacity). Without this node Brigadier ends the command
+                                                    // at the ability name, so there is nothing to tab-complete and a
+                                                    // trailing argument is rejected as bad syntax - TomeAbilityCommand
+                                                    // forwards it happily, but its Bukkit completer never runs while
+                                                    // /pow is served by Brigadier.
+                                                    .then(
+                                                            Commands.argument("target", StringArgumentType.word())
+                                                                    .suggests((ctx, builder) -> this.suggestTomeAbilityTargets(ctx, builder))
+                                                                    .executes(ctx -> {
+                                                                      String ability = StringArgumentType.getString(ctx, "ability");
+                                                                      String target = StringArgumentType.getString(ctx, "target");
+                                                                      return this.executePowCommand(ctx, "tome", ability, target);
+                                                                    })
+                                                    )
                                     )
                     )
                     .then(Commands.literal("beaconstatus").executes(ctx -> this.executePowCommand(ctx, "beaconstatus"))))
@@ -190,6 +205,11 @@ public class BrigadierCommands {
                     .then(Commands.literal("sendpendingmessage").executes(ctx -> this.executePowCommand(ctx, "sendmessage")))
                     .then(Commands.literal("reopen").executes(ctx -> this.executePowCommand(ctx, "reopen"))))
                     .then(Commands.literal("forcedcure-reopen").executes(ctx -> this.executePowCommand(ctx, "reopen")))
+                    .then(Commands.literal("bossbar")
+                            .executes(ctx -> this.executePowCommand(ctx, "bossbar", "status"))
+                            .then(Commands.literal("on").executes(ctx -> this.executePowCommand(ctx, "bossbar", "on")))
+                            .then(Commands.literal("off").executes(ctx -> this.executePowCommand(ctx, "bossbar", "off")))
+                            .then(Commands.literal("status").executes(ctx -> this.executePowCommand(ctx, "bossbar", "status"))))
                     .then(
                             ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal(
                                             "admin"
@@ -264,6 +284,40 @@ public class BrigadierCommands {
                                                                             )
                                                                     )
                                                     )
+                                    ))
+                                    .then(
+                                            ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal("sessionsetup")
+                                                    .executes(ctx -> this.executePowCommand(ctx, "admin", "sessionsetup")))
+                                                    .then(Commands.literal("status").executes(
+                                                            ctx -> this.executePowCommand(ctx, "admin", "sessionsetup", "status")))
+                                                    .then(Commands.literal("cancel").executes(
+                                                            ctx -> this.executePowCommand(ctx, "admin", "sessionsetup", "cancel")))
+                                    ))
+                                    .then(
+                                            Commands.literal("extendbreak")
+                                                    .then(Commands.argument("minutes", IntegerArgumentType.integer(1, 10080))
+                                                            .executes(ctx -> this.executePowCommand(ctx, "admin", "extendbreak",
+                                                                    String.valueOf(IntegerArgumentType.getInteger(ctx, "minutes")))))
+                                    )
+                                    .then(
+                                            Commands.literal("extendsession")
+                                                    .then(Commands.argument("minutes", IntegerArgumentType.integer(1, 10080))
+                                                            .executes(ctx -> this.executePowCommand(ctx, "admin", "extendsession",
+                                                                    String.valueOf(IntegerArgumentType.getInteger(ctx, "minutes")))))
+                                    )
+                                    .then(
+                                            ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal("sessionturns")
+                                                    .executes(ctx -> this.executePowCommand(ctx, "admin", "sessionturns", "status")))
+                                                    .then(Commands.literal("status").executes(
+                                                            ctx -> this.executePowCommand(ctx, "admin", "sessionturns", "status")))
+                                                    .then(Commands.literal("limit")
+                                                            .then(Commands.argument("turn_limit", IntegerArgumentType.integer(0, 100000))
+                                                                    .executes(ctx -> this.executePowCommand(ctx, "admin", "sessionturns", "limit",
+                                                                            String.valueOf(IntegerArgumentType.getInteger(ctx, "turn_limit"))))))
+                                                    .then(Commands.literal("extend")
+                                                            .then(Commands.argument("turn_extension", IntegerArgumentType.integer(1, 100000))
+                                                                    .executes(ctx -> this.executePowCommand(ctx, "admin", "sessionturns", "extend",
+                                                                            String.valueOf(IntegerArgumentType.getInteger(ctx, "turn_extension"))))))
                                     ))
                                     .then(
                                             Commands.literal("vampire")
@@ -1198,6 +1252,44 @@ public class BrigadierCommands {
     };
     this.powCommand.onCommand(sender, dummyCommand, "pow", args);
     return 1;
+  }
+
+  /**
+   * Second argument of {@code /pow tome <ability> <arg>}, which means different things per
+   * tome: Scrying names a player to point at, Fading takes an opacity. Anything else has no
+   * second argument, so nothing is suggested rather than offering a misleading player list.
+   */
+  private CompletableFuture<Suggestions> suggestTomeAbilityTargets(
+          CommandContext<CommandSourceStack> ctx, SuggestionsBuilder builder) {
+    String ability;
+    try {
+      ability = StringArgumentType.getString(ctx, "ability").toLowerCase();
+    } catch (IllegalArgumentException e) {
+      return builder.buildFuture();
+    }
+
+    if (ability.equals("scrying")) {
+      CommandSender sender = ((CommandSourceStack) ctx.getSource()).getSender();
+      String remaining = builder.getRemainingLowerCase();
+      for (Player player : Bukkit.getOnlinePlayers()) {
+        // Pointing an arrow at yourself is not useful, so leave the caller out.
+        if (sender instanceof Player self && player.getUniqueId().equals(self.getUniqueId())) continue;
+        if (player.getName().toLowerCase().startsWith(remaining)) {
+          builder.suggest(player.getName());
+        }
+      }
+      return builder.buildFuture();
+    }
+
+    if (ability.equals("fading")) {
+      String remaining = builder.getRemainingLowerCase();
+      for (String opacity : new String[] { "0", "25", "50", "75", "100" }) {
+        if (opacity.startsWith(remaining)) builder.suggest(opacity);
+      }
+      return builder.buildFuture();
+    }
+
+    return builder.buildFuture();
   }
 
   private CompletableFuture<Suggestions> suggestOnlinePlayers(SuggestionsBuilder builder) {

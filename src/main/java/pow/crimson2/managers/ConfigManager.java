@@ -869,6 +869,29 @@ public class ConfigManager {
       return x >= this.getOakhurstMinX() && x <= this.getOakhurstMaxX() && z >= this.getOakhurstMinZ() && z <= this.getOakhurstMaxZ();
    }
 
+   /**
+    * Config invariants that silently break gameplay rather than erroring.
+    *
+    * <p>Currently one: the human death counter is clamped to
+    * {@code combat.human-death-score-cap}, and permadeath fires at
+    * {@code combat.vampire-kill-permadeath-threshold}. If the threshold sits above the cap the
+    * counter can never reach it and the whole 5-death rule quietly never triggers. config.yml
+    * documents the rule but nothing enforced it.
+    *
+    * @return human-readable warnings, empty when the config is coherent
+    */
+   public List<String> validateGameplayInvariants() {
+      List<String> warnings = new ArrayList<>();
+      int cap = this.getHumanDeathScoreCap();
+      int threshold = this.getVampireKillPermadeathThreshold();
+      if (threshold > cap) {
+         warnings.add("combat.vampire-kill-permadeath-threshold (" + threshold
+            + ") is above combat.human-death-score-cap (" + cap
+            + "), so the death counter can never reach it and vampire-kill permadeath will never trigger.");
+      }
+      return warnings;
+   }
+
    public List<String> validateConfiguredLocations(BeaconManager beaconManager) {
       List<String> warnings = new ArrayList<>();
       double townX = this.getOakhurstTownCenterX();

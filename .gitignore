@@ -7,3 +7,5 @@ worlds/
 
 # Compiled plugin builds (use GitHub Releases for jars)
 testbuilds/
+# Graphify knowledge-graph output (regenerate; never commit)
+graphify-out/

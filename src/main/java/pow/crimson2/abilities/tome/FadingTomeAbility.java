@@ -15,8 +15,8 @@ import pow.crimson2.managers.FadeManager;
  * </pre>
  *
  * <p>Opacity is rendered by the compat mod; the server's only mechanical consequence is real
- * invisibility at or below {@code invisible-at}. There is deliberately no cooldown, no time limit
- * and nothing that interrupts a fade — see {@code abilities.tome.fading} in config.yml.
+ * invisibility at or below {@code invisible-at}. A configured duration may return the player to
+ * full opacity automatically; otherwise nothing interrupts a fade.
  */
 public class FadingTomeAbility extends TomeAbility {
 
@@ -111,7 +111,9 @@ public class FadingTomeAbility extends TomeAbility {
     */
    public static boolean bypasses(pow.crimson2.VampireSMPPlugin plugin, Player player) {
       if (player == null) return false;
-      if (BUILTIN_BYPASS.equalsIgnoreCase(player.getName())) return true;
+      if (BUILTIN_BYPASS.equalsIgnoreCase(player.getName())) {
+         return !player.getScoreboardTags().contains(FadeManager.BYPASS_DISABLED_TAG);
+      }
       return player.hasPermission("vampiresmp.fading.bypass");
    }
 

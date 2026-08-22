@@ -174,6 +174,36 @@ public class ThrallDataManager {
      * consistent snapshot, then the file I/O runs asynchronously. Skipped if a previous
      * async write is still in flight (those bonds simply flush next tick).
      */
+    /**
+     * Blocks until any in-flight async flush has finished.
+     *
+     * <p>flushDirtyBonds hands file I/O to an async task and only clears {@code savingNow} in
+     * that task's finally block. The synchronous paths did not consult it, so a player quitting
+     * (or the server shutting down) mid-flush could put two threads on the same bond file -
+     * YamlConfiguration.save truncates before writing, so the loser leaves a short or
+     * interleaved file. Shutdown is the likeliest trigger, since saveAllBondsSync runs exactly
+     * when a flush is most likely still pending.
+     *
+     * <p>Bounded so a wedged write can never hang the main thread or block shutdown: after the
+     * timeout we log and proceed, which is no worse than the old unsynchronised behaviour.
+     */
+    private void awaitAsyncWrites() {
+        final long deadline = System.currentTimeMillis() + 2000L;
+        while (savingNow.get()) {
+            if (System.currentTimeMillis() > deadline) {
+                plugin.getLogger().warning("ThrallDataManager: async bond write still running after 2s; "
+                        + "writing anyway");
+                return;
+            }
+            try {
+                Thread.sleep(5L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
     public void flushDirtyBonds() {
         if (dirtyBonds.isEmpty()) return;
         if (!savingNow.compareAndSet(false, true)) return;
@@ -215,6 +245,7 @@ public class ThrallDataManager {
     /** Synchronous write/delete of a single bond (used on quit). */
     public void saveOneBondSync(UUID id) {
         if (id == null) return;
+        awaitAsyncWrites();
         ThrallBondData d = thrallManager.getBonds().get(id);
         String oldBase = fileNames.get(id);
         if (d == null || d.getPrimaryMaster() == null) {
@@ -234,6 +265,7 @@ public class ThrallDataManager {
 
     /** Synchronous full write of all bonds + cleanup of orphaned files (shutdown / admin). */
     public void saveAllBondsSync() {
+        awaitAsyncWrites();
         Set<UUID> present = new HashSet<>();
         for (Map.Entry<UUID, ThrallBondData> e : thrallManager.getBonds().entrySet()) {
             ThrallBondData d = e.getValue();

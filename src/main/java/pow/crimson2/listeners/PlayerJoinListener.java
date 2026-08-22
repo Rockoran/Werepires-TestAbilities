@@ -151,6 +151,13 @@ public class PlayerJoinListener implements Listener {
 
       this.plugin.getPlayerChatManager().removePlayersPendingMessages(player);
       if (player.isOp() || player.hasPermission("vampiresmp.admin")) {
+         List<String> invariants = this.plugin.getConfigManager().validateGameplayInvariants();
+         if (!invariants.isEmpty()) {
+            player.sendMessage("");
+            player.sendMessage("§c§l[CONFIG WARNING] §eThese settings cancel each other out:");
+            for (String w : invariants) player.sendMessage("§c  - " + w);
+         }
+
          List<String> warnings = this.plugin.getConfigManager().validateConfiguredLocations(this.plugin.getBeaconManager());
          if (!warnings.isEmpty()) {
             player.sendMessage("");
