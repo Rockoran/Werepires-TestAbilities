@@ -418,6 +418,11 @@ public class SessionManager {
    }
 
    public void endSession() {
+      this.endSession(true);
+   }
+
+   /** @param clearSessionTurns false only for a technical restart used to finish a break. */
+   public void endSession(boolean clearSessionTurns) {
       this.stopTrackingSessionTime();
       Score sessionScore = this.sessionObjective.getScore("state");
       sessionScore.setScore(3);
@@ -429,6 +434,9 @@ public class SessionManager {
       pow.crimson2.abilities.tome.TomeAbility.clearAllForNewSession();
       this.freezeTick();
       this.plugin.getTomeDistributionManager().stopDistributionTask();
+      if (clearSessionTurns && this.plugin.getSessionTurnManager() != null) {
+         this.plugin.getSessionTurnManager().clearAtSessionEnd();
+      }
       if (this.plugin.getFadeManager() != null) {
          this.plugin.getFadeManager().resetAll();
       }

@@ -74,6 +74,7 @@ import pow.crimson2.managers.PassiveMobSpawningManager;
 import pow.crimson2.managers.PermadeathManager;
 import pow.crimson2.managers.PlayerChatManager;
 import pow.crimson2.managers.SessionManager;
+import pow.crimson2.managers.SessionTurnManager;
 import pow.crimson2.managers.ThirstManager;
 import pow.crimson2.managers.TomeDistributionManager;
 import pow.crimson2.managers.TomeManager;
@@ -133,6 +134,7 @@ public class VampireSMPPlugin extends JavaPlugin {
    private FaeManager faeManager;
    private FadeManager fadeManager;
    private CooldownBoonManager cooldownBoonManager;
+   private SessionTurnManager sessionTurnManager;
    private com.tom.cpm.paper.CPMPaperPlugin cpm;
    private VampireSireManager sireManager;
    private ForcedCureChoiceManager forcedCureChoiceManager;
@@ -237,6 +239,7 @@ public class VampireSMPPlugin extends JavaPlugin {
       this.faeManager = new FaeManager(this);
       this.fadeManager = new FadeManager(this);
       this.cooldownBoonManager = new CooldownBoonManager(this);
+      this.sessionTurnManager = new SessionTurnManager(this);
 
       // CustomPlayerModels (MIT, tom5454) runs as a component rather than its own plugin —
       // a jar can only declare one main class. Failure here must not take WerePires down.
@@ -886,6 +889,10 @@ public class VampireSMPPlugin extends JavaPlugin {
 
    public VampireTurningManager getVampireTurningManager() {
       return this.vampireTurningManager;
+   }
+
+   public SessionTurnManager getSessionTurnManager() {
+      return this.sessionTurnManager;
    }
 
    public TurnLockManager getTurnLockManager() {

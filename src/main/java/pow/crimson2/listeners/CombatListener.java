@@ -294,7 +294,10 @@ public class CombatListener implements Listener {
                               return;
                            }
 
+                           boolean sessionTurnBlocked = this.plugin.getSessionTurnManager() != null
+                                 && !this.plugin.getSessionTurnManager().canTurn();
                            if (!this.plugin.getVampireTurningManager().isTurningEnabled(attacker)
+                                 || sessionTurnBlocked
                                  || this.plugin.getTurnLockManager().isTurnBlocked(attacker, victim, TurnLockManager.Species.VAMPIRE)) {
                               event.setCancelled(true);
 
@@ -322,7 +325,11 @@ public class CombatListener implements Listener {
 
                               int killThirst = this.plugin.getThirstManager().getKillThirstReward(attacker, victim);
                               this.plugin.getThirstManager().modifyQuench(attacker, killThirst, true);
-                              attacker.sendMessage("§cYou have killed " + victim.getName() + ". They will respawn as a human, wounded.");
+                              if (sessionTurnBlocked) {
+                                 attacker.sendMessage("§cThe session turn limit has been reached. " + victim.getName() + " cannot be turned.");
+                              } else {
+                                 attacker.sendMessage("§cYou have killed " + victim.getName() + ". They will respawn as a human, wounded.");
+                              }
                               victim.sendMessage("§7You have been slain by a vampire, but they do not turn you...");
                               Player finalVictim = victim;
                               this.plugin.getServer().getScheduler().runTask(this.plugin, () -> finalVictim.setHealth(0.0));
@@ -360,6 +367,9 @@ public class CombatListener implements Listener {
                            event.setCancelled(true);
                            victim.setHealth(2.0);
                            this.plugin.getVampireManager().performVampireTurning(victim, attacker);
+                           if (this.plugin.getSessionTurnManager() != null) {
+                              this.plugin.getSessionTurnManager().consume(attacker, victim, "a vampire");
+                           }
                            victim.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 300, 2, false, false));
                            this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
                               if (this.plugin.getBeaconMajorityManager() != null) {

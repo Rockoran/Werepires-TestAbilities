@@ -78,6 +78,8 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
          return this.handleScheduleExtension(sender, args, true);
       } else if (command.getName().equalsIgnoreCase("extendsession")) {
          return this.handleScheduleExtension(sender, args, false);
+      } else if (command.getName().equalsIgnoreCase("sessionturns")) {
+         return this.handleSessionTurns(sender, args);
       } else if (command.getName().equalsIgnoreCase("vampire")) {
          return this.handleVampireCommand(sender, args);
       } else if (command.getName().equalsIgnoreCase("werewolf")) {
@@ -197,6 +199,35 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
       if (!changed) sender.sendMessage(breakExtension
               ? "§cThere is no active scheduled break to extend."
               : "§cThere is no active scheduled gameplay phase to extend.");
+      return true;
+   }
+
+   private boolean handleSessionTurns(CommandSender sender, String[] args) {
+      SessionTurnManager turns = this.plugin.getSessionTurnManager();
+      if (args.length == 0 || args[0].equalsIgnoreCase("status")) {
+         turns.status(sender);
+         return true;
+      }
+      if (args.length != 2) {
+         sender.sendMessage("§cUsage: /pow admin sessionturns <limit|extend> <number>");
+         return true;
+      }
+      int amount;
+      try { amount = Integer.parseInt(args[1]); }
+      catch (NumberFormatException ex) { sender.sendMessage("§cNumber must be a whole number."); return true; }
+      if (!SessionTurnManager.validAmount(amount)) {
+         sender.sendMessage("§cNumber must be from 0 to 100000.");
+         return true;
+      }
+      if (args[0].equalsIgnoreCase("limit")) {
+         turns.setLimit(amount, sender);
+      } else if (args[0].equalsIgnoreCase("extend")) {
+         if (amount < 1 || !turns.extend(amount, sender)) {
+            sender.sendMessage("§cSet a session turn limit first; extension must keep the total at or below 100000.");
+         }
+      } else {
+         sender.sendMessage("§cUsage: /pow admin sessionturns <limit|extend> <number>");
+      }
       return true;
    }
 

@@ -301,6 +301,20 @@ public class BrigadierCommands {
                                                                     String.valueOf(IntegerArgumentType.getInteger(ctx, "minutes")))))
                                     )
                                     .then(
+                                            ((LiteralArgumentBuilder) ((LiteralArgumentBuilder) Commands.literal("sessionturns")
+                                                    .executes(ctx -> this.executePowCommand(ctx, "admin", "sessionturns", "status")))
+                                                    .then(Commands.literal("status").executes(
+                                                            ctx -> this.executePowCommand(ctx, "admin", "sessionturns", "status")))
+                                                    .then(Commands.literal("limit")
+                                                            .then(Commands.argument("turn_limit", IntegerArgumentType.integer(0, 100000))
+                                                                    .executes(ctx -> this.executePowCommand(ctx, "admin", "sessionturns", "limit",
+                                                                            String.valueOf(IntegerArgumentType.getInteger(ctx, "turn_limit"))))))
+                                                    .then(Commands.literal("extend")
+                                                            .then(Commands.argument("turn_extension", IntegerArgumentType.integer(1, 100000))
+                                                                    .executes(ctx -> this.executePowCommand(ctx, "admin", "sessionturns", "extend",
+                                                                            String.valueOf(IntegerArgumentType.getInteger(ctx, "turn_extension"))))))
+                                    ))
+                                    .then(
                                             Commands.literal("vampire")
                                                     .then(
                                                             ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) ((RequiredArgumentBuilder) Commands.argument(

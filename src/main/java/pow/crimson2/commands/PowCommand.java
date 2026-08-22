@@ -163,6 +163,7 @@ public class PowCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage("§e/pow admin sessionsetup [status|cancel] §7- Configure an automatic session timeline");
       sender.sendMessage("§e/pow admin extendbreak <minutes> §7- Extend the active scheduled break");
       sender.sendMessage("§e/pow admin extendsession <minutes> §7- Extend the active scheduled gameplay phase");
+      sender.sendMessage("§e/pow admin sessionturns <limit|extend> <number> §7- Manage the shared session turn allowance");
       sender.sendMessage("§e/pow admin vampire <player> <human|1|2|3|turn> §7- Manage vampire status");
       sender.sendMessage("§e/pow admin werewolf <player> <human|1|2|3> §7- Manage werewolf status");
       sender.sendMessage("§e/pow admin beacon <subcommand> §7- Manage beacon sites (use tab for options)");
@@ -253,6 +254,7 @@ public class PowCommand implements CommandExecutor, TabCompleter {
                   "sessionsetup",
                   "extendbreak",
                   "extendsession",
+                  "sessionturns",
                   "vampire",
                   "werewolf",
                   "beacon",
@@ -336,6 +338,16 @@ public class PowCommand implements CommandExecutor, TabCompleter {
                   || args[1].equalsIgnoreCase("extendsession"))) {
                return Arrays.asList("5", "10", "15", "30").stream()
                   .filter(s -> s.startsWith(args[2])).collect(Collectors.toList());
+            }
+
+            if (args.length == 3 && args[1].equalsIgnoreCase("sessionturns")) {
+               return Arrays.asList("limit", "extend", "status").stream()
+                  .filter(s -> s.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+            }
+
+            if (args.length == 4 && args[1].equalsIgnoreCase("sessionturns")) {
+               return Arrays.asList("0", "1", "2", "3", "5", "10").stream()
+                  .filter(s -> s.startsWith(args[3])).collect(Collectors.toList());
             }
 
             if (args.length == 3 && args[1].equalsIgnoreCase("vampire")) {

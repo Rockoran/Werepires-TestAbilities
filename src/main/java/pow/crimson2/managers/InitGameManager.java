@@ -991,6 +991,9 @@ public class InitGameManager {
 
         admin.sendMessage("§7[4/9] Priming new session and incrementing game ID...");
         plugin.getSessionManager().primeNewSession();
+        if (plugin.getSessionTurnManager() != null) {
+            plugin.getSessionTurnManager().clearAtSessionEnd();
+        }
         plugin.getSessionManager().incrementGameID();
 
         admin.sendMessage("§7[4.5/9] Resetting game state flags...");

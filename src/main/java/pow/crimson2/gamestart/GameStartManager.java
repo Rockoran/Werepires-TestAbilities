@@ -185,7 +185,7 @@ public class GameStartManager {
 
         if ("restart".equals(breakMode)) {
             // pow session end → wait → pow session start
-            plugin.getSessionManager().endSession();
+            plugin.getSessionManager().endSession(false);
             Bukkit.getScheduler().runTaskLater(plugin,
                     () -> plugin.getSessionManager().startSession(), 60L);
         } else {
@@ -345,7 +345,7 @@ public class GameStartManager {
         playBell(2f);
         // Resume or restart based on how the series was configured
         if ("restart".equals(lastBreakMode)) {
-            plugin.getSessionManager().endSession();
+            plugin.getSessionManager().endSession(false);
             Bukkit.getScheduler().runTaskLater(plugin, () ->
                     plugin.getSessionManager().startSession(), 2L);
         } else {

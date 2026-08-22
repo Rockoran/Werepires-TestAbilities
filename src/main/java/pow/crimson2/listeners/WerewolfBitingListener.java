@@ -73,6 +73,12 @@ public class WerewolfBitingListener implements Listener {
       if (!this.vampireManager.isWerewolf(biter)) return;
       if (!biter.isSneaking()) return;
 
+      if (this.plugin.getSessionTurnManager() != null && !this.plugin.getSessionTurnManager().canTurn()) {
+         biter.sendMessage("§cThe session turn limit has been reached. No more players can be turned.");
+         event.setCancelled(true);
+         return;
+      }
+
       // Must have empty main hand
       ItemStack mainHand = biter.getInventory().getItemInMainHand();
       if (mainHand != null && mainHand.getType() != Material.AIR) return;
@@ -204,6 +210,13 @@ public class WerewolfBitingListener implements Listener {
       if (locks.isTurnBlocked(biter, victim, TurnLockManager.Species.WEREWOLF)) {
          biter.sendMessage("§6The curse slips away at the last moment. The infection fails.");
          victim.sendMessage("§6You feel the beast recede. Whatever took hold of you has passed.");
+         return;
+      }
+
+      if (this.plugin.getSessionTurnManager() != null
+            && !this.plugin.getSessionTurnManager().consume(biter, victim, "a werewolf")) {
+         biter.sendMessage("§cThe session turn limit was reached before the infection completed.");
+         victim.sendMessage("§6The infection recedes before it can take hold.");
          return;
       }
 
